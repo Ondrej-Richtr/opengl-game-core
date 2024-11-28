@@ -5,6 +5,11 @@
 #include <fstream>
 
 
+bool Utils::isZero(glm::vec3 vector)
+{
+    return vector == glm::vec3(0.f);
+}
+
 size_t Utils::getTextFileLength(const char *path)
 {
     assert(path != NULL);

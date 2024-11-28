@@ -11,7 +11,12 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
     //TODO check for resizes to 0x0?
     printf("Window resized to: %dx%d\n", width, height);
     glViewport(0, 0, width, height);
-}  
+}
+
+/*void windowMouseMoveCallback(GLFWwindow* window)
+{
+    //TODO
+}*/
 
 int main()
 {
@@ -68,7 +73,7 @@ int main()
 
     float fov = 45.f;
     const glm::vec3 camera_init_pos(0.f, 0.f, 2.5f);
-    const glm::vec3 camera_init_target(0.f, 0.f, 0.f);
+    const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
     Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
 
     //Triangle and it's vbo
@@ -252,6 +257,21 @@ int main()
 
         // ---Keyboard input---
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+
+        glm::vec3 move_dir = Movement::getSimplePlayerDir(window);
+
+        // ---Camera movement---
+        const float move_per_sec = 2.f;
+        const float move_magnitude = move_per_sec * frame_delta;
+        glm::vec3 move_rel = move_magnitude * move_dir; // move vector relative to the camera (view coords)
+        
+        if (!Utils::isZero(move_rel))
+        {
+            glm::vec3 move_abs = camera.dirCoordsViewToWorld(move_rel); // absolute move vector (world coords)
+            // printf("move_rel: %f|%f|%f\n", move_rel.x, move_rel.y, move_rel.z);
+            // printf("move_abs: %f|%f|%f\n", move_abs.x, move_abs.y, move_abs.z);
+            camera.move(move_abs);
+        }
 
         // ---Draw begin---
         {

@@ -12,6 +12,10 @@
 #define DEFAULT_WINDOW_HEIGHT 720
 
 
+//Macro functions
+//TODO find a better solution than macros
+#define NORMALIZE_OR_0(v) (Utils::isZero((v)) ? glm::vec3(0.f) : (v))
+
 //struct definitions
 struct ColorF
 {
@@ -52,11 +56,19 @@ namespace Drawing
         Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                  float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
 
+        void setPosition(glm::vec3 pos);        // setter for camera position, in the future we might want to cache view matrix
+        void movePosition(glm::vec3 move_vec);  // move camera position by given vector
+
+        void setTarget(glm::vec3 target);       // setter for camera target, in the future we might want to cache view matrix
+        void moveTarget(glm::vec3 move_vec);    // move camera target by given vector
+
+        void move(glm::vec3 move_vec);          // combines movePosition and moveTarget
+        
         glm::mat4 getViewMatrix() const;
 
         glm::mat4 getProjectionMatrix() const;
 
-        void setPosition(glm::vec3 pos); // setter for camera position, in the future we might want to cache view matrix
+        glm::vec3 dirCoordsViewToWorld(glm::vec3 dir) const;
     };
 
     void clear(GLFWwindow* window, Color color);
@@ -64,6 +76,8 @@ namespace Drawing
 
 namespace Utils
 {
+    bool isZero(glm::vec3 vector);
+
     size_t getTextFileLength(const char *path);
     char* getTextFileAsString(const char *path);
 
@@ -120,4 +134,10 @@ namespace Textures
 
         void bind(unsigned int unit = 0) const;
     };
+}
+
+//movement.cpp
+namespace Movement
+{
+    glm::vec3 getSimplePlayerDir(GLFWwindow* window);
 }
