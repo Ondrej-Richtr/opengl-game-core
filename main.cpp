@@ -1,0 +1,363 @@
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "game.hpp"
+#include "stb_image.h"
+
+#include "glm/gtc/matrix_transform.hpp" //DEBUG
+
+#include <array>
+
+//TODO move this elsewhere - window manager?
+void windowResizeCallback(GLFWwindow* window, int width, int height)
+{
+    //TODO check for resizes to 0x0?
+    printf("Window resized to: %dx%d\n", width, height);
+    glViewport(0, 0, width, height);
+}  
+
+int main()
+{
+    puts("Program begin.");
+
+    //GLFW initialization
+    if (glfwInit() == GLFW_FALSE)
+    {
+        fprintf(stderr, "GLFW failed to initialize!\n");
+        return 1;
+    }
+
+    //setting up stbi
+    stbi_set_flip_vertically_on_load(true);
+
+    //setting up OpenGL in GLFW
+    //ES
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
+
+    //initializing the window
+    int window_width = DEFAULT_WINDOW_WIDTH, window_height = DEFAULT_WINDOW_HEIGHT;
+    const char window_title[] = "OpenGL Game";
+    GLFWwindow* window = glfwCreateWindow(window_width, window_height,
+                                          (char*)window_title, NULL, NULL);
+    if (window == NULL)
+    {
+        fprintf(stderr, "GLFW failed to create window!\n");
+        glfwTerminate();
+        return 2;
+    }
+    glfwMakeContextCurrent(window);
+
+    //initializing GLAD
+    if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+    {
+        fprintf(stderr, "GLAD failed to initialize!\n");
+        glfwTerminate();
+        return 3;
+    }
+
+    glViewport(0, 0, window_width, window_height);
+    glfwSetFramebufferSizeCallback(window, windowResizeCallback);
+
+    //Camera
+    using Camera = Drawing::Camera3D;
+
+    float fov = 45.f;
+    const glm::vec3 camera_init_pos(0.f, 0.f, 2.5f);
+    const glm::vec3 camera_init_target(0.f, 0.f, 0.f);
+    Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
+
+    //Triangle and it's vbo
+    Color clear_color(50, 220, 80);
+    GLfloat trinagle_verts[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f
+    };
+    GLfloat triangle_tex_verts[] = {
+        0.0f, 0.0f,  
+        1.0f, 0.0f,
+        0.5f, 1.0f
+    };
+
+    unsigned int triangle_vbo; //TODO make this better
+    glGenBuffers(1, &triangle_vbo);
+    // unsigned int vao;
+    // glGenVertexArrays(1, &vao);
+
+    // glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(trinagle_verts), trinagle_verts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(GLfloat), (void*)0);
+    // glEnableVertexAttribArray(0);
+
+    //Square and it's vbo and ebo
+    GLfloat square_vertices[] = {
+        //positions             //texcoords
+        0.2f,  0.2f,   0.0f,     1.0f, 1.0f, // top right
+        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f, // bottom right
+        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f, // bottom left
+        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f  // top left 
+    };
+    GLuint square_indices[] = {
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
+    size_t square_verts_pos_offset = 0;
+    size_t square_verts_texcoord_offset = 3;
+    size_t square_vert_attrib = 5; //amount of square attributes - 3x pos + 2x texcoords
+
+    unsigned int square_vbo; //TODO make this better
+    glGenBuffers(1, &square_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices), square_vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    unsigned int square_ebo;
+    glGenBuffers(1, &square_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, square_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(square_indices), square_indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    //Cube and it's vbo
+    float cube_vertices[] = {
+        //pos                //texcoords
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+    size_t cube_verts_pos_offset = 0;
+    size_t cube_verts_texcoord_offset = 3;
+    size_t cube_vert_attrib = 5; //amount of cube attributes - 3x pos + 2x texcoords
+
+    unsigned int cube_vbo; //TODO make this better
+    glGenBuffers(1, &cube_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    //Default shader program
+    using ShaderP = Shaders::Program;
+
+    const char *default_vs_src_path = "shaders/default.vs",
+               *default_fs_src_path = "shaders/default.fs";
+    
+    ShaderP default_shader(default_vs_src_path, default_fs_src_path);
+    if (default_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create default shader program!\n");
+        glfwTerminate();
+        return 4;
+    }
+
+    //Textures
+    // loading simple texture shader program
+    const char *texture_vs_path = "shaders/texture.vs",
+               *texture_fs_path = "shaders/texture.fs";
+    
+    ShaderP texture_shader(texture_vs_path, texture_fs_path);
+    if (texture_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create simple texture shader program!\n");
+        glfwTerminate();
+        return 5;
+    }
+
+    using Texture = Textures::Texture2D;
+
+    const char *bricks_path = "assets/bricks2.png",
+               *orb_path   = "assets/orb.jpg";
+
+    Texture brick_texture(bricks_path);
+    if (brick_texture.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create brick texture!\n");
+        glfwTerminate();
+        return 6;
+    }
+    //TODO rework this
+    texture_shader.use();
+    texture_shader.set("inputTexture1", 0);
+
+    Texture orb_texture(orb_path);
+    if (orb_texture.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create orb texture!\n");
+        glfwTerminate();
+        return 7;
+    }
+    //TODO rework this
+    texture_shader.use();
+    texture_shader.set("inputTexture2", 1);
+
+    // MainLoopData loopData = {}; //TODO use this
+    // loopData.test = 15;
+    // loopData.window = window;
+
+    //Misc.
+    unsigned int tick = 0;
+    float frame_delta = 0.f;
+    double last_frame_time = glfwGetTime();
+    
+    while(!glfwWindowShouldClose(window))
+    {
+        //calculating correct frame delta time
+        //TODO
+        double current_frame_time = glfwGetTime();
+        frame_delta = current_frame_time - last_frame_time;
+        last_frame_time = current_frame_time;
+
+        // ---Keyboard input---
+        if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+
+        // ---Draw begin---
+        {
+            Drawing::clear(window, clear_color);
+            glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+
+            //TODO
+            const glm::mat4 view_mat = camera.getViewMatrix(),
+                            proj_mat = camera.getProjectionMatrix();
+
+            //triangle
+            default_shader.use();
+            {
+                float time = glfwGetTime();
+                float blue_value = sin(time) / 2.0f + 0.5f;
+                default_shader.set("inputColor", { 0.0f, 0.0f, blue_value, 1.0f });
+
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3(-0.7f, 0.3f, 0.0f));
+                //model = glm::rotate(model, time, glm::vec3(0.f, 1.f, 0.f));
+                model = glm::rotate(model, time, glm::vec3(0.f, 0.f, 1.f));
+
+                glm::mat4 transform = proj_mat * view_mat * model;
+                default_shader.set("transform", transform);
+            }
+            
+            glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
+                glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(GLfloat), (void*)0);
+                glEnableVertexAttribArray(0);
+                    glDrawArrays(GL_TRIANGLES, 0, 3);
+                glDisableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            //square
+            texture_shader.use();
+            brick_texture.bind(0);
+            orb_texture.bind(1);
+            {
+                glm::mat4 model = glm::mat4(1.f);
+                model = glm::translate(model, glm::vec3(0.7f, 0.7f, 0.f));
+
+                glm::mat4 transform = proj_mat * view_mat * model;
+                texture_shader.set("transform", transform);
+            }
+
+            glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, square_ebo);
+                glVertexAttribPointer(0, 3, GL_FLOAT, false,
+                                      square_vert_attrib * sizeof(GLfloat),
+                                      (void*)(square_verts_pos_offset * sizeof(GLfloat)));
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(1, 2, GL_FLOAT, false,
+                                      square_vert_attrib * sizeof(GLfloat),
+                                      (void*)(square_verts_texcoord_offset * sizeof(GLfloat)));
+                glEnableVertexAttribArray(1);
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glDisableVertexAttribArray(0);
+                glDisableVertexAttribArray(1);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            //3D block
+            {
+                glEnable(GL_DEPTH_TEST);
+
+                //cube
+                texture_shader.use();
+                brick_texture.bind(0);
+                orb_texture.bind(1);
+                {
+                    float time = glfwGetTime();
+                    glm::mat4 model = glm::mat4(1.0f);
+                    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+                    model = glm::rotate(model, time, glm::vec3(0.f, 1.f, 0.f));
+                    model = glm::rotate(model, time, glm::vec3(0.f, 0.f, 1.f));
+
+                    glm::mat4 transform = proj_mat * view_mat * model;
+                    texture_shader.set("transform", transform);
+                }
+
+                glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
+                    glVertexAttribPointer(0, 3, GL_FLOAT, false,
+                                        cube_vert_attrib * sizeof(GLfloat),
+                                        (void*)(cube_verts_pos_offset * sizeof(GLfloat)));
+                    glEnableVertexAttribArray(0);
+                    glVertexAttribPointer(1, 2, GL_FLOAT, false,
+                                        cube_vert_attrib * sizeof(GLfloat),
+                                        (void*)(cube_verts_texcoord_offset * sizeof(GLfloat)));
+                    glEnableVertexAttribArray(1);
+                        glDrawArrays(GL_TRIANGLES, 0, 36);
+                    glDisableVertexAttribArray(0);
+                    glDisableVertexAttribArray(1);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                glDisable(GL_DEPTH_TEST);
+            }
+        }
+
+        // ---Draw end---
+        glfwPollEvents();
+        glfwSwapBuffers(window);
+
+        ++tick;
+    }
+
+    glfwTerminate();
+
+    puts("Program end.");
+    return 0;
+}
