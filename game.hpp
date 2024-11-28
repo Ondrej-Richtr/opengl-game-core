@@ -51,7 +51,7 @@ namespace Drawing
     struct Camera3D
     {
         glm::vec3 m_pos, m_target;
-        glm::mat4 m_proj_mat;
+        glm::mat4 m_view_mat, m_proj_mat;
 
         Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                  float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
@@ -64,9 +64,11 @@ namespace Drawing
 
         void move(glm::vec3 move_vec);          // combines movePosition and moveTarget
         
-        glm::mat4 getViewMatrix() const;
+        void updateViewMatrix();
 
-        glm::mat4 getProjectionMatrix() const;
+        const glm::mat4& getViewMatrix() const;
+
+        const glm::mat4& getProjectionMatrix() const;
 
         glm::vec3 dirCoordsViewToWorld(glm::vec3 dir) const;
     };

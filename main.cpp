@@ -278,8 +278,8 @@ int main()
             Drawing::clear(window, clear_color);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
-            const glm::mat4 view_mat = camera.getViewMatrix(),
-                            proj_mat = camera.getProjectionMatrix();
+            const glm::mat4& view_mat = camera.getViewMatrix();
+            const glm::mat4& proj_mat = camera.getProjectionMatrix();
 
             //triangle
             default_shader.use();
