@@ -5,8 +5,6 @@
 
 #include "glm/gtc/matrix_transform.hpp" //DEBUG
 
-#include <array>
-
 //TODO move this elsewhere - window manager?
 void windowResizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -270,13 +268,16 @@ int main()
                 float blue_value = sin(time) / 2.0f + 0.5f;
                 default_shader.set("inputColor", { 0.0f, 0.0f, blue_value, 1.0f });
 
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, glm::vec3(-0.7f, 0.3f, 0.0f));
-                //model = glm::rotate(model, time, glm::vec3(0.f, 1.f, 0.f));
-                model = glm::rotate(model, time, glm::vec3(0.f, 0.f, 1.f));
+                glm::mat4 model_mat = glm::mat4(1.0f);
+                model_mat = glm::translate(model_mat, glm::vec3(-0.7f, 0.3f, 0.0f));
+                //model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
+                model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
 
-                glm::mat4 transform = proj_mat * view_mat * model;
-                default_shader.set("transform", transform);
+                default_shader.set("model", model_mat);
+                default_shader.set("view", view_mat);
+                default_shader.set("projection", proj_mat);
+                // glm::mat4 transform = proj_mat * view_mat * model;
+                // default_shader.set("transform", transform);
             }
             
             glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
@@ -291,11 +292,14 @@ int main()
             brick_texture.bind(0);
             orb_texture.bind(1);
             {
-                glm::mat4 model = glm::mat4(1.f);
-                model = glm::translate(model, glm::vec3(0.7f, 0.7f, 0.f));
+                glm::mat4 model_mat = glm::mat4(1.f);
+                model_mat = glm::translate(model_mat, glm::vec3(0.7f, 0.7f, 0.f));
 
-                glm::mat4 transform = proj_mat * view_mat * model;
-                texture_shader.set("transform", transform);
+                texture_shader.set("model", model_mat);
+                texture_shader.set("view", view_mat);
+                texture_shader.set("projection", proj_mat);
+                // glm::mat4 transform = proj_mat * view_mat * model;
+                // texture_shader.set("transform", transform);
             }
 
             glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
@@ -324,13 +328,16 @@ int main()
                 orb_texture.bind(1);
                 {
                     float time = glfwGetTime();
-                    glm::mat4 model = glm::mat4(1.0f);
-                    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-                    model = glm::rotate(model, time, glm::vec3(0.f, 1.f, 0.f));
-                    model = glm::rotate(model, time, glm::vec3(0.f, 0.f, 1.f));
+                    glm::mat4 model_mat = glm::mat4(1.0f);
+                    model_mat = glm::scale(model_mat, glm::vec3(0.5f, 0.5f, 0.5f));
+                    model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
+                    model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
 
-                    glm::mat4 transform = proj_mat * view_mat * model;
-                    texture_shader.set("transform", transform);
+                    texture_shader.set("model", model_mat);
+                    texture_shader.set("view", view_mat);
+                    texture_shader.set("projection", proj_mat);
+                    // glm::mat4 transform = proj_mat * view_mat * model;
+                    // texture_shader.set("transform", transform);
                 }
 
                 glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);

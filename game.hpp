@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cassert>
 #include <cmath>
+#include <array>
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
