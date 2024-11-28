@@ -51,6 +51,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
 
+    //other GLFW settings
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     //initializing GLAD
     if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
     {
@@ -208,7 +211,7 @@ int main()
     using Texture = Textures::Texture2D;
 
     const char *bricks_path = "assets/bricks2.png",
-               *orb_path   = "assets/orb.jpg";
+               *orb_path    = "assets/orb.jpg";
 
     Texture brick_texture(bricks_path);
     if (brick_texture.m_id == Textures::empty_id)
@@ -257,7 +260,6 @@ int main()
             Drawing::clear(window, clear_color);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
-            //TODO
             const glm::mat4 view_mat = camera.getViewMatrix(),
                             proj_mat = camera.getProjectionMatrix();
 
@@ -333,12 +335,12 @@ int main()
 
                 glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
                     glVertexAttribPointer(0, 3, GL_FLOAT, false,
-                                        cube_vert_attrib * sizeof(GLfloat),
-                                        (void*)(cube_verts_pos_offset * sizeof(GLfloat)));
+                                          cube_vert_attrib * sizeof(GLfloat),
+                                          (void*)(cube_verts_pos_offset * sizeof(GLfloat)));
                     glEnableVertexAttribArray(0);
                     glVertexAttribPointer(1, 2, GL_FLOAT, false,
-                                        cube_vert_attrib * sizeof(GLfloat),
-                                        (void*)(cube_verts_texcoord_offset * sizeof(GLfloat)));
+                                          cube_vert_attrib * sizeof(GLfloat),
+                                          (void*)(cube_verts_texcoord_offset * sizeof(GLfloat)));
                     glEnableVertexAttribArray(1);
                         glDrawArrays(GL_TRIANGLES, 0, 36);
                     glDisableVertexAttribArray(0);
