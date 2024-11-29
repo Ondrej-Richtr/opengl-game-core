@@ -7,8 +7,6 @@
 Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
             : m_id(Textures::empty_id), m_width(0), m_height(0)
 {
-    //stbi_set_flip_vertically_on_load(true); //TODO
-
     // load the image data using stbi
     int wanted_channels = 4, // we force 4 channels as we always want RGBA textures
         loaded_width, loaded_height, actual_channels;

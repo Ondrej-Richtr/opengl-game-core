@@ -35,6 +35,8 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
     if (!vs_id || !fs_id)
     {
         fprintf(stderr, "Failed to initialize vertex and fragment shaders when constructing shader program!\n");
+        // fprintf(stderr, "vs_id == 0: %d\n", vs_id == 0);
+        // fprintf(stderr, "fs_id == 0: %d\n", fs_id == 0);
         glDeleteShader(vs_id);
         glDeleteShader(fs_id);
         delete[] vs_source;
@@ -145,4 +147,15 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
 
     assert(id != Shaders::empty_id);
     return id;
+}
+
+void Shaders::setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride)
+{
+    glVertexAttribPointer(location, count, GL_FLOAT, false, stride, (void*)(offset * sizeof(GLfloat)));
+    glEnableVertexAttribArray(location);
+}
+
+void Shaders::disableVertexAttribute(GLuint location)
+{
+    glDisableVertexAttribArray(location);
 }

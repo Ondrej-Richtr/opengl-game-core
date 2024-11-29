@@ -55,12 +55,15 @@ namespace Drawing
 
         Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                  float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
+        Camera3D(float fov, float aspect_ration, glm::vec3 pos, float pitch, float yaw,
+                 float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
 
         void setPosition(glm::vec3 pos);        // setter for camera position, in the future we might want to cache view matrix
         void movePosition(glm::vec3 move_vec);  // move camera position by given vector
 
         void setTarget(glm::vec3 target);       // setter for camera target, in the future we might want to cache view matrix
         void moveTarget(glm::vec3 move_vec);    // move camera target by given vector
+        void setTargetFromPitchYaw(float pitch, float yaw); //TODO
 
         void move(glm::vec3 move_vec);          // combines movePosition and moveTarget
         
@@ -111,6 +114,10 @@ namespace Shaders
     GLuint fromString(GLenum type, const char *str);
 
     GLuint programLink(GLuint vs, GLuint fs);
+
+    void setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride);
+
+    void disableVertexAttribute(GLuint location);
 }
 
 //textures.cpp

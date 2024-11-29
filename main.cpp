@@ -5,6 +5,8 @@
 
 #include "glm/gtc/matrix_transform.hpp" //DEBUG
 
+#include <algorithm>
+
 //TODO move this elsewhere - window manager?
 void windowResizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -13,10 +15,17 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-/*void windowMouseMoveCallback(GLFWwindow* window)
-{
-    //TODO
-}*/
+// double last_xpos = 0.f, last_ypos = 0.f;
+// void windowMouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
+// {
+//     //TODO
+//     const float sensitivity = 0.1f;
+//     printf("xpos: %f, ypos: %f, last_xpos: %f, last_ypos: %f\n", xpos, ypos, last_xpos, last_ypos);
+//     last_xpos = xpos;
+//     last_ypos = ypos;
+//     float dif_x = (float)(xpos - last_xpos), dif_y = (float)(ypos - last_ypos);
+//     //printf("xpos: %f, ypos: %f, last_xpos: %f, last_ypos: %f\n", xpos, ypos, last_xpos, last_ypos);
+// }
 
 int main()
 {
@@ -56,6 +65,8 @@ int main()
 
     //other GLFW settings
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetFramebufferSizeCallback(window, windowResizeCallback);
+    //glfwSetCursorPosCallback(window, windowMouseMoveCallback); 
 
     //initializing GLAD
     if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
@@ -66,15 +77,18 @@ int main()
     }
 
     glViewport(0, 0, window_width, window_height);
-    glfwSetFramebufferSizeCallback(window, windowResizeCallback);
 
     //Camera
     using Camera = Drawing::Camera3D;
 
-    float fov = 45.f;
+    const float mouse_sens = 0.08f;
+    float fov = 80.f;
     const glm::vec3 camera_init_pos(0.f, 0.f, 2.5f);
-    const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
-    Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
+    //const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
+    //Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
+    float camera_pitch = 0.f;
+    float camera_yaw = -90.f;
+    Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_pitch, camera_yaw);
 
     //Triangle and it's vbo
     Color clear_color(50, 220, 80);
@@ -246,6 +260,7 @@ int main()
     unsigned int tick = 0;
     float frame_delta = 0.f;
     double last_frame_time = glfwGetTime();
+    double last_mouse_x = 0.f, last_mouse_y = 0.f;
     
     while(!glfwWindowShouldClose(window))
     {
@@ -255,13 +270,54 @@ int main()
         frame_delta = current_frame_time - last_frame_time;
         last_frame_time = current_frame_time;
 
+        // ---Mouse input---
+        double mouse_x = 0.f, mouse_y = 0.f;
+        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+
+        if (tick == 0)
+        {
+            last_mouse_x = mouse_x;
+            last_mouse_y = mouse_y;
+        }
+
+        float mouse_delta_x = (float)(mouse_x - last_mouse_x), mouse_delta_y = (float)(mouse_y - last_mouse_y);
+        //printf("mouse_delta_x: %f, mouse_delta_y: %f\n", mouse_delta_x, mouse_delta_y);
+
+        if (mouse_delta_x != 0.f || mouse_delta_y != 0.f)
+        {
+            camera_yaw += mouse_sens * mouse_delta_x;
+            camera_pitch = std::min(89.f, std::max(-89.f, camera_pitch - mouse_sens * mouse_delta_y)); // set camera_pitch with limits -89°/89°
+            camera.setTargetFromPitchYaw(camera_pitch, camera_yaw); //TODO make this better
+        }
+
         // ---Keyboard input---
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+
+        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        {
+            camera_yaw -= 0.5f;
+            camera.setTargetFromPitchYaw(camera_pitch, camera_yaw);
+        }
+        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        {
+            camera_yaw += 0.5f;
+            camera.setTargetFromPitchYaw(camera_pitch, camera_yaw);
+        }
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        {
+            camera_pitch += 0.5f;
+            camera.setTargetFromPitchYaw(camera_pitch, camera_yaw);
+        }
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        {
+            camera_pitch -= 0.5f;
+            camera.setTargetFromPitchYaw(camera_pitch, camera_yaw);
+        }
 
         glm::vec3 move_dir = Movement::getSimplePlayerDir(window);
 
         // ---Camera movement---
-        const float move_per_sec = 2.f;
+        const float move_per_sec = 4.f;
         const float move_magnitude = move_per_sec * frame_delta;
         glm::vec3 move_rel = move_magnitude * move_dir; // move vector relative to the camera (view coords)
         
@@ -296,15 +352,12 @@ int main()
                 default_shader.set("model", model_mat);
                 default_shader.set("view", view_mat);
                 default_shader.set("projection", proj_mat);
-                // glm::mat4 transform = proj_mat * view_mat * model;
-                // default_shader.set("transform", transform);
             }
             
             glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
-                glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(GLfloat), (void*)0);
-                glEnableVertexAttribArray(0);
+                Shaders::setupVertexAttribute_float(0, 3, 0, 3 * sizeof(GLfloat));
                     glDrawArrays(GL_TRIANGLES, 0, 3);
-                glDisableVertexAttribArray(0);
+                Shaders::disableVertexAttribute(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             //square
@@ -318,23 +371,15 @@ int main()
                 texture_shader.set("model", model_mat);
                 texture_shader.set("view", view_mat);
                 texture_shader.set("projection", proj_mat);
-                // glm::mat4 transform = proj_mat * view_mat * model;
-                // texture_shader.set("transform", transform);
             }
 
             glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, square_ebo);
-                glVertexAttribPointer(0, 3, GL_FLOAT, false,
-                                      square_vert_attrib * sizeof(GLfloat),
-                                      (void*)(square_verts_pos_offset * sizeof(GLfloat)));
-                glEnableVertexAttribArray(0);
-                glVertexAttribPointer(1, 2, GL_FLOAT, false,
-                                      square_vert_attrib * sizeof(GLfloat),
-                                      (void*)(square_verts_texcoord_offset * sizeof(GLfloat)));
-                glEnableVertexAttribArray(1);
+                Shaders::setupVertexAttribute_float(0, 3, square_verts_pos_offset, square_vert_attrib * sizeof(GLfloat));
+                Shaders::setupVertexAttribute_float(1, 2, square_verts_texcoord_offset, square_vert_attrib * sizeof(GLfloat));
                     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-                glDisableVertexAttribArray(0);
-                glDisableVertexAttribArray(1);
+                Shaders::disableVertexAttribute(0);
+                Shaders::disableVertexAttribute(1);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -356,22 +401,14 @@ int main()
                     texture_shader.set("model", model_mat);
                     texture_shader.set("view", view_mat);
                     texture_shader.set("projection", proj_mat);
-                    // glm::mat4 transform = proj_mat * view_mat * model;
-                    // texture_shader.set("transform", transform);
                 }
 
                 glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
-                    glVertexAttribPointer(0, 3, GL_FLOAT, false,
-                                          cube_vert_attrib * sizeof(GLfloat),
-                                          (void*)(cube_verts_pos_offset * sizeof(GLfloat)));
-                    glEnableVertexAttribArray(0);
-                    glVertexAttribPointer(1, 2, GL_FLOAT, false,
-                                          cube_vert_attrib * sizeof(GLfloat),
-                                          (void*)(cube_verts_texcoord_offset * sizeof(GLfloat)));
-                    glEnableVertexAttribArray(1);
+                    Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
                         glDrawArrays(GL_TRIANGLES, 0, 36);
-                    glDisableVertexAttribArray(0);
-                    glDisableVertexAttribArray(1);
+                    Shaders::disableVertexAttribute(0);
+                    Shaders::disableVertexAttribute(1);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                 glDisable(GL_DEPTH_TEST);
@@ -382,6 +419,8 @@ int main()
         glfwPollEvents();
         glfwSwapBuffers(window);
 
+        last_mouse_x = mouse_x;
+        last_mouse_y = mouse_y;
         ++tick;
     }
 

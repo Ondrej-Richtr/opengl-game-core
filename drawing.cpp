@@ -8,9 +8,18 @@
 
 Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                             float near_plane, float far_plane)
-                     : m_pos(pos), m_target(target), m_proj_mat(), m_view_mat()
+                    : m_pos(pos), m_target(target), m_proj_mat(), m_view_mat()
 {
     updateViewMatrix(); // properly sets m_view_mat
+    m_proj_mat = glm::perspective(glm::radians(fov), aspect_ration, near_plane, far_plane);
+}
+
+Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, float pitch, float yaw,
+                            float near_plane, float far_plane)
+                    : m_pos(pos), m_target(), m_proj_mat(), m_view_mat()
+{
+    setTargetFromPitchYaw(pitch, yaw);  // properly sets m_target and m_view_mat
+    //updateViewMatrix();               // properly sets m_view_mat
     m_proj_mat = glm::perspective(glm::radians(fov), aspect_ration, near_plane, far_plane);
 }
 
@@ -40,6 +49,18 @@ void Drawing::Camera3D::setTarget(glm::vec3 target)
 void Drawing::Camera3D::moveTarget(glm::vec3 move_vec)
 {
     setTarget(m_target + move_vec);
+}
+
+void Drawing::Camera3D::setTargetFromPitchYaw(float pitch, float yaw)
+{
+    //TODO
+    const float sin_pitch = sin(glm::radians(pitch));
+    const float cos_pitch = cos(glm::radians(pitch));
+    const float sin_yaw = sin(glm::radians(yaw));
+    const float cos_yaw = cos(glm::radians(yaw));
+    glm::vec3 dir = glm::normalize(glm::vec3(cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch)); //TODO up_vec
+
+    setTarget(m_pos + dir);
 }
 
 void Drawing::Camera3D::move(glm::vec3 move_vec)
