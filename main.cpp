@@ -117,11 +117,11 @@ int main()
 
     //Square and it's vbo and ebo
     GLfloat square_vertices[] = {
-        //positions             //texcoords
-        0.2f,  0.2f,   0.0f,     1.0f, 1.0f, // top right
-        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f, // bottom right
-        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f, // bottom left
-        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f  // top left 
+        //positions             //texcoords     //normals
+        0.2f,  0.2f,   0.0f,     1.0f, 1.0f,    0.0f, 0.0f, 1.0f, // top right
+        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom right
+        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom left
+        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f,    0.0f, 0.0f, 1.0f  // top left 
     };
     GLuint square_indices[] = {
         0, 1, 3,   // first triangle
@@ -129,7 +129,8 @@ int main()
     };
     size_t square_verts_pos_offset = 0;
     size_t square_verts_texcoord_offset = 3;
-    size_t square_vert_attrib = 5; //amount of square attributes - 3x pos + 2x texcoords
+    size_t square_verts_normal_offset = 5;
+    size_t square_vert_attrib = 8; //amount of square attributes - 3x pos + 2x texcoords + 3x normals
 
     unsigned int square_vbo; //TODO make this better
     glGenBuffers(1, &square_vbo);
@@ -145,52 +146,53 @@ int main()
 
     //Cube and it's vbo
     float cube_vertices[] = {
-        //pos                //texcoords
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        //pos                //texcoords    //normals
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,    0.0f, 0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
 
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,    1.0f, 0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,    0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
     };
     size_t cube_verts_pos_offset = 0;
     size_t cube_verts_texcoord_offset = 3;
-    size_t cube_vert_attrib = 5; //amount of cube attributes - 3x pos + 2x texcoords
+    size_t cube_verts_normal_offset = 5;
+    size_t cube_vert_attrib = 8; //amount of cube attributes - 3x pos + 2x texcoords + 3x normals
 
     unsigned int cube_vbo; //TODO make this better
     glGenBuffers(1, &cube_vbo);
@@ -201,10 +203,10 @@ int main()
     //Default shader program
     using ShaderP = Shaders::Program;
 
-    const char *default_vs_src_path = "shaders/default.vs",
-               *default_fs_src_path = "shaders/default.fs";
+    const char *default_vs_path = "shaders/default.vs",
+               *default_fs_path = "shaders/default.fs";
     
-    ShaderP default_shader(default_vs_src_path, default_fs_src_path);
+    ShaderP default_shader(default_vs_path, default_fs_path);
     if (default_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create default shader program!\n");
@@ -252,6 +254,23 @@ int main()
     texture_shader.use();
     texture_shader.set("inputTexture2", 1);
 
+    //Light sources
+    // loading simple lighting shader program
+    const char *light_src_fs_path = "shaders/light_src.fs";
+    
+    ShaderP light_src_shader(default_vs_path, light_src_fs_path); // using the default vertex shader
+    if (light_src_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create light source shader program!\n");
+        glfwTerminate();
+        return 8;
+    }
+    
+    const float light_src_size = 0.2;
+    glm::vec3 light_src_color(0.f, 0.6f, 0.9f);
+    glm::vec3 light_source_pos(0.f, 2.2f, 1.5f);
+
+
     // MainLoopData loopData = {}; //TODO use this
     // loopData.test = 15;
     // loopData.window = window;
@@ -265,7 +284,6 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         //calculating correct frame delta time
-        //TODO
         double current_frame_time = glfwGetTime();
         frame_delta = current_frame_time - last_frame_time;
         last_frame_time = current_frame_time;
@@ -337,63 +355,71 @@ int main()
             const glm::mat4& view_mat = camera.getViewMatrix();
             const glm::mat4& proj_mat = camera.getProjectionMatrix();
 
-            //triangle
-            default_shader.use();
-            {
-                float time = glfwGetTime();
-                float blue_value = sin(time) / 2.0f + 0.5f;
-                default_shader.set("inputColor", { 0.0f, 0.0f, blue_value, 1.0f });
-
-                glm::mat4 model_mat = glm::mat4(1.0f);
-                model_mat = glm::translate(model_mat, glm::vec3(-0.7f, 0.3f, 0.0f));
-                //model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
-                model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
-
-                default_shader.set("model", model_mat);
-                default_shader.set("view", view_mat);
-                default_shader.set("projection", proj_mat);
-            }
-            
-            glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
-                Shaders::setupVertexAttribute_float(0, 3, 0, 3 * sizeof(GLfloat));
-                    glDrawArrays(GL_TRIANGLES, 0, 3);
-                Shaders::disableVertexAttribute(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            //square
-            texture_shader.use();
-            brick_texture.bind(0);
-            orb_texture.bind(1);
-            {
-                glm::mat4 model_mat = glm::mat4(1.f);
-                model_mat = glm::translate(model_mat, glm::vec3(0.7f, 0.7f, 0.f));
-
-                texture_shader.set("model", model_mat);
-                texture_shader.set("view", view_mat);
-                texture_shader.set("projection", proj_mat);
-            }
-
-            glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, square_ebo);
-                Shaders::setupVertexAttribute_float(0, 3, square_verts_pos_offset, square_vert_attrib * sizeof(GLfloat));
-                Shaders::setupVertexAttribute_float(1, 2, square_verts_texcoord_offset, square_vert_attrib * sizeof(GLfloat));
-                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-                Shaders::disableVertexAttribute(0);
-                Shaders::disableVertexAttribute(1);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
             //3D block
             {
                 glEnable(GL_DEPTH_TEST);
+
+                //triangle
+                default_shader.use();
+                {
+                    float time = glfwGetTime();
+                    float blue_value = sin(time) / 2.0f + 0.5f;
+                    default_shader.set("inputColor", glm::vec4(0.0f, 0.0f, blue_value, 1.0f));
+
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, glm::vec3(-0.7f, 0.3f, 0.0f));
+                    //model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
+                    model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
+
+                    default_shader.set("model", model_mat);
+                    default_shader.set("view", view_mat);
+                    default_shader.set("projection", proj_mat);
+                }
+                
+                glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
+                    Shaders::setupVertexAttribute_float(0, 3, 0, 3 * sizeof(GLfloat));
+                        glDrawArrays(GL_TRIANGLES, 0, 3);
+                    Shaders::disableVertexAttribute(0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                //square
+                texture_shader.use();
+                brick_texture.bind(0);
+                orb_texture.bind(1);
+                {
+                    light_src_shader.set("lightSrcColor", light_src_color);
+                    light_src_shader.set("lightSrcPos", light_source_pos);
+
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, glm::vec3(0.7f, 0.7f, 0.f));
+
+                    texture_shader.set("model", model_mat);
+                    texture_shader.set("view", view_mat);
+                    texture_shader.set("projection", proj_mat);
+                }
+
+                glBindBuffer(GL_ARRAY_BUFFER, square_vbo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, square_ebo);
+                    Shaders::setupVertexAttribute_float(0, 3, square_verts_pos_offset, square_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(1, 2, square_verts_texcoord_offset, square_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(2, 3, square_verts_normal_offset, square_vert_attrib * sizeof(GLfloat));
+                        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                    Shaders::disableVertexAttribute(0);
+                    Shaders::disableVertexAttribute(1);
+                    Shaders::disableVertexAttribute(2);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
                 //cube
                 texture_shader.use();
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
+                    light_src_shader.set("lightSrcColor", light_src_color);
+                    light_src_shader.set("lightSrcPos", light_source_pos);
+
                     float time = glfwGetTime();
-                    glm::mat4 model_mat = glm::mat4(1.0f);
+                    glm::mat4 model_mat(1.f);
                     model_mat = glm::scale(model_mat, glm::vec3(0.5f, 0.5f, 0.5f));
                     model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
                     model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
@@ -406,9 +432,35 @@ int main()
                 glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
                     Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
                     Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
                         glDrawArrays(GL_TRIANGLES, 0, 36);
                     Shaders::disableVertexAttribute(0);
                     Shaders::disableVertexAttribute(1);
+                    Shaders::disableVertexAttribute(2);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                //light source
+                light_src_shader.use();
+                {
+                    light_src_shader.set("lightSrcColor", light_src_color);
+
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, light_source_pos);
+                    model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
+
+                    light_src_shader.set("model", model_mat);
+                    light_src_shader.set("view", view_mat);
+                    light_src_shader.set("projection", proj_mat);
+                }
+
+                glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
+                    Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
+                    // Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
+                    // Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
+                        glDrawArrays(GL_TRIANGLES, 0, 36);
+                    Shaders::disableVertexAttribute(0);
+                    // Shaders::disableVertexAttribute(1);
+                    // Shaders::disableVertexAttribute(2);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                 glDisable(GL_DEPTH_TEST);

@@ -67,11 +67,27 @@ void Shaders::Program::use() const
     glUseProgram(m_id);
 }
 
-void Shaders::Program::set(const char *uniform_name, std::array<float, 4> floats) const
+//USELESS probably better to use glm::vec4 version
+/*void Shaders::Program::set(const char *uniform_name, std::array<float, 4> floats) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
     glUniform4f(location, floats[0], floats[1], floats[2], floats[3]);
+}*/
+
+void Shaders::Program::set(const char *uniform_name, glm::vec3 vec) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    glUniform3f(location, vec.x, vec.y, vec.z);
+}
+
+
+void Shaders::Program::set(const char *uniform_name, glm::vec4 vec) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    glUniform4f(location, vec.x, vec.y, vec.z, vec.w);
 }
 
 void Shaders::Program::set(const char *uniform_name, GLint value) const

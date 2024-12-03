@@ -106,7 +106,9 @@ namespace Shaders
 
         void use() const;
 
-        void set(const char *uniform_name, std::array<float, 4> floats) const;
+        //void set(const char *uniform_name, std::array<float, 4> floats) const;
+        void set(const char *uniform_name, glm::vec3 vec) const;
+        void set(const char *uniform_name, glm::vec4 vec) const;
         void set(const char *uniform_name, GLint value) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
     };
