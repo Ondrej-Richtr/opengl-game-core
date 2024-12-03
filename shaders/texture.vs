@@ -11,6 +11,7 @@ out vec3 Normal;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+//unofrm mat3 normalMat; //TODO
 
 void main()
 {
@@ -20,6 +21,7 @@ void main()
     FragPos = vec3(model * pos);
 
     TexCoord = aTexCoord;
-    //Normal = aNormal;
-    Normal = mat3(transpose(inverse(model))) * -aNormal; //TODO check this
+
+    mat3 normalMat = transpose(inverse(mat3(model))); //TODO make normal matrix an uniform
+    Normal = normalMat * aNormal;
 }

@@ -118,19 +118,28 @@ int main()
     //Square and it's vbo and ebo
     GLfloat square_vertices[] = {
         //positions             //texcoords     //normals
-        0.2f,  0.2f,   0.0f,     1.0f, 1.0f,    0.0f, 0.0f, 1.0f, // top right
-        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom right
-        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom left
-        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f,    0.0f, 0.0f, 1.0f  // top left 
+        0.2f,  0.2f,   0.0f,     1.0f, 1.0f,    0.0f, 0.0f, 1.0f, // top right front
+        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom right front
+        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f,    0.0f, 0.0f, 1.0f, // bottom left front
+        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f,    0.0f, 0.0f, 1.0f, // top left  front
+        
+        0.2f,  0.2f,   0.0f,     1.0f, 1.0f,    0.0f, 0.0f, -1.0f, // top right back
+        0.2f,  -0.2f,  0.0f,     1.0f, 0.0f,    0.0f, 0.0f, -1.0f, // bottom right back
+        -0.2f,  -0.2f, 0.0f,     0.0f, 0.0f,    0.0f, 0.0f, -1.0f, // bottom left back
+        -0.2f,  0.2f,  0.0f,     0.0f, 1.0f,    0.0f, 0.0f, -1.0f  // top left  back
     };
     GLuint square_indices[] = {
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
+        0, 1, 3,   // first front triangle
+        1, 2, 3,   // second front triangle
+
+        4, 5, 7,   // first back triangle
+        5, 6, 7    // second back triangle
     };
     size_t square_verts_pos_offset = 0;
     size_t square_verts_texcoord_offset = 3;
     size_t square_verts_normal_offset = 5;
     size_t square_vert_attrib = 8; //amount of square attributes - 3x pos + 2x texcoords + 3x normals
+    size_t square_poly_count = sizeof(square_indices) / sizeof(square_indices[0]);
 
     unsigned int square_vbo; //TODO make this better
     glGenBuffers(1, &square_vbo);
@@ -193,6 +202,8 @@ int main()
     size_t cube_verts_texcoord_offset = 3;
     size_t cube_verts_normal_offset = 5;
     size_t cube_vert_attrib = 8; //amount of cube attributes - 3x pos + 2x texcoords + 3x normals
+    size_t cube_vert_count = (sizeof(cube_vertices) / sizeof(cube_vertices[0]))
+                                / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
 
     unsigned int cube_vbo; //TODO make this better
     glGenBuffers(1, &cube_vbo);
@@ -267,7 +278,7 @@ int main()
     }
     
     const float light_src_size = 0.2;
-    glm::vec3 light_src_color(0.f, 0.6f, 0.9f);
+    glm::vec3 light_src_color(0.7f, 0.8f, 0.95f);
     glm::vec3 light_source_pos(0.f, 2.2f, 1.5f);
 
 
@@ -382,13 +393,18 @@ int main()
                     Shaders::disableVertexAttribute(0);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+                //TODO culling
+                // glCullFace(GL_FRONT);
+                // glEnable(GL_CULL_FACE);
+
                 //square
                 texture_shader.use();
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
-                    light_src_shader.set("lightSrcColor", light_src_color);
-                    light_src_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("lightSrcColor", light_src_color);
+                    texture_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("cameraPos", camera.m_pos);
 
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, glm::vec3(0.7f, 0.7f, 0.f));
@@ -403,20 +419,21 @@ int main()
                     Shaders::setupVertexAttribute_float(0, 3, square_verts_pos_offset, square_vert_attrib * sizeof(GLfloat));
                     Shaders::setupVertexAttribute_float(1, 2, square_verts_texcoord_offset, square_vert_attrib * sizeof(GLfloat));
                     Shaders::setupVertexAttribute_float(2, 3, square_verts_normal_offset, square_vert_attrib * sizeof(GLfloat));
-                        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                        glDrawElements(GL_TRIANGLES, square_poly_count, GL_UNSIGNED_INT, NULL);
                     Shaders::disableVertexAttribute(0);
                     Shaders::disableVertexAttribute(1);
                     Shaders::disableVertexAttribute(2);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-                //cube
+                //spinny cube
                 texture_shader.use();
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
-                    light_src_shader.set("lightSrcColor", light_src_color);
-                    light_src_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("lightSrcColor", light_src_color);
+                    texture_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("cameraPos", camera.m_pos);
 
                     float time = glfwGetTime();
                     glm::mat4 model_mat(1.f);
@@ -433,7 +450,7 @@ int main()
                     Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
                     Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
                     Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
-                        glDrawArrays(GL_TRIANGLES, 0, 36);
+                        glDrawArrays(GL_TRIANGLES, 0, cube_vert_count);
                     Shaders::disableVertexAttribute(0);
                     Shaders::disableVertexAttribute(1);
                     Shaders::disableVertexAttribute(2);
@@ -457,12 +474,13 @@ int main()
                     Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
                     // Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
                     // Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
-                        glDrawArrays(GL_TRIANGLES, 0, 36);
+                        glDrawArrays(GL_TRIANGLES, 0, cube_vert_count);
                     Shaders::disableVertexAttribute(0);
                     // Shaders::disableVertexAttribute(1);
                     // Shaders::disableVertexAttribute(2);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+                glDisable(GL_CULL_FACE);
                 glDisable(GL_DEPTH_TEST);
             }
         }

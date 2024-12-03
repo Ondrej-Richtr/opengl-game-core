@@ -79,6 +79,7 @@ void Shaders::Program::set(const char *uniform_name, glm::vec3 vec) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
     glUniform3f(location, vec.x, vec.y, vec.z);
 }
 
@@ -87,6 +88,7 @@ void Shaders::Program::set(const char *uniform_name, glm::vec4 vec) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
     glUniform4f(location, vec.x, vec.y, vec.z, vec.w);
 }
 
@@ -94,6 +96,7 @@ void Shaders::Program::set(const char *uniform_name, GLint value) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
     glUniform1i(location, value);
 }
 
@@ -101,6 +104,7 @@ void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) co
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
