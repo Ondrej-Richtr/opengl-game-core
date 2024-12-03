@@ -394,7 +394,7 @@ int main()
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                 //TODO culling
-                // glCullFace(GL_FRONT);
+                // glCullFace(GL_BACK);
                 // glEnable(GL_CULL_FACE);
 
                 //square
@@ -409,7 +409,10 @@ int main()
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, glm::vec3(0.7f, 0.7f, 0.f));
 
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
                     texture_shader.set("model", model_mat);
+                    texture_shader.set("normalMat", normal_mat);
                     texture_shader.set("view", view_mat);
                     texture_shader.set("projection", proj_mat);
                 }
@@ -441,7 +444,10 @@ int main()
                     model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
                     model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
 
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
                     texture_shader.set("model", model_mat);
+                    texture_shader.set("normalMat", normal_mat);
                     texture_shader.set("view", view_mat);
                     texture_shader.set("projection", proj_mat);
                 }

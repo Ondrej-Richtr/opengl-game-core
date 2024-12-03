@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/mat3x3.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 
@@ -87,6 +88,8 @@ namespace Utils
     char* getTextFileAsString(const char *path);
 
     GLint filteringEnumWithoutMipmap(GLint filtering);
+
+    glm::mat3 modelMatrixToNormalMatrix(const glm::mat4& model_mat);
 };
 
 //shaders.cpp
@@ -110,6 +113,7 @@ namespace Shaders
         void set(const char *uniform_name, glm::vec3 vec) const;
         void set(const char *uniform_name, glm::vec4 vec) const;
         void set(const char *uniform_name, GLint value) const;
+        void set(const char *uniform_name, const glm::mat3& matrix) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
     };
 

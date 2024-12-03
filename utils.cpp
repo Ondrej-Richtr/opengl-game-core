@@ -61,3 +61,9 @@ GLint Utils::filteringEnumWithoutMipmap(GLint filtering)
     
     return filtering; // otherwise leave the value as it is
 }
+
+glm::mat3 Utils::modelMatrixToNormalMatrix(const glm::mat4& model_mat)
+{
+    glm::mat3 result(model_mat);
+    return glm::transpose(glm::inverse(result));
+}

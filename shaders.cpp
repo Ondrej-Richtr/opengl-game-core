@@ -100,6 +100,14 @@ void Shaders::Program::set(const char *uniform_name, GLint value) const
     glUniform1i(location, value);
 }
 
+void Shaders::Program::set(const char *uniform_name, const glm::mat3& matrix) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
+    glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
 void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
