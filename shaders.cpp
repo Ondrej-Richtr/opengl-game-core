@@ -8,6 +8,18 @@
 
 #define ERR_MSG_MAX_LEN 1024
 
+#define UNIFORM_MATERIAL_NAME "material"
+#define UNIFORM_MATERIAL_AMBIENT "ambient"
+#define UNIFORM_MATERIAL_DIFFUSE "diffuse"
+#define UNIFORM_MATERIAL_SPECULAR "specular"
+#define UNIFORM_MATERIAL_SHININESS "shininess"
+
+#define UNIFORM_LIGHTSRC_NAME "lightSrc"
+#define UNIFORM_LIGHTSRC_POSITION "pos"
+#define UNIFORM_LIGHTSRC_AMBIENT "ambient"
+#define UNIFORM_LIGHTSRC_DIFFUSE "diffuse"
+#define UNIFORM_LIGHTSRC_SPECULAR "specular"
+
 
 Shaders::Program::Program(GLuint vs_id, GLuint fs_id)
                     : m_id(Shaders::programLink(vs_id, fs_id))
@@ -75,6 +87,14 @@ void Shaders::Program::use() const
     glUniform4f(location, floats[0], floats[1], floats[2], floats[3]);
 }*/
 
+void Shaders::Program::set(const char *uniform_name, Color3F color) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
+    glUniform3f(location, color.r, color.g, color.b);
+}
+
 void Shaders::Program::set(const char *uniform_name, glm::vec3 vec) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
@@ -82,7 +102,6 @@ void Shaders::Program::set(const char *uniform_name, glm::vec3 vec) const
     assert(location >= 0); // wrong uniform name (or type)!
     glUniform3f(location, vec.x, vec.y, vec.z);
 }
-
 
 void Shaders::Program::set(const char *uniform_name, glm::vec4 vec) const
 {
@@ -100,6 +119,14 @@ void Shaders::Program::set(const char *uniform_name, GLint value) const
     glUniform1i(location, value);
 }
 
+void Shaders::Program::set(const char *uniform_name, GLfloat value) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
+    glUniform1f(location, value);
+}
+
 void Shaders::Program::set(const char *uniform_name, const glm::mat3& matrix) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
@@ -114,6 +141,26 @@ void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) co
     int location = glGetUniformLocation(m_id, uniform_name);
     assert(location >= 0); // wrong uniform name (or type)!
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+void Shaders::Program::setMaterial(const Material& material) const
+{
+    //IDEA could use constexpr and templates
+    //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_AMBIENT, material.m_ambient);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_DIFFUSE, material.m_diffuse);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SPECULAR, material.m_specular);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material.m_shininess);
+}
+
+void Shaders::Program::setLightSrc(const LightSrc& light_src) const
+{
+    //IDEA could use constexpr and templates
+    //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
+    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_POSITION, light_src.m_pos);
+    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_AMBIENT, light_src.m_ambient);
+    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_DIFFUSE, light_src.m_diffuse);
+    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_SPECULAR, light_src.m_specular);
 }
 
 GLuint Shaders::fromString(GLenum type, const char *str)

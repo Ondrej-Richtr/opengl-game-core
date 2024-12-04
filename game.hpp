@@ -21,12 +21,28 @@
 struct ColorF
 {
     GLfloat r = 0.f, g = 0.f, b = 0.f, a = 0.f;
+
+    ColorF() = default;
+    ColorF(GLfloat r, GLfloat g, GLfloat b, GLfloat a = 1.0)
+            : r(r), g(g), b(b), a(a) {}
+};
+
+struct Color3F
+{
+    GLfloat r = 0.f, g = 0.f, b = 0.f;
+
+    Color3F() = default;
+    Color3F(GLfloat r, GLfloat g, GLfloat b)
+            : r(r), g(g), b(b) {}
+    Color3F(glm::vec3 color)
+            : r(color.r), g(color.g), b(color.b) {}
 };
 
 struct Color
 {
     unsigned char r = 0, g = 0, b = 0, a = 0;
 
+    Color() = default;
     Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 0)
             : r(r), g(g), b(b), a(a) {}
 
@@ -34,6 +50,30 @@ struct Color
     {
         return ColorF{ (GLfloat)r / 255.f, (GLfloat)g / 255.f,
                        (GLfloat)b / 255.f, (GLfloat)a / 255.f };
+    }
+};
+
+struct Material
+{
+    Color3F m_ambient, m_diffuse, m_specular;
+    float m_shininess;
+
+    Material() = default; //DEBUG
+    Material(Color3F color, float shininess)
+                : m_ambient(color), m_diffuse(color),
+                  m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
+};
+
+struct LightSrc //TODO change this to props
+{
+    glm::vec3 m_pos;
+    Color3F m_ambient, m_diffuse, m_specular;
+
+    LightSrc(glm::vec3 pos, Color3F color, float ambient_intensity)
+                : m_pos(pos), m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
+    {
+        assert(ambient_intensity >= 0.f && ambient_intensity <= 1.f);
+        m_ambient = Color3F(ambient_intensity * color.r, ambient_intensity * color.g, ambient_intensity * color.b);
     }
 };
 
@@ -110,11 +150,16 @@ namespace Shaders
         void use() const;
 
         //void set(const char *uniform_name, std::array<float, 4> floats) const;
+        void set(const char *uniform_name, Color3F color) const;
         void set(const char *uniform_name, glm::vec3 vec) const;
         void set(const char *uniform_name, glm::vec4 vec) const;
         void set(const char *uniform_name, GLint value) const;
+        void set(const char *uniform_name, GLfloat value) const;
         void set(const char *uniform_name, const glm::mat3& matrix) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
+
+        void setMaterial(const Material& material) const;
+        void setLightSrc(const LightSrc& light_src) const;
     };
 
     GLuint fromString(GLenum type, const char *str);

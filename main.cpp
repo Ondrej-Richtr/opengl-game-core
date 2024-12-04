@@ -266,7 +266,7 @@ int main()
     texture_shader.set("inputTexture2", 1);
 
     //Light sources
-    // loading simple lighting shader program
+    // loading special light source shader program (renders light source without light effects etc.)
     const char *light_src_fs_path = "shaders/light_src.fs";
     
     ShaderP light_src_shader(default_vs_path, light_src_fs_path); // using the default vertex shader
@@ -277,10 +277,33 @@ int main()
         return 8;
     }
     
-    const float light_src_size = 0.2;
-    glm::vec3 light_src_color(0.7f, 0.8f, 0.95f);
-    glm::vec3 light_source_pos(0.f, 2.2f, 1.5f);
+    // loading light shader program
+    const char *light_fs_path = "shaders/light.fs";
 
+    ShaderP light_shader(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
+    if (light_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create shader program for lighting!\n");
+        glfwTerminate();
+        return 9;
+    }
+
+    const float light_src_size = 0.2;
+    // glm::vec3 light_src_color(0.7f, 0.8f, 0.95f);
+    // glm::vec3 light_source_pos(0.f, 2.2f, 1.5f);
+    LightSrc light_src(glm::vec3(0.f, 10.f, 1.5f), Color3F(0.7f, 0.8f, 0.95f), 0.4f);
+
+    //Materials
+    size_t materials_count = 16;
+    Material materials[16];
+    //glm::vec3 mat_cubes[16];
+
+    for (size_t i = 0, shininess = 1; i < materials_count; ++i)
+    {
+        materials[i] = Material(Color3F(0.85f, 0.3f, 0.4f), i ? 10 * i : 1);
+        glm::vec3 spec = glm::vec3(1.f) * ((float)(i + 1) / (float)materials_count);
+        materials[i].m_specular = Color3F(spec);
+    }
 
     // MainLoopData loopData = {}; //TODO use this
     // loopData.test = 15;
@@ -402,8 +425,8 @@ int main()
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
-                    texture_shader.set("lightSrcColor", light_src_color);
-                    texture_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("lightSrcColor", light_src.m_diffuse);
+                    texture_shader.set("lightSrcPos", light_src.m_pos);
                     texture_shader.set("cameraPos", camera.m_pos);
 
                     glm::mat4 model_mat(1.f);
@@ -434,8 +457,8 @@ int main()
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
-                    texture_shader.set("lightSrcColor", light_src_color);
-                    texture_shader.set("lightSrcPos", light_source_pos);
+                    texture_shader.set("lightSrcColor", light_src.m_diffuse);
+                    texture_shader.set("lightSrcPos", light_src.m_pos);
                     texture_shader.set("cameraPos", camera.m_pos);
 
                     float time = glfwGetTime();
@@ -465,10 +488,10 @@ int main()
                 //light source
                 light_src_shader.use();
                 {
-                    light_src_shader.set("lightSrcColor", light_src_color);
+                    light_src_shader.set("lightSrcColor", light_src.m_diffuse);
 
                     glm::mat4 model_mat(1.f);
-                    model_mat = glm::translate(model_mat, light_source_pos);
+                    model_mat = glm::translate(model_mat, light_src.m_pos);
                     model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
 
                     light_src_shader.set("model", model_mat);
@@ -485,6 +508,48 @@ int main()
                     // Shaders::disableVertexAttribute(1);
                     // Shaders::disableVertexAttribute(2);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                //material cubes
+                light_shader.use();
+                {
+                    light_shader.set("cameraPos", camera.m_pos);
+                    light_shader.setLightSrc(light_src);
+                    
+                    light_shader.set("view", view_mat);
+                    light_shader.set("projection", proj_mat);
+                }
+
+                glm::vec3 mat_cubes_pos(-8.f * 0.8f, -0.4f, 2.f);
+
+                for (size_t i = 0; i < materials_count; ++i)
+                {
+                    light_shader.setMaterial(materials[i]);
+
+                    // float time = glfwGetTime();
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, mat_cubes_pos);
+                    model_mat = glm::scale(model_mat, glm::vec3(0.7f, 0.7f, 0.7f));
+                    // model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 1.f, 0.f));
+                    // model_mat = glm::rotate(model_mat, time, glm::vec3(0.f, 0.f, 1.f));
+
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                    light_shader.set("model", model_mat);
+                    light_shader.set("normalMat", normal_mat);
+
+                    glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
+                        Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
+                        Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
+                        Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
+                            glDrawArrays(GL_TRIANGLES, 0, cube_vert_count);
+                        Shaders::disableVertexAttribute(0);
+                        Shaders::disableVertexAttribute(1);
+                        Shaders::disableVertexAttribute(2);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    mat_cubes_pos.x += 0.8f;
+                }
+
 
                 glDisable(GL_CULL_FACE);
                 glDisable(GL_DEPTH_TEST);
