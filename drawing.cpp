@@ -5,6 +5,8 @@
 #include "glm/ext/matrix_transform.hpp" //glm::lookAt
 #include "glm/gtc/matrix_transform.hpp" //glm::perspective
 
+#include <cstring>
+
 
 Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                             float near_plane, float far_plane)
@@ -96,6 +98,121 @@ glm::vec3 Drawing::Camera3D::dirCoordsViewToWorld(glm::vec3 dir) const
 
     return NORMALIZE_OR_0(dir_transformed);
 }
+
+//helper function for binding lights to shaders
+void bufferAttributeWrite(char *buffer, size_t buffer_len, const char *attr, size_t attr_len)
+{
+    //buffer is expected to be buffer_len + 1 long! (because of term. char)
+    assert(1 + attr_len <= buffer_len);     // +1 is for dot 
+    
+    buffer[0] = '.'; // (here is the dot)
+    strncpy(buffer + 1, attr, attr_len);    // +1 is for dot
+    buffer[1 + attr_len] = '\0';            // +1 is for dot
+}
+
+Drawing::Light::Light(const LightProps& props)
+                        : m_props(props) {}
+
+void Drawing::Light::bindPropsToShader(const char *props_uniform_name, size_t props_uniform_name_len,
+                                       const Shaders::Program& shader) const
+{
+    //TODO rework this to constexpr
+    //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
+    assert(strlen(props_uniform_name) == props_uniform_name_len);
+
+    char str_buffer[UNIFORM_NAME_BUFFER_LEN + 1];
+    assert(props_uniform_name_len <= UNIFORM_NAME_BUFFER_LEN);
+    strncpy(str_buffer, props_uniform_name, props_uniform_name_len);
+    char *buffer_ptr = (char*)str_buffer + props_uniform_name_len;
+    size_t buffer_len = UNIFORM_NAME_BUFFER_LEN - props_uniform_name_len;
+
+    //ambient
+    size_t ambient_len = STR_LEN(UNIFORM_LIGHTPROPS_AMBIENT);
+    bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHTPROPS_AMBIENT, ambient_len);
+    shader.set(str_buffer, m_props.m_ambient);
+
+    //diffuse
+    size_t diffuse_len = STR_LEN(UNIFORM_LIGHTPROPS_DIFFUSE);
+    bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHTPROPS_DIFFUSE, diffuse_len);
+    shader.set(str_buffer, m_props.m_diffuse);
+
+    //specular
+    size_t specular_len = STR_LEN(UNIFORM_LIGHTPROPS_SPECULAR);
+    bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHTPROPS_SPECULAR, specular_len);
+    shader.set(str_buffer, m_props.m_specular);
+}
+
+Drawing::DirLight::DirLight(const LightProps& props, glm::vec3 dir)
+                            : Light(props), m_dir(glm::normalize(dir)) {}
+
+bool Drawing::DirLight::bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                                     const char *props_uniform_name, size_t props_uniform_name_len,
+                                     const Shaders::Program& shader) const
+{
+    // binds the props, type and direction to given shader, other attributes are left unchanged/unbinded
+    //TODO sprintf (snprintf?)
+    bindPropsToShader(props_uniform_name, props_uniform_name_len, shader);
+
+    char str_buffer[UNIFORM_NAME_BUFFER_LEN + 1];
+    assert(light_uniform_name_len <= UNIFORM_NAME_BUFFER_LEN);
+    strncpy(str_buffer, light_uniform_name, light_uniform_name_len);
+    char *buffer_ptr = (char*)str_buffer + light_uniform_name_len;
+    size_t buffer_len = UNIFORM_NAME_BUFFER_LEN - light_uniform_name_len;
+
+    //type
+    {
+        size_t type_len = STR_LEN(UNIFORM_LIGHT_TYPE);
+        bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHT_TYPE, type_len);
+        shader.set(str_buffer, static_cast<GLint>(Drawing::Light::Type::directional));
+    }
+
+    //dir
+    {
+        size_t dir_len = STR_LEN(UNIFORM_LIGHT_DIRECTION);
+        bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHT_DIRECTION, dir_len);
+        shader.set(str_buffer, m_dir);
+    }
+
+    return true; //TODO
+}
+
+Drawing::PointLight::PointLight(const LightProps& props, glm::vec3 pos)
+                                : Light(props), m_pos(pos) {}
+
+bool Drawing::PointLight::bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                                       const char *props_uniform_name, size_t props_uniform_name_len,
+                                       const Shaders::Program& shader) const
+{
+    // binds the props, type and position to given shader, other attributes are left unchanged/unbinded
+    //TODO sprintf (snprintf?)
+    bindPropsToShader(props_uniform_name, props_uniform_name_len, shader);
+
+    char str_buffer[UNIFORM_NAME_BUFFER_LEN + 1];
+    assert(light_uniform_name_len <= UNIFORM_NAME_BUFFER_LEN);
+    strncpy(str_buffer, light_uniform_name, light_uniform_name_len);
+    char *buffer_ptr = (char*)str_buffer + light_uniform_name_len;
+    size_t buffer_len = UNIFORM_NAME_BUFFER_LEN - light_uniform_name_len;
+
+    //type
+    {
+        size_t type_len = STR_LEN(UNIFORM_LIGHT_TYPE);
+        bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHT_TYPE, type_len);
+        shader.set(str_buffer, static_cast<GLint>(Drawing::Light::Type::point));
+    }
+
+    //pos
+    {
+        size_t pos_len = STR_LEN(UNIFORM_LIGHT_POSITION);
+        bufferAttributeWrite(buffer_ptr, buffer_len, UNIFORM_LIGHT_POSITION, pos_len);
+        shader.set(str_buffer, m_pos);
+    }
+
+    return true; //TODO
+}
+
+Drawing::SpotLight::SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle)
+                                : Light(props), m_dir(glm::normalize(dir)),
+                                  m_pos(pos), m_cos_cutoff_angle(cos(cutoff_angle)) {}
 
 void Drawing::clear(GLFWwindow* window, Color color)
 {

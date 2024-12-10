@@ -64,6 +64,7 @@ int main()
     glfwMakeContextCurrent(window);
 
     //other GLFW settings
+    glfwSwapInterval(1); //TODO check this, maybe 0?
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
     //glfwSetCursorPosCallback(window, windowMouseMoveCallback); 
@@ -76,6 +77,7 @@ int main()
         return 3;
     }
 
+    //TODO use the windowResizeCallback?
     glViewport(0, 0, window_width, window_height);
 
     //Camera
@@ -276,7 +278,7 @@ int main()
         glfwTerminate();
         return 8;
     }
-    
+
     // loading light shader program
     const char *light_fs_path = "shaders/light.fs";
 
@@ -289,18 +291,39 @@ int main()
     }
 
     const float light_src_size = 0.2;
-    // glm::vec3 light_src_color(0.7f, 0.8f, 0.95f);
-    // glm::vec3 light_source_pos(0.f, 2.2f, 1.5f);
-    LightSrc light_src(glm::vec3(0.f, 10.f, 1.5f), Color3F(0.7f, 0.8f, 0.95f), 0.4f);
+    using DirLight = Drawing::DirLight;
+    using PointLight = Drawing::PointLight;
+    using SpotLight = Drawing::SpotLight;
+
+    //sun
+    const char sun_uniform_name[] = UNIFORM_LIGHT_NAME "[0]";
+    const size_t sun_uniform_name_len = STR_LEN(sun_uniform_name);
+    const char sun_props_uniform_name[] = UNIFORM_LIGHT_NAME "[0]." UNIFORM_LIGHTPROPS_ATTRNAME;
+    const size_t sun_props_uniform_name_len = STR_LEN(sun_props_uniform_name);
+
+    const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
+    DirLight sun(sun_light_props, glm::vec3(1.f, -1.f, -0.5f));
+
+    //point light test
+    const char pointl_uniform_name[] = UNIFORM_LIGHT_NAME "[1]";
+    const size_t pointl_uniform_name_len = STR_LEN(pointl_uniform_name);
+    const char pointl_props_uniform_name[] = UNIFORM_LIGHT_NAME "[1]." UNIFORM_LIGHTPROPS_ATTRNAME;
+    const size_t pointl_props_uniform_name_len = STR_LEN(pointl_props_uniform_name);
+
+    const Color3F pointl_color = Color3F(0.1f, 0.3f, 0.95f);
+    const float pointl_ambient_intensity = 0.f;
+    const LightProps pointl_light_props(pointl_color, pointl_ambient_intensity);
+    PointLight pointl(pointl_light_props, glm::vec3(-2.5f, -0.3f, 0.6f));
 
     //Materials
+    MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
+
     size_t materials_count = 16;
-    Material materials[16];
-    //glm::vec3 mat_cubes[16];
+    MaterialProps materials[16];
 
     for (size_t i = 0, shininess = 1; i < materials_count; ++i)
     {
-        materials[i] = Material(Color3F(0.85f, 0.3f, 0.4f), i ? 10 * i : 1);
+        materials[i] = MaterialProps(Color3F(0.65f, 0.4f, 0.5f), i ? 10 * i : 1);
         glm::vec3 spec = glm::vec3(1.f) * ((float)(i + 1) / (float)materials_count);
         materials[i].m_specular = Color3F(spec);
     }
@@ -314,6 +337,9 @@ int main()
     float frame_delta = 0.f;
     double last_frame_time = glfwGetTime();
     double last_mouse_x = 0.f, last_mouse_y = 0.f;
+
+    //DEBUG
+    bool show_pointl = true;
     
     while(!glfwWindowShouldClose(window))
     {
@@ -344,6 +370,9 @@ int main()
 
         // ---Keyboard input---
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+
+        if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) show_pointl = false;
+        if(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) show_pointl = true;
 
         if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         {
@@ -380,6 +409,10 @@ int main()
             // printf("move_abs: %f|%f|%f\n", move_abs.x, move_abs.y, move_abs.z);
             camera.move(move_abs);
         }
+
+        //DEBUG
+        pointl.m_props = show_pointl ? LightProps(pointl_color, pointl_ambient_intensity)
+                                     : LightProps(Color3F(0.f, 0.f, 0.f), pointl_ambient_intensity);
 
         // ---Draw begin---
         {
@@ -421,7 +454,7 @@ int main()
                 // glEnable(GL_CULL_FACE);
 
                 //square
-                texture_shader.use();
+                /*texture_shader.use();
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
@@ -450,10 +483,10 @@ int main()
                     Shaders::disableVertexAttribute(1);
                     Shaders::disableVertexAttribute(2);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
 
                 //spinny cube
-                texture_shader.use();
+                /*texture_shader.use();
                 brick_texture.bind(0);
                 orb_texture.bind(1);
                 {
@@ -483,15 +516,15 @@ int main()
                     Shaders::disableVertexAttribute(0);
                     Shaders::disableVertexAttribute(1);
                     Shaders::disableVertexAttribute(2);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);*/
 
-                //light source
+                //test point light source cube
                 light_src_shader.use();
                 {
-                    light_src_shader.set("lightSrcColor", light_src.m_diffuse);
+                    light_src_shader.set("lightSrcColor", pointl.m_props.m_diffuse);
 
                     glm::mat4 model_mat(1.f);
-                    model_mat = glm::translate(model_mat, light_src.m_pos);
+                    model_mat = glm::translate(model_mat, pointl.m_pos);
                     model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
 
                     light_src_shader.set("model", model_mat);
@@ -511,20 +544,26 @@ int main()
 
                 //material cubes
                 light_shader.use();
+                brick_texture.bind();
                 {
-                    light_shader.set("cameraPos", camera.m_pos);
-                    light_shader.setLightSrc(light_src);
-                    
+                    //vs
                     light_shader.set("view", view_mat);
                     light_shader.set("projection", proj_mat);
+                    
+                    //fs
+                    light_shader.set("cameraPos", camera.m_pos);
+                    light_shader.setLight(sun_uniform_name, sun_uniform_name_len,
+                                          sun_props_uniform_name, sun_props_uniform_name_len, sun);
+                    light_shader.setLight(pointl_uniform_name, pointl_uniform_name_len,
+                                          pointl_props_uniform_name, pointl_props_uniform_name_len, pointl);
+                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 2);
                 }
 
                 glm::vec3 mat_cubes_pos(-8.f * 0.8f, -0.4f, 2.f);
 
                 for (size_t i = 0; i < materials_count; ++i)
                 {
-                    light_shader.setMaterial(materials[i]);
-
+                    //vs
                     // float time = glfwGetTime();
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, mat_cubes_pos);
@@ -548,7 +587,46 @@ int main()
                     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                     mat_cubes_pos.x += 0.8f;
+
+                    //fs
+                    light_shader.setMaterialProps(materials[i]);
                 }
+
+                //default material cube
+                light_shader.use();
+                brick_texture.bind();
+                {
+                    //vs
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, glm::vec3(-2.f, 0.f, -0.5f));
+                    model_mat = glm::scale(model_mat, glm::vec3(0.7f, 0.7f, 0.7f));
+
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                    light_shader.set("model", model_mat);
+                    light_shader.set("normalMat", normal_mat);
+                    light_shader.set("view", view_mat);
+                    light_shader.set("projection", proj_mat);
+
+                    //fs
+                    light_shader.set("cameraPos", camera.m_pos);
+                    light_shader.setMaterialProps(default_material);
+                    light_shader.setLight(sun_uniform_name, sun_uniform_name_len,
+                                          sun_props_uniform_name, sun_props_uniform_name_len, sun);
+                    light_shader.setLight(pointl_uniform_name, pointl_uniform_name_len,
+                                          pointl_props_uniform_name, pointl_props_uniform_name_len, pointl);
+                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 2);
+                }
+
+                glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
+                    Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
+                    Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
+                        glDrawArrays(GL_TRIANGLES, 0, cube_vert_count);
+                    Shaders::disableVertexAttribute(0);
+                    Shaders::disableVertexAttribute(1);
+                    Shaders::disableVertexAttribute(2);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
                 glDisable(GL_CULL_FACE);

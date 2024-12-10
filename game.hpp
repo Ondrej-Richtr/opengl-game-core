@@ -12,6 +12,31 @@
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
 
+#define UNIFORM_NAME_BUFFER_LEN 512
+
+#define UNIFORM_MATERIAL_NAME "material"
+#define UNIFORM_MATERIAL_AMBIENT "ambient"
+#define UNIFORM_MATERIAL_DIFFUSE "diffuse"
+#define UNIFORM_MATERIAL_SPECULAR "specular"
+#define UNIFORM_MATERIAL_SHININESS "shininess"
+
+#define UNIFORM_LIGHTPROPS_ATTRNAME "props"
+#define UNIFORM_LIGHTPROPS_AMBIENT "ambient"
+#define UNIFORM_LIGHTPROPS_DIFFUSE "diffuse"
+#define UNIFORM_LIGHTPROPS_SPECULAR "specular"
+
+#define UNIFORM_LIGHT_NAME "lights"
+#define UNIFORM_LIGHT_TYPE "type"
+#define UNIFORM_LIGHT_POSITION "pos"
+#define UNIFORM_LIGHT_DIRECTION "dir"
+#define UNIFORM_LIGHT_COSCUTOFF "cosCutoff"
+
+#define UNIFORM_LIGHT_COUNT_NAME "lightsCount"
+
+// returns size_t length of string (must be string literal or char array with term. char.),
+// -1 as we dont count the term. char.
+#define STR_LEN(S) ((sizeof((S)) / sizeof((S)[0])) - 1)
+
 
 //Macro functions
 //TODO find a better solution than macros
@@ -53,28 +78,34 @@ struct Color
     }
 };
 
-struct Material
+//TODO move somewhere else?
+struct MaterialProps //should correspond to Material struct in shaders
 {
     Color3F m_ambient, m_diffuse, m_specular;
     float m_shininess;
 
-    Material() = default; //DEBUG
-    Material(Color3F color, float shininess)
-                : m_ambient(color), m_diffuse(color),
-                  m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
+    MaterialProps() = default; //DEBUG
+    MaterialProps(Color3F color, float shininess)
+                    : m_ambient(color), m_diffuse(color),
+                      m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
 };
 
-struct LightSrc //TODO change this to props
+//TODO move somewhere else?
+struct LightProps //should correspond to LightProps struct in shaders
 {
-    glm::vec3 m_pos;
     Color3F m_ambient, m_diffuse, m_specular;
 
-    LightSrc(glm::vec3 pos, Color3F color, float ambient_intensity)
-                : m_pos(pos), m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
+    LightProps(Color3F color, float ambient_intensity)
+                : m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
     {
         assert(ambient_intensity >= 0.f && ambient_intensity <= 1.f);
         m_ambient = Color3F(ambient_intensity * color.r, ambient_intensity * color.g, ambient_intensity * color.b);
     }
+};
+
+namespace Shaders
+{
+    struct Program;
 };
 
 //TODO use this
@@ -87,6 +118,7 @@ struct LightSrc //TODO change this to props
 //drawing.cpp
 namespace Drawing
 {
+
     static const glm::vec3 up_dir = glm::vec3(0.f, 1.f, 0.f); // up is in the positive direction of Y axis
 
     struct Camera3D
@@ -115,6 +147,68 @@ namespace Drawing
         const glm::mat4& getProjectionMatrix() const;
 
         glm::vec3 dirCoordsViewToWorld(glm::vec3 dir) const;
+    };
+
+    // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
+    static const size_t lights_max_amount = 10; //TODO make this synchronized with LIGHTS_MAX_AMOUNT in light.fs fragent shader!
+
+    class Light //abstract class representing singular light source (directional/point/spot light)
+    {
+    public:
+        enum class Type { directional = 0, point = 1, spot = 2 };
+
+        LightProps m_props;
+
+        Light(const LightProps& props);
+        virtual ~Light() = default;
+
+        void bindPropsToShader(const char *props_uniform_name, size_t props_uniform_name_len,
+                               const Shaders::Program& shader) const;
+
+        virtual bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                                  const char *props_uniform_name, size_t props_uniform_name_len,
+                                  const Shaders::Program& shader) const = 0; //TODO
+    };
+
+    class DirLight : public Light
+    {
+    public:
+        glm::vec3 m_dir;
+
+        DirLight(const LightProps& props, glm::vec3 dir);
+        ~DirLight() = default;
+
+        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                          const char *props_uniform_name, size_t props_uniform_name_len,
+                          const Shaders::Program& shader) const override;
+    };
+
+    class PointLight : public Light
+    {
+    public:
+        glm::vec3 m_pos;
+
+        PointLight(const LightProps& props, glm::vec3 pos);
+        ~PointLight() = default;
+
+        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                          const char *props_uniform_name, size_t props_uniform_name_len,
+                          const Shaders::Program& shader) const override;
+    };
+
+    class SpotLight : public Light
+    {
+    public:
+        glm::vec3 m_dir;
+        glm::vec3 m_pos;
+        float m_cos_cutoff_angle;
+
+        SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle);
+        ~SpotLight() = default;
+
+        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
+                          const char *props_uniform_name, size_t props_uniform_name_len,
+                          const Shaders::Program& shader) const override = 0; //TODO
     };
 
     void clear(GLFWwindow* window, Color color);
@@ -158,8 +252,10 @@ namespace Shaders
         void set(const char *uniform_name, const glm::mat3& matrix) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
 
-        void setMaterial(const Material& material) const;
-        void setLightSrc(const LightSrc& light_src) const;
+        void setMaterialProps(const MaterialProps& material) const;
+        void setLight(const char *light_uniform_name, size_t light_uniform_name_len,
+                      const char *props_uniform_name, size_t props_uniform_name_len,
+                      const Drawing::Light& light) const;
     };
 
     GLuint fromString(GLenum type, const char *str);
@@ -195,6 +291,8 @@ namespace Textures
         void bind(unsigned int unit = 0) const;
     };
 }
+
+//TODO meshes - verts, normals, texcoords, indices for faces, (material?)
 
 //movement.cpp
 namespace Movement

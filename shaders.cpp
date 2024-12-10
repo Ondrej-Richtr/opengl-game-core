@@ -8,18 +8,6 @@
 
 #define ERR_MSG_MAX_LEN 1024
 
-#define UNIFORM_MATERIAL_NAME "material"
-#define UNIFORM_MATERIAL_AMBIENT "ambient"
-#define UNIFORM_MATERIAL_DIFFUSE "diffuse"
-#define UNIFORM_MATERIAL_SPECULAR "specular"
-#define UNIFORM_MATERIAL_SHININESS "shininess"
-
-#define UNIFORM_LIGHTSRC_NAME "lightSrc"
-#define UNIFORM_LIGHTSRC_POSITION "pos"
-#define UNIFORM_LIGHTSRC_AMBIENT "ambient"
-#define UNIFORM_LIGHTSRC_DIFFUSE "diffuse"
-#define UNIFORM_LIGHTSRC_SPECULAR "specular"
-
 
 Shaders::Program::Program(GLuint vs_id, GLuint fs_id)
                     : m_id(Shaders::programLink(vs_id, fs_id))
@@ -115,6 +103,7 @@ void Shaders::Program::set(const char *uniform_name, GLint value) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    //printf("setting uniform: '%s' with int value %d\n", uniform_name, value);
     assert(location >= 0); // wrong uniform name (or type)!
     glUniform1i(location, value);
 }
@@ -143,7 +132,7 @@ void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) co
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-void Shaders::Program::setMaterial(const Material& material) const
+void Shaders::Program::setMaterialProps(const MaterialProps& material) const
 {
     //IDEA could use constexpr and templates
     //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
@@ -153,14 +142,12 @@ void Shaders::Program::setMaterial(const Material& material) const
     set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material.m_shininess);
 }
 
-void Shaders::Program::setLightSrc(const LightSrc& light_src) const
+void Shaders::Program::setLight(const char *light_uniform_name, size_t light_uniform_name_len,
+                                const char *props_uniform_name, size_t props_uniform_name_len,
+                                const Drawing::Light& light) const
 {
-    //IDEA could use constexpr and templates
-    //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
-    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_POSITION, light_src.m_pos);
-    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_AMBIENT, light_src.m_ambient);
-    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_DIFFUSE, light_src.m_diffuse);
-    set(UNIFORM_LIGHTSRC_NAME "." UNIFORM_LIGHTSRC_SPECULAR, light_src.m_specular);
+    light.bindToShader(light_uniform_name, light_uniform_name_len,
+                       props_uniform_name, props_uniform_name_len, *this);
 }
 
 GLuint Shaders::fromString(GLenum type, const char *str)
