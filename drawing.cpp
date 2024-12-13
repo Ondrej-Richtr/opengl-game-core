@@ -223,7 +223,24 @@ bool Drawing::PointLight::bindToShader(const char *uniform_name, const Shaders::
     
     shader.set(str_buffer, m_pos);
 
+    //attenuation coefs
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_ATTENUATION
+                            : "%s."     UNIFORM_LIGHT_ATTENUATION,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, glm::vec3(m_attenuation_coefs_const, m_attenuation_coefs_lin, m_attenuation_coefs_quad));
+
     return true;
+}
+
+void Drawing::PointLight::setAttenuation(GLfloat constant, GLfloat linear, GLfloat quadratic)
+{
+    m_attenuation_coefs_const = constant;
+    m_attenuation_coefs_lin = linear;
+    m_attenuation_coefs_quad = quadratic;
 }
 
 Drawing::SpotLight::SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle)

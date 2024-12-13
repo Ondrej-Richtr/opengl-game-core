@@ -27,20 +27,21 @@
 
 #define UNIFORM_LIGHT_NAME "lights"
 #define UNIFORM_LIGHT_TYPE "type"
+#define UNIFORM_LIGHT_ATTENUATION "atten_coefs"
 #define UNIFORM_LIGHT_POSITION "pos"
 #define UNIFORM_LIGHT_DIRECTION "dir"
 #define UNIFORM_LIGHT_COSCUTOFF "cosCutoff"
 
 #define UNIFORM_LIGHT_COUNT_NAME "lightsCount"
 
+//Macro functions
+// returns normalized vector or zero vector if the given vector is zero
+//TODO find a better solution than macros
+#define NORMALIZE_OR_0(v) (Utils::isZero((v)) ? glm::vec3(0.f) : (v))
 // returns size_t length of string (must be string literal or char array with term. char.),
 // -1 as we dont count the term. char.
 #define STR_LEN(S) ((sizeof((S)) / sizeof((S)[0])) - 1)
 
-
-//Macro functions
-//TODO find a better solution than macros
-#define NORMALIZE_OR_0(v) (Utils::isZero((v)) ? glm::vec3(0.f) : (v))
 
 //struct definitions
 struct ColorF
@@ -183,10 +184,17 @@ namespace Drawing
     public:
         glm::vec3 m_pos;
 
+        //TODO coef values, see https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+        GLfloat m_attenuation_coefs_const = 1.f; // constant coeficient used to calculate attenuation value
+        GLfloat m_attenuation_coefs_lin   = 0.f; // linear coeficient used to calculate attenuation value
+        GLfloat m_attenuation_coefs_quad  = 0.f; // quadratic coeficient used to calculate attenuation value
+
         PointLight(const LightProps& props, glm::vec3 pos);
         ~PointLight() = default;
 
         bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override;
+
+        void setAttenuation(GLfloat constant, GLfloat linear, GLfloat quadratic);
     };
 
     class SpotLight : public Light
@@ -196,10 +204,17 @@ namespace Drawing
         glm::vec3 m_pos;
         float m_cos_cutoff_angle;
 
+        //TODO coef values, see https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+        float m_attenuation_coefs_const = 1.f; // constant coeficient used to calculate attenuation value
+        float m_attenuation_coefs_lin   = 0.f; // linear coeficient used to calculate attenuation value
+        float m_attenuation_coefs_quad  = 0.f; // quadratic coeficient used to calculate attenuation value
+
         SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle);
         ~SpotLight() = default;
 
         bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override = 0; //TODO
+
+        // void setAttenuation(GLfloat const, GLfloat linear, GLfloat quadratic); //TODO
     };
 
     void clear(GLFWwindow* window, Color color);

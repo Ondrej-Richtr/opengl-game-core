@@ -21,11 +21,13 @@ struct LightProps
 struct Light
 {
     LightProps props;
-    int type;        // 0 -> directional, 1 -> point light, 2 -> spot light
+    int type;         // 0 -> directional, 1 -> point light, 2 -> spot light
 
-    vec3 pos;        // only for point and spot lights
-    vec3 dir;        // only for directional and spot lights
-    float cosCutoff; // only for spot lights
+    vec3 atten_coefs; // coeficients for calculating attenuation - in order: constant, linear, quadratic, only for point and spot lights
+
+    vec3 pos;         // only for point and spot lights
+    vec3 dir;         // only for directional and spot lights
+    float cosCutoff;  // only for spot lights
 };
 
 //in vec4 gl_FragCoord;
@@ -61,9 +63,8 @@ vec3 calc_dir_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 dir)
     return result;
 }
 
-vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos)
+vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos, vec3 atten_coefs)
 {
-    //TODO
     vec3 result = vec3(0.f);
 
     //ambient
@@ -78,6 +79,14 @@ vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos
     vec3 reflectDir = reflect(-lightSrcDir, norm);
     float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
     result += spec * (material.specular * props.specular);
+
+    //attenuation
+    float distance = length(lightPos - FragPos);
+    float attenuation = 1.0 /
+                        (atten_coefs.x +                           // constant component
+                         atten_coefs.y *  distance +               // linear component
+                         atten_coefs.z * (distance * distance));   // quadratic component
+    result *= attenuation;
 
     return result;
 }
@@ -104,7 +113,7 @@ void main()
             lightColor += calc_dir_light(norm, cameraDir, lights[i].props, lights[i].dir);
             break;
         case 1: // lights[i] is a point light
-            lightColor += calc_point_light(norm, cameraDir, lights[i].props, lights[i].pos);
+            lightColor += calc_point_light(norm, cameraDir, lights[i].props, lights[i].pos, lights[i].atten_coefs);
             break;
         case 2: // lights[i] is a spot light
             lightColor += calc_spot_light(); //TODO
