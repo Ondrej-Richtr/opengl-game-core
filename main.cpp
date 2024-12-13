@@ -318,9 +318,20 @@ int main()
     float movingl_move_per_sec = 2.f;
 
     PointLight movingl(movingl_light_props, glm::vec3(movingl_x_min, -0.4f, 0.9f));
+    // SpotLight movingl(movingl_light_props, glm::vec3(0.f, 0.f, 1.f), glm::vec3(movingl_x_min, -0.4f, 0.9f),
+    //                   12.5f, 17.5f);
     // movingl.setAttenuation(1.f, 0.09f, 0.032f);
     movingl.setAttenuation(1.f, 0.22f, 0.2f);
     bool movingl_pos_move = true;
+
+    //flashlight
+    const Color3F flashlight_color = Color3F(1.f, 1.f, 1.f);
+    const LightProps flashlight_light_props(flashlight_color, 0.f);
+
+    SpotLight flashlight(flashlight_light_props, glm::vec3(0.f), glm::vec3(0.f), //throwaway values for position and direction
+                         40.f, 50.f);
+    flashlight.setAttenuation(1.f, 0.09f, 0.032f);
+    bool show_flashlight = false;
 
     //Materials
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
@@ -378,8 +389,11 @@ int main()
         // ---Keyboard input---
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
-        if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) show_pointl = false;
-        if(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) show_pointl = true;
+        if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) show_pointl = true;
+        if(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) show_pointl = false;
+
+        if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
+        if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
         if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         {
@@ -417,7 +431,6 @@ int main()
             camera.move(move_abs);
         }
 
-        //DEBUG
         //point light turning on/off
         if (show_pointl)
         {
@@ -450,6 +463,10 @@ int main()
                 movingl_pos_move = true;
             }
         }
+
+        //updating flashlight position and direction according to camera
+        flashlight.m_pos = camera.m_pos;
+        flashlight.m_dir = camera.getDirection();
 
         // ---Draw begin---
         {
@@ -616,7 +633,8 @@ int main()
                     light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
                     light_shader.setLight(UNIFORM_LIGHT_NAME, pointl, 1);
                     light_shader.setLight(UNIFORM_LIGHT_NAME, movingl, 2);
-                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 3);
+                    if (show_flashlight) light_shader.setLight(UNIFORM_LIGHT_NAME, flashlight, 3);
+                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, show_flashlight ? 4 : 3);
                 }
 
                 glm::vec3 mat_cubes_pos(-8.f * 0.8f, -0.4f, 2.f);
@@ -674,7 +692,8 @@ int main()
                     light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
                     light_shader.setLight(UNIFORM_LIGHT_NAME, pointl, 1);
                     light_shader.setLight(UNIFORM_LIGHT_NAME, movingl, 2);
-                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 3);
+                    if (show_flashlight) light_shader.setLight(UNIFORM_LIGHT_NAME, flashlight, 3);
+                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, show_flashlight ? 4 : 3);
                 }
 
                 glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);

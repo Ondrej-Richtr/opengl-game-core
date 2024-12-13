@@ -30,7 +30,8 @@
 #define UNIFORM_LIGHT_ATTENUATION "atten_coefs"
 #define UNIFORM_LIGHT_POSITION "pos"
 #define UNIFORM_LIGHT_DIRECTION "dir"
-#define UNIFORM_LIGHT_COSCUTOFF "cosCutoff"
+#define UNIFORM_LIGHT_COSINNERCUTOFF "cosInnerCutoff"
+#define UNIFORM_LIGHT_COSOUTERCUTOFF "cosOuterCutoff"
 
 #define UNIFORM_LIGHT_COUNT_NAME "lightsCount"
 
@@ -148,6 +149,8 @@ namespace Drawing
         const glm::mat4& getProjectionMatrix() const;
 
         glm::vec3 dirCoordsViewToWorld(glm::vec3 dir) const;
+
+        glm::vec3 getDirection() const;
     };
 
     // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
@@ -202,19 +205,21 @@ namespace Drawing
     public:
         glm::vec3 m_dir;
         glm::vec3 m_pos;
-        float m_cos_cutoff_angle;
+        float m_cos_in_cutoff;  // cosine of inner cutoff angle - defines area with full light intensity
+        float m_cos_out_cutoff; // cosine of outer cutoff angle - defines area that makes light smoothly fade at the edges
 
         //TODO coef values, see https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
         float m_attenuation_coefs_const = 1.f; // constant coeficient used to calculate attenuation value
         float m_attenuation_coefs_lin   = 0.f; // linear coeficient used to calculate attenuation value
         float m_attenuation_coefs_quad  = 0.f; // quadratic coeficient used to calculate attenuation value
 
-        SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle);
+        SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos,
+                  float inner_cutoff_angle, float outer_cutoff_angle);
         ~SpotLight() = default;
 
-        bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override = 0; //TODO
+        bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override;
 
-        // void setAttenuation(GLfloat const, GLfloat linear, GLfloat quadratic); //TODO
+        void setAttenuation(GLfloat const, GLfloat linear, GLfloat quadratic);
     };
 
     void clear(GLFWwindow* window, Color color);

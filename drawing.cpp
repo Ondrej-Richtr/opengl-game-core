@@ -76,7 +76,7 @@ void Drawing::Camera3D::move(glm::vec3 move_vec)
 //     return getViewMatrix() * vec;
 // }
 
-void Drawing::Camera3D::updateViewMatrix() //TODO apply this
+void Drawing::Camera3D::updateViewMatrix()
 {
     m_view_mat = glm::lookAt(m_pos, m_target, Drawing::up_dir);
 }
@@ -97,6 +97,11 @@ glm::vec3 Drawing::Camera3D::dirCoordsViewToWorld(glm::vec3 dir) const
     glm::vec3 dir_transformed = glm::inverse(m) * dir;
 
     return NORMALIZE_OR_0(dir_transformed);
+}
+
+glm::vec3 Drawing::Camera3D::getDirection() const
+{
+    return NORMALIZE_OR_0(m_target - m_pos);
 }
 
 //USELESS
@@ -243,9 +248,97 @@ void Drawing::PointLight::setAttenuation(GLfloat constant, GLfloat linear, GLflo
     m_attenuation_coefs_quad = quadratic;
 }
 
-Drawing::SpotLight::SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle)
-                                : Light(props), m_dir(glm::normalize(dir)),
-                                  m_pos(pos), m_cos_cutoff_angle(cos(cutoff_angle)) {}
+Drawing::SpotLight::SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos,
+                              float inner_cutoff_angle, float outer_cutoff_angle) // cutoff angles are expected in degrees
+                                : Light(props), m_dir(glm::normalize(dir)), m_pos(pos),
+                                  m_cos_in_cutoff(cos(glm::radians(inner_cutoff_angle))),
+                                  m_cos_out_cutoff(cos(glm::radians(outer_cutoff_angle)))
+{
+    // cutoff angles must make sense - inner cant be larger + they must define valid cone
+    assert(inner_cutoff_angle <= outer_cutoff_angle);
+    assert(inner_cutoff_angle >= 0.f);
+    assert(outer_cutoff_angle <= 180.f);
+}
+
+bool Drawing::SpotLight::bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx) const
+{
+    // binds the props, type and position to given shader under given uniform_name, other attributes are left unchanged/unbinded,
+    // if idx is non-negative then it appends array access after the uniform name (as "[idx]"),
+    // returns whether binding was successful
+    bool props_bind = bindPropsToShader(uniform_name, shader, idx);
+    if (!props_bind) return false;
+
+    char str_buffer[UNIFORM_NAME_BUFFER_LEN + 1];
+    
+    //type
+    size_t len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                           idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_TYPE
+                                    : "%s."     UNIFORM_LIGHT_TYPE,
+                           uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, static_cast<GLint>(Drawing::Light::Type::spot));
+
+    //dir
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_DIRECTION
+                            : "%s."     UNIFORM_LIGHT_DIRECTION,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, m_dir);
+
+    //pos
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_POSITION
+                            : "%s."     UNIFORM_LIGHT_POSITION,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, m_pos);
+
+    //cos inner cutoff angle
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_COSINNERCUTOFF
+                            : "%s."     UNIFORM_LIGHT_COSINNERCUTOFF,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, m_cos_in_cutoff);
+
+    //cos outer cutoff angle
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_COSOUTERCUTOFF
+                            : "%s."     UNIFORM_LIGHT_COSOUTERCUTOFF,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, m_cos_out_cutoff);
+
+    //attenuation coefs
+    len = snprintf((char*)str_buffer, UNIFORM_NAME_BUFFER_LEN + 1,
+                   idx >= 0 ? "%s[%d]." UNIFORM_LIGHT_ATTENUATION
+                            : "%s."     UNIFORM_LIGHT_ATTENUATION,
+                   uniform_name, idx);
+    // negative len indicates that there was an error, len > buffer len indicates that buffer was not big enough
+    if (len < 0 || len > UNIFORM_NAME_BUFFER_LEN) return false; 
+    
+    shader.set(str_buffer, glm::vec3(m_attenuation_coefs_const, m_attenuation_coefs_lin, m_attenuation_coefs_quad));
+
+    return true;
+}
+
+void Drawing::SpotLight::setAttenuation(GLfloat constant, GLfloat linear, GLfloat quadratic)
+{
+    m_attenuation_coefs_const = constant;
+    m_attenuation_coefs_lin = linear;
+    m_attenuation_coefs_quad = quadratic;
+}
 
 void Drawing::clear(GLFWwindow* window, Color color)
 {
