@@ -142,12 +142,11 @@ void Shaders::Program::setMaterialProps(const MaterialProps& material) const
     set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material.m_shininess);
 }
 
-void Shaders::Program::setLight(const char *light_uniform_name, size_t light_uniform_name_len,
-                                const char *props_uniform_name, size_t props_uniform_name_len,
-                                const Drawing::Light& light) const
+bool Shaders::Program::setLight(const char *uniform_name, const Drawing::Light& light, int idx) const
 {
-    light.bindToShader(light_uniform_name, light_uniform_name_len,
-                       props_uniform_name, props_uniform_name_len, *this);
+    assert(uniform_name != NULL);
+
+    return light.bindToShader(uniform_name, *this, idx);
 }
 
 GLuint Shaders::fromString(GLenum type, const char *str)

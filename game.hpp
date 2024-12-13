@@ -162,12 +162,9 @@ namespace Drawing
         Light(const LightProps& props);
         virtual ~Light() = default;
 
-        void bindPropsToShader(const char *props_uniform_name, size_t props_uniform_name_len,
-                               const Shaders::Program& shader) const;
+        bool bindPropsToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const;
 
-        virtual bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
-                                  const char *props_uniform_name, size_t props_uniform_name_len,
-                                  const Shaders::Program& shader) const = 0; //TODO
+        virtual bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const = 0;
     };
 
     class DirLight : public Light
@@ -178,9 +175,7 @@ namespace Drawing
         DirLight(const LightProps& props, glm::vec3 dir);
         ~DirLight() = default;
 
-        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
-                          const char *props_uniform_name, size_t props_uniform_name_len,
-                          const Shaders::Program& shader) const override;
+        bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override;
     };
 
     class PointLight : public Light
@@ -191,9 +186,7 @@ namespace Drawing
         PointLight(const LightProps& props, glm::vec3 pos);
         ~PointLight() = default;
 
-        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
-                          const char *props_uniform_name, size_t props_uniform_name_len,
-                          const Shaders::Program& shader) const override;
+        bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override;
     };
 
     class SpotLight : public Light
@@ -206,9 +199,7 @@ namespace Drawing
         SpotLight(const LightProps& props, glm::vec3 dir, glm::vec3 pos, float cutoff_angle);
         ~SpotLight() = default;
 
-        bool bindToShader(const char *light_uniform_name, size_t light_uniform_name_len,
-                          const char *props_uniform_name, size_t props_uniform_name_len,
-                          const Shaders::Program& shader) const override = 0; //TODO
+        bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override = 0; //TODO
     };
 
     void clear(GLFWwindow* window, Color color);
@@ -253,9 +244,7 @@ namespace Shaders
         void set(const char *uniform_name, const glm::mat4& matrix) const;
 
         void setMaterialProps(const MaterialProps& material) const;
-        void setLight(const char *light_uniform_name, size_t light_uniform_name_len,
-                      const char *props_uniform_name, size_t props_uniform_name_len,
-                      const Drawing::Light& light) const;
+        bool setLight(const char *uniform_name, const Drawing::Light& light, int idx = -1) const;
     };
 
     GLuint fromString(GLenum type, const char *str);

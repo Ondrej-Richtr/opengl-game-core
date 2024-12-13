@@ -296,22 +296,24 @@ int main()
     using SpotLight = Drawing::SpotLight;
 
     //sun
-    const char sun_uniform_name[] = UNIFORM_LIGHT_NAME "[0]";
-    const size_t sun_uniform_name_len = STR_LEN(sun_uniform_name);
-    const char sun_props_uniform_name[] = UNIFORM_LIGHT_NAME "[0]." UNIFORM_LIGHTPROPS_ATTRNAME;
-    const size_t sun_props_uniform_name_len = STR_LEN(sun_props_uniform_name);
+    //USELESS
+    // const char sun_uniform_name[] = UNIFORM_LIGHT_NAME "[0]";
+    // const size_t sun_uniform_name_len = STR_LEN(sun_uniform_name);
+    // const char sun_props_uniform_name[] = UNIFORM_LIGHT_NAME "[0]." UNIFORM_LIGHTPROPS_ATTRNAME;
+    // const size_t sun_props_uniform_name_len = STR_LEN(sun_props_uniform_name);
 
     const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
     DirLight sun(sun_light_props, glm::vec3(1.f, -1.f, -0.5f));
 
     //point light test
-    const char pointl_uniform_name[] = UNIFORM_LIGHT_NAME "[1]";
-    const size_t pointl_uniform_name_len = STR_LEN(pointl_uniform_name);
-    const char pointl_props_uniform_name[] = UNIFORM_LIGHT_NAME "[1]." UNIFORM_LIGHTPROPS_ATTRNAME;
-    const size_t pointl_props_uniform_name_len = STR_LEN(pointl_props_uniform_name);
+    //USELESS
+    // const char pointl_uniform_name[] = UNIFORM_LIGHT_NAME "[1]";
+    // const size_t pointl_uniform_name_len = STR_LEN(pointl_uniform_name);
+    // const char pointl_props_uniform_name[] = UNIFORM_LIGHT_NAME "[1]." UNIFORM_LIGHTPROPS_ATTRNAME;
+    // const size_t pointl_props_uniform_name_len = STR_LEN(pointl_props_uniform_name);
 
     const Color3F pointl_color = Color3F(0.1f, 0.3f, 0.95f);
-    const float pointl_ambient_intensity = 0.f;
+    const float pointl_ambient_intensity = 0.1f;
     const LightProps pointl_light_props(pointl_color, pointl_ambient_intensity);
     PointLight pointl(pointl_light_props, glm::vec3(-2.5f, -0.3f, 0.6f));
 
@@ -552,10 +554,8 @@ int main()
                     
                     //fs
                     light_shader.set("cameraPos", camera.m_pos);
-                    light_shader.setLight(sun_uniform_name, sun_uniform_name_len,
-                                          sun_props_uniform_name, sun_props_uniform_name_len, sun);
-                    light_shader.setLight(pointl_uniform_name, pointl_uniform_name_len,
-                                          pointl_props_uniform_name, pointl_props_uniform_name_len, pointl);
+                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
+                    light_shader.setLight(UNIFORM_LIGHT_NAME, pointl, 1);
                     light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 2);
                 }
 
@@ -611,10 +611,8 @@ int main()
                     //fs
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterialProps(default_material);
-                    light_shader.setLight(sun_uniform_name, sun_uniform_name_len,
-                                          sun_props_uniform_name, sun_props_uniform_name_len, sun);
-                    light_shader.setLight(pointl_uniform_name, pointl_uniform_name_len,
-                                          pointl_props_uniform_name, pointl_props_uniform_name_len, pointl);
+                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
+                    light_shader.setLight(UNIFORM_LIGHT_NAME, pointl, 1);
                     light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 2);
                 }
 
