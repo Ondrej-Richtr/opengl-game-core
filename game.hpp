@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cmath>
 #include <array>
+#include <memory>
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
@@ -230,7 +231,8 @@ namespace Utils
     bool isZero(glm::vec3 vector);
 
     size_t getTextFileLength(const char *path);
-    char* getTextFileAsString(const char *path);
+    char* getTextFileAsString_C_str(const char *path);
+    std::unique_ptr<char[]> getTextFileAsString(const char *path);
 
     GLint filteringEnumWithoutMipmap(GLint filtering);
 

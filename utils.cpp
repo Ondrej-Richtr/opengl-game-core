@@ -23,8 +23,9 @@ size_t Utils::getTextFileLength(const char *path)
     return len;
 }
 
-char* Utils::getTextFileAsString(const char *path)
+char* Utils::getTextFileAsString_C_str(const char *path)
 {
+    // loads whole file as a C string, returns NULL when error
     assert(path != NULL);
 
     size_t len = Utils::getTextFileLength(path);
@@ -47,6 +48,39 @@ char* Utils::getTextFileAsString(const char *path)
 
     return result;
 }
+
+std::unique_ptr<char[]> Utils::getTextFileAsString(const char *path)
+{
+    // loads whole file as C string, caller takes ownership of allocated memory with returned unique_ptr,
+    // returns NULL ptr when error
+    return std::unique_ptr<char[]>(Utils::getTextFileAsString_C_str(path));
+}
+
+//std::string version does not seem like a good idea
+/*std::string Utils::getTextFileAsString(const char *path)
+{
+    //TODO errors?
+    // loads whole file as a std::string, returns empty string when error
+    assert(path != NULL);
+
+    size_t len = Utils::getTextFileLength(path);
+    // printf("len: %d\n", len);
+    if (!len) return std::string{};
+
+    std::ifstream f(path, std::ios::in);
+    if (!f.is_open()) return std::string{};
+    
+    //IDEA probably more idiomatic to use std::string with preallocated memory
+    std::unique_ptr<char[]> result(new char[len + 1]);
+    assert(result);
+
+    f.read(result.get(), len);
+    if (f.gcount() != len) return std::string{};
+
+    result[len] = '\0'; //we need to add the terminating character
+
+    return std::string(result.release());
+}*/
 
 GLint Utils::filteringEnumWithoutMipmap(GLint filtering)
 {

@@ -18,20 +18,20 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
 {
     // constructs shader program based on source code of vertex and fragment shader located at given paths,
     // caller should always check whether constructor failed -> m_id == Shaders::empty_id
-    char *vs_source = Utils::getTextFileAsString(vs_path),
-         *fs_source = Utils::getTextFileAsString(fs_path);
+    
+    // char *vs_source = Utils::getTextFileAsString(vs_path),
+    //      *fs_source = Utils::getTextFileAsString(fs_path);
+    std::unique_ptr<char[]> vs_source = Utils::getTextFileAsString(vs_path),
+                            fs_source = Utils::getTextFileAsString(fs_path);
     
     if (!vs_source || !fs_source)
     {
         fprintf(stderr, "Failed to load vertex or fragment shader source code when constructing shader program!\n");
-        delete[] vs_source;
-        delete[] fs_source;
-
         return;
     }
 
-    GLuint vs_id = Shaders::fromString(GL_VERTEX_SHADER, vs_source),
-           fs_id = Shaders::fromString(GL_FRAGMENT_SHADER, fs_source);
+    GLuint vs_id = Shaders::fromString(GL_VERTEX_SHADER, vs_source.get()),
+           fs_id = Shaders::fromString(GL_FRAGMENT_SHADER, fs_source.get());
     if (!vs_id || !fs_id)
     {
         fprintf(stderr, "Failed to initialize vertex and fragment shaders when constructing shader program!\n");
@@ -39,8 +39,6 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
         // fprintf(stderr, "fs_id == 0: %d\n", fs_id == 0);
         glDeleteShader(vs_id);
         glDeleteShader(fs_id);
-        delete[] vs_source;
-        delete[] fs_source;
         
         return;
     }
@@ -51,10 +49,9 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
         fprintf(stderr, "Shader program failed to link!\n");
     }
 
+    // we dont need those partial shaders either way
     glDeleteShader(vs_id);
     glDeleteShader(fs_id);
-    delete[] vs_source;
-    delete[] fs_source;
 }
 
 Shaders::Program::~Program()
