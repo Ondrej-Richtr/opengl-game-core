@@ -2,6 +2,7 @@
 
 #include "glm/mat3x3.hpp"
 #include "glm/mat4x4.hpp"
+#include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
 #include <cstdio>
@@ -225,8 +226,12 @@ namespace Drawing
 
     void clear(GLFWwindow* window, Color color);
 
-    void crosshair(glm::vec2 size, glm::vec2 screen_pos, float thickness, Color3F color);
-};
+    void screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                    glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
+
+    void crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                   glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
+}
 
 namespace Utils
 {
@@ -265,7 +270,9 @@ namespace Shaders
         void use() const;
 
         //void set(const char *uniform_name, std::array<float, 4> floats) const;
+        void set(const char *uniform_name, ColorF color) const;
         void set(const char *uniform_name, Color3F color) const;
+        void set(const char *uniform_name, glm::vec2 vec) const;
         void set(const char *uniform_name, glm::vec3 vec) const;
         void set(const char *uniform_name, glm::vec4 vec) const;
         void set(const char *uniform_name, GLint value) const;
@@ -284,6 +291,14 @@ namespace Shaders
     void setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride);
 
     void disableVertexAttribute(GLuint location);
+
+    //basic static shader programs
+    // IMPORTANT: needs to get initialized first by calling initBasicShaderPrograms!
+    
+    //TODO
+    // static Program line{};
+
+    // bool initBasicShaderPrograms();
 }
 
 //textures.cpp
@@ -367,3 +382,17 @@ namespace Movement
 {
     glm::vec3 getSimplePlayerDir(GLFWwindow* window);
 }
+
+//game.hpp
+/*namespace Game
+{
+    class Target //TODO
+    {
+        //constexpr static double grow_duration = 5.f; // 5 seconds
+
+        const Meshes::VBO& vbo;
+
+        glm::vec3 pos;
+        double spawn_time;
+    };
+}*/

@@ -4,6 +4,7 @@
 
 #include "glm/ext/matrix_transform.hpp" //glm::lookAt
 #include "glm/gtc/matrix_transform.hpp" //glm::perspective
+#include "glm/gtx/matrix_transform_2d.hpp" //glm::translate and glm::scale
 
 #include <cstring>
 
@@ -348,8 +349,53 @@ void Drawing::clear(GLFWwindow* window, Color color)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Drawing::crosshair(glm::vec2 size, glm::vec2 screen_pos, float thickness, Color3F color)
+void Drawing::screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                         glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color)
+{
+    assert(line_vbo != 0);
+    assert(thickness >= 1.f);
+
+    // v * scale + translation = u
+    // -> translation = v1
+    // -> scale = v2 - translation = v2 - v1
+    const glm::vec2 t = v1;
+    const glm::vec2 s = v2 - v1;
+
+    glm::mat3 transform(1.f);
+    transform = glm::translate(transform, t);
+    transform = glm::scale(transform, s);
+
+    glLineWidth(thickness);
+
+    line_shader.use();
+    {
+        //vs
+        line_shader.set("transform", transform);
+        line_shader.set("screenRes", screen_res);
+
+        //fs
+        line_shader.set("color", color);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
+        Shaders::setupVertexAttribute_float(Shaders::attribute_position_verts, 2, 0, 2 * sizeof(GLfloat));
+            glDrawArrays(GL_LINES, 0, 2);
+        Shaders::disableVertexAttribute(Shaders::attribute_position_verts);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                        glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color)
 {
     //TODO
-    
+
+    // horizontal (x) line
+    glm::vec2 v1_x(screen_pos.x, screen_pos.y - (size.y / 2.f));
+    glm::vec2 v2_x(screen_pos.x, screen_pos.y + (size.y / 2.f));
+    Drawing::screenLine(line_shader, line_vbo, screen_res, v1_x, v2_x, thickness, color);
+
+    // vertical (y) line
+    glm::vec2 v1_y(screen_pos.x - (size.x / 2.f), screen_pos.y);
+    glm::vec2 v2_y(screen_pos.x + (size.x / 2.f), screen_pos.y);
+    Drawing::screenLine(line_shader, line_vbo, screen_res, v1_y, v2_y, thickness, color);
 }

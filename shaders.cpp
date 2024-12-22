@@ -72,12 +72,28 @@ void Shaders::Program::use() const
     glUniform4f(location, floats[0], floats[1], floats[2], floats[3]);
 }*/
 
+void Shaders::Program::set(const char *uniform_name, ColorF color) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
+    glUniform4f(location, color.r, color.g, color.b, color.a);
+}
+
 void Shaders::Program::set(const char *uniform_name, Color3F color) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
     assert(location >= 0); // wrong uniform name (or type)!
     glUniform3f(location, color.r, color.g, color.b);
+}
+
+void Shaders::Program::set(const char *uniform_name, glm::vec2 vec) const
+{
+    // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
+    int location = glGetUniformLocation(m_id, uniform_name);
+    assert(location >= 0); // wrong uniform name (or type)!
+    glUniform2f(location, vec.x, vec.y);
 }
 
 void Shaders::Program::set(const char *uniform_name, glm::vec3 vec) const

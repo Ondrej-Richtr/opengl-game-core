@@ -791,7 +791,8 @@ int game_main(void)
     Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_pitch, camera_yaw);
 
     //Cube and it's vbo
-    float cube_vertices[] = {
+    float cube_vertices[] =
+    {
         //pos                //texcoords    //normals
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,    0.0f, 0.0f, -1.0f,
@@ -847,6 +848,30 @@ int game_main(void)
         return 4;
     }
 
+    //Unit line and it's vbo
+    float line_vertices[] =
+    {
+        //position
+        0.f, 0.f,
+        1.f, 1.f,
+    };
+    size_t line_vert_attrib = 2; //amount of line attributes - 2x pos
+    size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
+                                / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
+    
+    unsigned int line_vbo;
+    glGenBuffers(1, &line_vbo);
+    if (!line_vbo)
+    {
+        fprintf(stderr, "Failed to create unit line VBO!\n");
+        glfwTerminate();
+        return 4;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(line_vertices), line_vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the buffer afterwards
+
     //Textures
     using Texture = Textures::Texture2D;
 
@@ -899,7 +924,19 @@ int game_main(void)
     using ShaderP = Shaders::Program;
 
     const char *default_vs_path = "shaders/default.vs",
-               *default_fs_path = "shaders/default.fs";
+               *default_fs_path = "shaders/default.fs",
+               *static_color_fs_path = "shaders/static-color.fs";
+
+    //line shader
+    const char *screen_line_vs_path = "shaders/screen2d-line.vs";
+
+    ShaderP screen_line_shader(screen_line_vs_path, static_color_fs_path);
+    if (screen_line_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create screen line shader program!\n");
+        glfwTerminate();
+        return 7;
+    }
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
@@ -1114,6 +1151,21 @@ int game_main(void)
 
                 glDisable(GL_CULL_FACE);
                 glDisable(GL_DEPTH_TEST);
+            }
+
+            //2D block
+            {
+                glm::vec2 screen_res((float)window_width, (float)window_height);
+                glm::vec2 screen_middle = screen_res / 2.f;
+
+                //line test
+                // Drawing::screenLine(screen_line_shader, line_vbo, screen_res,
+                //                     screen_res / 2.f, glm::vec2(50.f),
+                //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
+
+                //crosshair
+                Drawing::crosshair(screen_line_shader, line_vbo, screen_res,
+                                   glm::vec2(50.f, 30.f), screen_middle, 1.f, ColorF(1.0f, 1.0f, 0.0f));
             }
         }
 
