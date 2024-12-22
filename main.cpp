@@ -770,6 +770,14 @@ int game_main(void)
 
     windowResizeCallback(window, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
 
+    //Inits
+    if (!Meshes::initBasicMeshes())
+    {
+        fprintf(stderr, "Failed to initialize basic meshes!\n");
+        glfwTerminate();
+        return 3;
+    }
+
     //Camera
     using Camera = Drawing::Camera3D;
 
@@ -853,6 +861,40 @@ int game_main(void)
         return 5;
     }
 
+    const char *bricks_alt_path = "assets/bricks1.jpg";
+    const glm::vec2 brick_alt_texture_world_size(0.75f, 0.75f); // aspect ration 1:1
+
+    Texture brick_alt_texture(bricks_alt_path);
+    if (brick_alt_texture.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create brick alternative texture!\n");
+        glfwTerminate();
+        return 5;
+    }
+
+    const char *orb_path = "assets/orb.jpg";
+    const glm::vec2 orb_texture_world_size(1.f, 1.f); // almost 1:1 aspect ratio
+
+    Texture orb_texture(orb_path);
+    if (orb_texture.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create orb texture!\n");
+        glfwTerminate();
+        return 5;
+    }
+
+    const char *target_path = "assets/target_small.png";
+    const glm::vec2 target_texture_world_size(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
+    const float target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
+
+    Texture target_texture(target_path);
+    if (target_texture.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create target texture!\n");
+        glfwTerminate();
+        return 5;
+    }
+
     //Shaders
     using ShaderP = Shaders::Program;
 
@@ -868,7 +910,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
         glfwTerminate();
-        return 6;
+        return 7;
     }
 
     // loading light shader program
@@ -880,7 +922,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
         glfwTerminate();
-        return 7;
+        return 8;
     }
 
     const float light_src_size = 0.2;
@@ -896,16 +938,29 @@ int game_main(void)
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
     //Wall and it's vbo
-    const glm::vec3 wall_size(2.f, 1.f, 0.2f);
-    const glm::vec3 wall_pos(0.f);
+    const glm::vec3 wall_size(3.f, 1.5f, 0.2f);
+    const glm::vec3 wall_pos(0.f, wall_size.y / 2.f, 0.f);
     
-    Meshes::VBO wall_vbo = Meshes::generateCubicVBO(wall_size, brick_texture_world_size,
+    Meshes::VBO wall_vbo = Meshes::generateCubicVBO(wall_size, brick_alt_texture_world_size,
                                                     Meshes::TexcoordStyle::repeat, true);
     if (wall_vbo.m_id == Meshes::empty_id)
     {
         fprintf(stderr, "Failed to create wall VBO!\n");
         glfwTerminate();
-        return 8;
+        return 9;
+    }
+
+    //Quad and it's vbo
+    const glm::vec2 quad_size(0.12f, 0.12f);
+    const glm::vec3 quad_pos(0.f, 0.6f, 0.2f);
+
+    Meshes::VBO quad_vbo = Meshes::generateQuadVBO(quad_size, target_texture_world_size,
+                                                   Meshes::TexcoordStyle::stretch, true);
+    if (quad_vbo.m_id == Meshes::empty_id)
+    {
+        fprintf(stderr, "Failed to create quad VBO!\n");
+        glfwTerminate();
+        return 10;
     }
 
     //Misc.
@@ -1005,7 +1060,8 @@ int game_main(void)
 
                 //wall
                 light_shader.use();
-                brick_texture.bind();
+                // brick_texture.bind();
+                brick_alt_texture.bind();
                 {
                     //vs
                     glm::mat4 model_mat(1.f);
@@ -1028,6 +1084,32 @@ int game_main(void)
                 wall_vbo.bind();
                     glDrawArrays(GL_TRIANGLES, 0, wall_vbo.m_vert_count);
                 wall_vbo.unbind();
+
+                //quad
+                light_shader.use();
+                target_texture.bind();
+                {
+                    //vs
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, quad_pos);
+
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                    light_shader.set("model", model_mat);
+                    light_shader.set("normalMat", normal_mat);
+                    light_shader.set("view", view_mat);
+                    light_shader.set("projection", proj_mat);
+
+                    //fs
+                    light_shader.set("cameraPos", camera.m_pos);
+                    light_shader.setMaterialProps(default_material);
+                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
+                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
+                }
+
+                quad_vbo.bind();
+                    glDrawArrays(GL_TRIANGLES, 0, quad_vbo.m_vert_count);
+                quad_vbo.unbind();
 
 
                 glDisable(GL_CULL_FACE);

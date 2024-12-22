@@ -347,3 +347,9 @@ void Drawing::clear(GLFWwindow* window, Color color)
     glClearColor(colorf.r, colorf.g, colorf.b, colorf.a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
+
+void Drawing::crosshair(glm::vec2 size, glm::vec2 screen_pos, float thickness, Color3F color)
+{
+    //TODO
+    
+}

@@ -224,6 +224,8 @@ namespace Drawing
     };
 
     void clear(GLFWwindow* window, Color color);
+
+    void crosshair(glm::vec2 size, glm::vec2 screen_pos, float thickness, Color3F color);
 };
 
 namespace Utils
@@ -331,7 +333,9 @@ namespace Meshes
         size_t m_stride;        // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
         int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
 
-        VBO(GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
+        VBO(); // default constructor for uninitialized VBO
+
+        VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
 
         ~VBO();
 
@@ -347,6 +351,15 @@ namespace Meshes
 
     Meshes::VBO generateCubicVBO(glm::vec3 mesh_scale,  glm::vec2 texture_world_size,
                                  Meshes::TexcoordStyle style, bool normals);
+    
+    Meshes::VBO generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_world_size,
+                                Meshes::TexcoordStyle style, bool normals);
+    
+    //basic static meshes
+    // IMPORTANT: needs to get initialized first by calling initBasicMeshes!
+    static VBO unit_quad_pos_only{};
+
+    bool initBasicMeshes();
 }
 
 //movement.cpp
