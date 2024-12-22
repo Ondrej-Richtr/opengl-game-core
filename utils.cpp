@@ -35,7 +35,7 @@ char* Utils::getTextFileAsString_C_str(const char *path)
     std::ifstream f(path, std::ios::in);
     if (!f.is_open()) return NULL;
     
-    char *result = new char[len + 1];
+    char *result = new char[len + 1]();
 
     f.read(result, len);
     if (f.gcount() != len)
@@ -100,4 +100,15 @@ glm::mat3 Utils::modelMatrixToNormalMatrix(const glm::mat4& model_mat)
 {
     glm::mat3 result(model_mat);
     return glm::transpose(glm::inverse(result));
+}
+
+bool Utils::checkForGLError()
+{
+    // if no error -> return false
+    if (glGetError() == GL_NO_ERROR) return false;
+
+    // if error -> clear all GL error flags and return true
+    while (glGetError() != GL_NO_ERROR);
+
+    return true;
 }

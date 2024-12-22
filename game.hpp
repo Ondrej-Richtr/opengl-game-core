@@ -237,6 +237,8 @@ namespace Utils
     GLint filteringEnumWithoutMipmap(GLint filtering);
 
     glm::mat3 modelMatrixToNormalMatrix(const glm::mat4& model_mat);
+
+    bool checkForGLError();
 };
 
 //shaders.cpp
@@ -244,6 +246,10 @@ namespace Shaders
 {
     //TODO unite those ids?
     static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
+
+    static const GLuint attribute_position_verts = 0;
+    static const GLuint attribute_position_texcoords = 1;
+    static const GLuint attribute_position_normals = 2;
 
     struct Program
     {
@@ -303,7 +309,45 @@ namespace Textures
     };
 }
 
-//TODO meshes - verts, normals, texcoords, indices for faces, (material?)
+//meshes.cpp
+namespace Meshes
+{
+    //TODO meshes - verts, normals, texcoords, indices for faces, (material?)
+
+    //TODO unite those ids?
+    static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
+
+    static const size_t attribute_verts_amount = 3;     // vec3
+    static const size_t attribute_texcoord_amount = 2;  // vec2
+    static const size_t attribute_normal_amount = 3;    // vec3
+
+    //Vertex buffer object abstraction, should be used mainly for mesh data
+    //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
+    struct VBO
+    {
+        GLuint m_id = empty_id;
+
+        size_t m_vert_count;    // amount of vertices that this vbo holds
+        size_t m_stride;        // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
+        int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
+
+        VBO(GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
+
+        ~VBO();
+
+        void bind() const;
+        void unbind() const;
+    };
+
+    //style of UV texcoords
+    //  none    - no texcoords
+    //  stretch - fit each face into 0.0-1.0 UV coordinates
+    //  repeat  - set repeating according to texture size (size in world coordinates)
+    enum class TexcoordStyle { none, stretch, repeat };
+
+    Meshes::VBO generateCubicVBO(glm::vec3 mesh_scale,  glm::vec2 texture_world_size,
+                                 Meshes::TexcoordStyle style, bool normals);
+}
 
 //movement.cpp
 namespace Movement

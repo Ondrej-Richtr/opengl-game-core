@@ -23,8 +23,9 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
     m_width = loaded_width;
     m_height = loaded_height;
 
-    // geneare and bind the OpenGL texture object
+    // generate and bind the OpenGL texture object
     glGenTextures(1, &m_id);
+
     glBindTexture(GL_TEXTURE_2D, m_id);
 
     // set the texture wrapping to default values
