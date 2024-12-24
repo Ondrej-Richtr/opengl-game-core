@@ -162,6 +162,24 @@ bool Shaders::Program::setLight(const char *uniform_name, const Drawing::Light& 
     return light.bindToShader(uniform_name, *this, idx);
 }
 
+int Shaders::Program::setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
+                                 const std::vector<const Drawing::Light*>& lights) const
+{
+    int success_count = 0;
+
+    for (size_t i = 0; i < lights.size() && success_count < Drawing::lights_max_amount; ++i)
+    {
+        if (setLight(uniform_array_name, *lights[i], success_count))
+        {
+            ++success_count;
+        }
+    }
+    
+    set(uniform_arrray_size_name, success_count);
+
+    return success_count;
+}
+
 GLuint Shaders::fromString(GLenum type, const char *str)
 {
     unsigned int id = glCreateShader(type);

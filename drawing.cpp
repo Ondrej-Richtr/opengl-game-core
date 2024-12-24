@@ -105,18 +105,6 @@ glm::vec3 Drawing::Camera3D::getDirection() const
     return NORMALIZE_OR_0(m_target - m_pos);
 }
 
-//USELESS
-//helper function for binding lights to shaders
-/*void bufferAttributeWrite(char *buffer, size_t buffer_len, const char *attr, size_t attr_len)
-{
-    //buffer is expected to be buffer_len + 1 long! (because of term. char)
-    assert(1 + attr_len <= buffer_len);     // +1 is for dot 
-    
-    buffer[0] = '.'; // (here is the dot)
-    strncpy(buffer + 1, attr, attr_len);    // +1 is for dot
-    buffer[1 + attr_len] = '\0';            // +1 is for dot
-}*/
-
 Drawing::Light::Light(const LightProps& props)
                         : m_props(props) {}
 
@@ -387,8 +375,6 @@ void Drawing::screenLine(const Shaders::Program& line_shader, unsigned int line_
 void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
                         glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color)
 {
-    //TODO
-
     // horizontal (x) line
     glm::vec2 v1_x(screen_pos.x, screen_pos.y - (size.y / 2.f));
     glm::vec2 v2_x(screen_pos.x, screen_pos.y + (size.y / 2.f));
@@ -398,4 +384,43 @@ void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_v
     glm::vec2 v1_y(screen_pos.x - (size.x / 2.f), screen_pos.y);
     glm::vec2 v2_y(screen_pos.x + (size.x / 2.f), screen_pos.y);
     Drawing::screenLine(line_shader, line_vbo, screen_res, v1_y, v2_y, thickness, color);
+}
+
+void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+                     const std::vector<const Drawing::Light*>& lights, const Game::Target& target, double current_frame_time)
+{
+    glm::vec2 target_size = target.getSize(current_frame_time);
+
+    shader.use();
+    target.m_texture.bind();
+    {
+        //vs
+        glm::mat4 model_mat(1.f);
+        model_mat = glm::translate(model_mat, target.m_pos);
+        // assumess that target's vbo is a quad facing in z axis
+        model_mat = glm::scale(model_mat, glm::vec3(target_size.x, target_size.y, 1.f));
+
+        glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+        shader.set("model", model_mat);
+        shader.set("normalMat", normal_mat);
+        shader.set("view", camera.getViewMatrix());
+        shader.set("projection", camera.getProjectionMatrix());
+
+        //fs
+        shader.set("cameraPos", camera.m_pos);
+        shader.setMaterialProps(target.m_material);
+        
+        int lights_set = shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights);
+        assert(lights_set >= 0);
+        assert((size_t)lights_set <= lights.size());
+        if ((size_t)lights_set < lights.size())
+        {
+            fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %d, set amount: %d\n.", lights.size(), lights_set);
+        }
+    }
+
+    target.m_vbo.bind();
+        glDrawArrays(GL_TRIANGLES, 0, target.m_vbo.m_vert_count);
+    target.m_vbo.unbind();
 }

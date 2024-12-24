@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cmath>
 #include <array>
+#include <vector>
 #include <memory>
 
 #define DEFAULT_WINDOW_WIDTH 1280
@@ -110,6 +111,11 @@ struct LightProps //should correspond to LightProps struct in shaders
 namespace Shaders
 {
     struct Program;
+};
+
+namespace Game
+{
+    class Target;
 };
 
 //TODO use this
@@ -231,6 +237,9 @@ namespace Drawing
 
     void crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
                    glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
+    
+    void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+                const std::vector<const Drawing::Light*>& lights, const Game::Target& target, double current_frame_time);
 }
 
 namespace Utils
@@ -282,6 +291,8 @@ namespace Shaders
 
         void setMaterialProps(const MaterialProps& material) const;
         bool setLight(const char *uniform_name, const Drawing::Light& light, int idx = -1) const;
+        int setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
+                      const std::vector<const Drawing::Light*>& lights) const;
     };
 
     GLuint fromString(GLenum type, const char *str);
@@ -294,10 +305,6 @@ namespace Shaders
 
     //basic static shader programs
     // IMPORTANT: needs to get initialized first by calling initBasicShaderPrograms!
-    
-    //TODO
-    // static Program line{};
-
     // bool initBasicShaderPrograms();
 }
 
@@ -349,9 +356,7 @@ namespace Meshes
         int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
 
         VBO(); // default constructor for uninitialized VBO
-
         VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
-
         ~VBO();
 
         void bind() const;
@@ -384,15 +389,25 @@ namespace Movement
 }
 
 //game.hpp
-/*namespace Game
+namespace Game
 {
-    class Target //TODO
+    class Target
     {
-        //constexpr static double grow_duration = 5.f; // 5 seconds
+    public:
+        const Meshes::VBO& m_vbo;
+        const Textures::Texture2D& m_texture;
+        const MaterialProps& m_material;
 
-        const Meshes::VBO& vbo;
+        glm::vec3 m_pos;
+        double m_spawn_time;
 
-        glm::vec3 pos;
-        double spawn_time;
+        Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const MaterialProps& material,
+               glm::vec3 pos, double spawn_time);
+        ~Target() = default;
+
+        glm::vec2 getSize(double time) const;
+
+        void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+                  const std::vector<const Drawing::Light*>& lights, double current_frame_time) const;
     };
-}*/
+}

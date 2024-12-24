@@ -971,6 +971,15 @@ int game_main(void)
     const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
     DirLight sun(sun_light_props, glm::vec3(1.f, -1.f, -0.5f));
 
+    //flashlight
+    const Color3F flashlight_color = Color3F(1.f, 1.f, 1.f);
+    const LightProps flashlight_light_props(flashlight_color, 0.f);
+
+    SpotLight flashlight(flashlight_light_props, glm::vec3(0.f), glm::vec3(0.f), //throwaway values for position and direction
+                         40.f, 50.f);
+    flashlight.setAttenuation(1.f, 0.09f, 0.032f);
+    bool show_flashlight = false;
+
     //Materials
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
@@ -987,18 +996,20 @@ int game_main(void)
         return 9;
     }
 
-    //Quad and it's vbo
-    const glm::vec2 quad_size(0.12f, 0.12f);
-    const glm::vec3 quad_pos(0.f, 0.6f, 0.2f);
+    //Targets
+    using Target = Game::Target;
 
-    Meshes::VBO quad_vbo = Meshes::generateQuadVBO(quad_size, target_texture_world_size,
-                                                   Meshes::TexcoordStyle::stretch, true);
-    if (quad_vbo.m_id == Meshes::empty_id)
+    Meshes::VBO target_vbo = Meshes::generateQuadVBO(glm::vec2(1.f), target_texture_world_size,
+                                                     Meshes::TexcoordStyle::stretch, true);
+    if (target_vbo.m_id == Meshes::empty_id)
     {
-        fprintf(stderr, "Failed to create quad VBO!\n");
+        fprintf(stderr, "Failed to create target's VBO!\n");
         glfwTerminate();
         return 10;
     }
+
+    glm::vec3 target_pos(0.f, 0.f, 0.5f);
+    Target target(target_vbo, target_texture, default_material, target_pos, glfwGetTime()); //TODO
 
     //Misc.
     Color clear_color(50, 220, 80);
@@ -1037,6 +1048,9 @@ int game_main(void)
         // ---Keyboard input---
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
+        if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
+        if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
+
         glm::vec3 move_dir = Movement::getSimplePlayerDir(window);
 
         // ---Player movement---
@@ -1050,6 +1064,20 @@ int game_main(void)
             // printf("move_rel: %f|%f|%f\n", move_rel.x, move_rel.y, move_rel.z);
             // printf("move_abs: %f|%f|%f\n", move_abs.x, move_abs.y, move_abs.z);
             camera.move(move_abs);
+        }
+
+        // ---Lights---
+        //lights array
+        std::vector<const Drawing::Light*> lights = { &sun };
+
+        //flashlight
+        if (show_flashlight)
+        {
+            // updating the flashlight position and directiom
+            flashlight.m_pos = camera.m_pos;
+            flashlight.m_dir = camera.getDirection();
+
+            lights.emplace_back(&flashlight);
         }
 
         // ---Draw begin---
@@ -1087,8 +1115,9 @@ int game_main(void)
                     //fs
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterialProps(default_material);
-                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
-                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
+                    light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                    // light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
+                    // light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
                 }
 
                 cube_vbo.bind();
@@ -1114,39 +1143,17 @@ int game_main(void)
                     //fs
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterialProps(default_material);
-                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
-                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
+                    light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                    // light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
+                    // light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
                 }
 
                 wall_vbo.bind();
                     glDrawArrays(GL_TRIANGLES, 0, wall_vbo.m_vert_count);
                 wall_vbo.unbind();
-
-                //quad
-                light_shader.use();
-                target_texture.bind();
-                {
-                    //vs
-                    glm::mat4 model_mat(1.f);
-                    model_mat = glm::translate(model_mat, quad_pos);
-
-                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
-
-                    light_shader.set("model", model_mat);
-                    light_shader.set("normalMat", normal_mat);
-                    light_shader.set("view", view_mat);
-                    light_shader.set("projection", proj_mat);
-
-                    //fs
-                    light_shader.set("cameraPos", camera.m_pos);
-                    light_shader.setMaterialProps(default_material);
-                    light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
-                    light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
-                }
-
-                quad_vbo.bind();
-                    glDrawArrays(GL_TRIANGLES, 0, quad_vbo.m_vert_count);
-                quad_vbo.unbind();
+                
+                //target
+                target.draw(light_shader, camera, lights, current_frame_time);
 
 
                 glDisable(GL_CULL_FACE);
