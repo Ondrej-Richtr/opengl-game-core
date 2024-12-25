@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <functional>
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
@@ -239,7 +240,7 @@ namespace Drawing
                    glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
     
     void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                const std::vector<const Drawing::Light*>& lights, const Game::Target& target, double current_frame_time);
+                const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target, double current_frame_time);
 }
 
 namespace Utils
@@ -292,7 +293,7 @@ namespace Shaders
         void setMaterialProps(const MaterialProps& material) const;
         bool setLight(const char *uniform_name, const Drawing::Light& light, int idx = -1) const;
         int setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
-                      const std::vector<const Drawing::Light*>& lights) const;
+                      const std::vector<std::reference_wrapper<const Drawing::Light>>& lights) const;
     };
 
     GLuint fromString(GLenum type, const char *str);
@@ -408,6 +409,6 @@ namespace Game
         glm::vec2 getSize(double time) const;
 
         void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                  const std::vector<const Drawing::Light*>& lights, double current_frame_time) const;
+                  const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, double current_frame_time) const;
     };
 }

@@ -163,13 +163,13 @@ bool Shaders::Program::setLight(const char *uniform_name, const Drawing::Light& 
 }
 
 int Shaders::Program::setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
-                                 const std::vector<const Drawing::Light*>& lights) const
+                                 const std::vector<std::reference_wrapper<const Drawing::Light>>& lights) const
 {
     int success_count = 0;
 
     for (size_t i = 0; i < lights.size() && success_count < Drawing::lights_max_amount; ++i)
     {
-        if (setLight(uniform_array_name, *lights[i], success_count))
+        if (setLight(uniform_array_name, lights[i], success_count))
         {
             ++success_count;
         }

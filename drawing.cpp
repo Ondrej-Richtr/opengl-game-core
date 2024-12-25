@@ -387,7 +387,7 @@ void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_v
 }
 
 void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                     const std::vector<const Drawing::Light*>& lights, const Game::Target& target, double current_frame_time)
+                     const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target, double current_frame_time)
 {
     glm::vec2 target_size = target.getSize(current_frame_time);
 

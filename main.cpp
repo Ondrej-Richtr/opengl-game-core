@@ -1008,8 +1008,9 @@ int game_main(void)
         return 10;
     }
 
+    std::vector<Target> targets;
     glm::vec3 target_pos(0.f, 0.f, 0.5f);
-    Target target(target_vbo, target_texture, default_material, target_pos, glfwGetTime()); //TODO
+    targets.emplace_back(target_vbo, target_texture, default_material, target_pos, glfwGetTime());
 
     //Misc.
     Color clear_color(50, 220, 80);
@@ -1068,7 +1069,7 @@ int game_main(void)
 
         // ---Lights---
         //lights array
-        std::vector<const Drawing::Light*> lights = { &sun };
+        std::vector<std::reference_wrapper<const Drawing::Light>> lights = { sun };
 
         //flashlight
         if (show_flashlight)
@@ -1077,7 +1078,8 @@ int game_main(void)
             flashlight.m_pos = camera.m_pos;
             flashlight.m_dir = camera.getDirection();
 
-            lights.emplace_back(&flashlight);
+            // lights.emplace_back(&flashlight);
+            lights.push_back(flashlight);
         }
 
         // ---Draw begin---
@@ -1152,8 +1154,11 @@ int game_main(void)
                     glDrawArrays(GL_TRIANGLES, 0, wall_vbo.m_vert_count);
                 wall_vbo.unbind();
                 
-                //target
-                target.draw(light_shader, camera, lights, current_frame_time);
+                //targets
+                for (size_t i = 0; i < targets.size(); ++i)
+                {
+                    targets[i].draw(light_shader, camera, lights, current_frame_time);
+                }
 
 
                 glDisable(GL_CULL_FACE);

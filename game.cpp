@@ -25,7 +25,7 @@ glm::vec2 Game::Target::getSize(double time) const
 }
 
 void Game::Target::draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                        const std::vector<const Drawing::Light*>& lights, double current_frame_time) const
+                        const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, double current_frame_time) const
 {
     Drawing::target(shader, camera, lights, *this, current_frame_time);
 }
