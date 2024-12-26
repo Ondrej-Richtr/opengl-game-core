@@ -203,58 +203,58 @@ Meshes::VBO Meshes::generateCubicVBO(glm::vec3 mesh_scale, glm::vec2 texture_wor
     // include texcoords when style given a Texcoord style
     bool texcoords = (style != Meshes::TexcoordStyle::none);
     
-    // clockwise vertex order
+    // counter-clockwise vertex winding order
     const GLfloat whole_data[] =
     {
         // Position                     // Texcoords        // Normal
         //+x face                       +u = -z, +v = +y
          half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
-         half_x,  half_y, -half_z,      u_max_z, v_max_y,    1.f,  0.f,  0.f,
          half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
+         half_x,  half_y, -half_z,      u_max_z, v_max_y,    1.f,  0.f,  0.f,
 
          half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
-         half_x, -half_y,  half_z,      u_min_z, v_min_y,    1.f,  0.f,  0.f,
          half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
+         half_x, -half_y,  half_z,      u_min_z, v_min_y,    1.f,  0.f,  0.f,
         //-x face                       +u = z, +v = +y
         -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
-        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
         -half_x,  half_y, -half_z,      u_min_z, v_max_y,   -1.f,  0.f,  0.f,
+        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
 
         -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
-        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
         -half_x, -half_y,  half_z,      u_max_z, v_min_y,   -1.f,  0.f,  0.f,
+        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
         //+y face                       +u = +x, +v = -z
          half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
-        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
          half_x,  half_y, -half_z,      u_max_x, v_max_z,    0.f,  1.f,  0.f,
+        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
         
         -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
-         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
         -half_x,  half_y,  half_z,      u_min_x, v_min_z,    0.f,  1.f,  0.f,
+         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
         //-y face                       +u = +x, +v = +z
          half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
-         half_x, -half_y, -half_z,      u_max_x, v_min_z,    0.f, -1.f,  0.f,
         -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
+         half_x, -half_y, -half_z,      u_max_x, v_min_z,    0.f, -1.f,  0.f,
 
         -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
-        -half_x, -half_y,  half_z,      u_min_x, v_max_z,    0.f, -1.f,  0.f,
          half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
+        -half_x, -half_y,  half_z,      u_min_x, v_max_z,    0.f, -1.f,  0.f,
         //+z face                       +u = +x, +v = +y
          half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-         half_x, -half_y,  half_z,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
         -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x, -half_y,  half_z,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
         
         -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-        -half_x,  half_y,  half_z,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
          half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x,  half_y,  half_z,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
         //-z face                       +u = -x, +v = +y
          half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
-        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
          half_x, -half_y, -half_z,      u_min_x, v_min_y,    0.f,  0.f, -1.f,
+        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
         
         -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
+        -half_x,  half_y, -half_z,      u_max_x, v_max_y,    0.f,  0.f, -1.f,
          half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
-        -half_x,  half_y, -half_z,      u_max_x, v_max_y,    0.f,  0.f, -1.f
     };
 
     return generateVBOfromData<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
@@ -291,18 +291,18 @@ Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_worl
     // include texcoords when style given a Texcoord style
     bool texcoords = (style != Meshes::TexcoordStyle::none);
 
-    // clockwise vertex order
+    // counter-clockwise vertex winding order
     GLfloat whole_data[] =
     {
         // Position                  // Texcoords        // Normal
         //+z face                    +u = +x, +v = +y
          half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-         half_x, -half_y,  0.f,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
         -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x, -half_y,  0.f,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
 
         -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-        -half_x,  half_y,  0.f,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
          half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x,  half_y,  0.f,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
     };
 
     return generateVBOfromData<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
