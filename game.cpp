@@ -8,7 +8,7 @@ Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture,
                         : m_vbo(vbo), m_texture(texture), m_material(material),
                           m_pos(pos), m_spawn_time(spawn_time) {}
 
-glm::vec3 Game::Target::generateXZPosition(Utils::RNG& width, Utils::RNG height, glm::vec2 wall_size)
+glm::vec3 Game::Target::generateXZPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size)
 {
     assert(wall_size.x > 0.f);
     float wall_width_half = wall_size.x / 2.f;
@@ -23,9 +23,6 @@ glm::vec3 Game::Target::generateXZPosition(Utils::RNG& width, Utils::RNG height,
 
 glm::vec2 Game::Target::getSize(double time) const
 {
-    static const double grow_time = 2.5f; // 5 seconds
-    static const float size_min = 0.1f;
-    static const float size_max = 0.75f;
     assert(size_min <= size_max);
 
     if (time <= m_spawn_time) return glm::vec2(size_min);
@@ -38,7 +35,8 @@ glm::vec2 Game::Target::getSize(double time) const
 }
 
 void Game::Target::draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                        const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, double current_frame_time) const
+                        const std::vector<std::reference_wrapper<const Drawing::Light>>& lights,
+                        double current_frame_time, glm::vec3 pos_offset) const
 {
-    Drawing::target(shader, camera, lights, *this, current_frame_time);
+    Drawing::target(shader, camera, lights, *this, current_frame_time, pos_offset);
 }

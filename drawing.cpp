@@ -387,7 +387,8 @@ void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_v
 }
 
 void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                     const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target, double current_frame_time)
+                     const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target,
+                     double current_frame_time, glm::vec3 pos_offset)
 {
     glm::vec2 target_size = target.getSize(current_frame_time);
 
@@ -396,7 +397,7 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
     {
         //vs
         glm::mat4 model_mat(1.f);
-        model_mat = glm::translate(model_mat, target.m_pos);
+        model_mat = glm::translate(model_mat, target.m_pos + pos_offset);
         // assumess that target's vbo is a quad facing in z axis
         model_mat = glm::scale(model_mat, glm::vec3(target_size.x, target_size.y, 1.f));
 

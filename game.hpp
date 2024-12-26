@@ -14,6 +14,8 @@
 #include <functional>
 #include <random>
 
+#define FLOAT_TOLERANCE 0.001f
+
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
 
@@ -241,7 +243,8 @@ namespace Drawing
                    glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
     
     void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target, double current_frame_time);
+                const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target,
+                double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f));
 }
 
 namespace Utils
@@ -412,6 +415,9 @@ namespace Game
     class Target
     {
     public:
+        constexpr static const float size_min = 0.1f, size_max = 0.5f;
+        constexpr static const float grow_time = 2.5f; // 2.5 seconds
+
         const Meshes::VBO& m_vbo;
         const Textures::Texture2D& m_texture;
         const MaterialProps& m_material;
@@ -423,11 +429,12 @@ namespace Game
                glm::vec3 pos, double spawn_time);
         ~Target() = default;
 
-        static glm::vec3 generateXZPosition(Utils::RNG& width, Utils::RNG height, glm::vec2 wall_size);
+        static glm::vec3 generateXZPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
 
         glm::vec2 getSize(double time) const;
 
         void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                  const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, double current_frame_time) const;
+                  const std::vector<std::reference_wrapper<const Drawing::Light>>& lights,
+                  double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
 }

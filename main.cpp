@@ -783,7 +783,7 @@ int game_main(void)
 
     const float mouse_sens = 0.08f;
     float fov = 80.f;
-    const glm::vec3 camera_init_pos(0.f, 0.f, 2.5f);
+    const glm::vec3 camera_init_pos(0.f, 0.7f, 2.5f);
     //const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
     //Camera camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
     float camera_pitch = 0.f;
@@ -984,7 +984,7 @@ int game_main(void)
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
     //Wall and it's vbo
-    const glm::vec3 wall_size(3.f, 1.5f, 0.2f);
+    const glm::vec3 wall_size(5.f, 2.5f, 0.2f);
     const glm::vec3 wall_pos(0.f, wall_size.y / 2.f, 0.f);
     
     Meshes::VBO wall_vbo = Meshes::generateCubicVBO(wall_size, brick_alt_texture_world_size,
@@ -1008,17 +1008,15 @@ int game_main(void)
         return 10;
     }
 
+    glm::vec3 target_pos_offset(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
+    double target_spawn_frequency = 0.5f; // target per second
+    double target_last_spawn_time = -1.f; // -1 should get us immediate first spawn, maybe use tick == 0 instead?
+
     std::vector<Target> targets;
 
     //targets rng init
-    glm::vec3 target_pos_offset(0.f, wall_size.y / 2.f, wall_size.z / 2.f + 0.001f);
     Utils::RNG target_rng_width(-1000, 1000);
     Utils::RNG target_rng_height(-500, 500);
-
-    {
-        glm::vec3 pos = target_pos_offset + Game::Target::generateXZPosition(target_rng_width, target_rng_height, glm::vec2(wall_size.x, wall_size.y));
-        targets.emplace_back(target_vbo, target_texture, default_material, pos, glfwGetTime());
-    }
 
     //Misc.
     Color clear_color(50, 220, 80);
@@ -1061,6 +1059,21 @@ int game_main(void)
         if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
         glm::vec3 move_dir = Movement::getSimplePlayerDir(window);
+
+        // ---Target spawning---
+        {
+            double time_to_spawn = 1.f / target_spawn_frequency;
+
+            if (current_frame_time - target_last_spawn_time >= time_to_spawn)
+            {
+                glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y) - glm::vec2(target_texture_dish_radius * Target::size_max * 2.f); // *2 for both borders
+                glm::vec3 pos = target_pos_offset + Game::Target::generateXZPosition(target_rng_width, target_rng_height, wall_spawnable_area);
+                targets.emplace_back(target_vbo, target_texture, default_material, pos, current_frame_time);
+
+                //NOTE simple solution, might produce slower spawn rates on inconsistent/low fps
+                target_last_spawn_time = current_frame_time;
+            }
+        }
 
         // ---Player movement---
         const float move_per_sec = 4.f;
@@ -1105,7 +1118,8 @@ int game_main(void)
                 //targets (no face culling for them)
                 for (size_t i = 0; i < targets.size(); ++i)
                 {
-                    targets[i].draw(light_shader, camera, lights, current_frame_time);
+                    glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE * (i + 1)); // adding offset so we reduce z-fighting
+                    targets[i].draw(light_shader, camera, lights, current_frame_time, pos_offset);
                 }
 
                 //Enable backface culling
@@ -1118,7 +1132,7 @@ int game_main(void)
                 {
                     //vs
                     glm::mat4 model_mat(1.f);
-                    model_mat = glm::translate(model_mat, glm::vec3(-2.f, 0.f, -0.5f));
+                    model_mat = glm::translate(model_mat, glm::vec3(-4.f, 0.35f, -0.5f));
                     model_mat = glm::scale(model_mat, glm::vec3(0.7f, 0.7f, 0.7f));
 
                     glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
@@ -1132,8 +1146,6 @@ int game_main(void)
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterialProps(default_material);
                     light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
-                    // light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
-                    // light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
                 }
 
                 cube_vbo.bind();
@@ -1160,8 +1172,6 @@ int game_main(void)
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterialProps(default_material);
                     light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
-                    // light_shader.setLight(UNIFORM_LIGHT_NAME, sun, 0);
-                    // light_shader.set(UNIFORM_LIGHT_COUNT_NAME, 1);
                 }
 
                 wall_vbo.bind();
