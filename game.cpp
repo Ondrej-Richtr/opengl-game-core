@@ -8,11 +8,24 @@ Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture,
                         : m_vbo(vbo), m_texture(texture), m_material(material),
                           m_pos(pos), m_spawn_time(spawn_time) {}
 
+glm::vec3 Game::Target::generateXZPosition(Utils::RNG& width, Utils::RNG height, glm::vec2 wall_size)
+{
+    assert(wall_size.x > 0.f);
+    float wall_width_half = wall_size.x / 2.f;
+    float width_rolled = width.generateFloatRange(-wall_width_half, wall_width_half);
+
+    assert(wall_size.y > 0.f);
+    float wall_height_half = wall_size.y / 2.f;
+    float height_rolled = height.generateFloatRange(-wall_height_half, wall_height_half);
+
+    return glm::vec3(width_rolled, height_rolled, 0.f);
+}
+
 glm::vec2 Game::Target::getSize(double time) const
 {
-    static const double grow_time = 5.f; // 5 seconds
+    static const double grow_time = 2.5f; // 5 seconds
     static const float size_min = 0.1f;
-    static const float size_max = 1.5f;
+    static const float size_max = 0.75f;
     assert(size_min <= size_max);
 
     if (time <= m_spawn_time) return glm::vec2(size_min);

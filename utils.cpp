@@ -5,6 +5,37 @@
 #include <fstream>
 
 
+Utils::RNG::RNG(int min_val, int max_val)
+                : m_generator(), m_distribution(min_val, max_val)
+{
+    std::random_device rd;
+    m_generator = std::mt19937(rd());
+}
+
+int Utils::RNG::generate()
+{
+    return m_distribution(m_generator);
+}
+
+float Utils::RNG::generateFloatRange(float range_min, float range_max)
+{
+    int rolled = generate();
+
+    float normalized = (float)(rolled - getMin()) / (getMax() - getMin()); // rolled number normalized to interval [0; 1]
+
+    return normalized * (range_max - range_min) + range_min; // scaled to interval [range_min; range_max]
+}
+
+int Utils::RNG::getMin() const
+{
+    return m_distribution.min();
+}
+
+int Utils::RNG::getMax() const
+{
+    return m_distribution.max();
+}
+
 bool Utils::isZero(glm::vec3 vector)
 {
     return vector == glm::vec3(0.f);

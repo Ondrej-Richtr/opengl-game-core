@@ -1009,8 +1009,16 @@ int game_main(void)
     }
 
     std::vector<Target> targets;
-    glm::vec3 target_pos(0.f, 0.f, 0.5f);
-    targets.emplace_back(target_vbo, target_texture, default_material, target_pos, glfwGetTime());
+
+    //targets rng init
+    glm::vec3 target_pos_offset(0.f, wall_size.y / 2.f, wall_size.z / 2.f + 0.001f);
+    Utils::RNG target_rng_width(-1000, 1000);
+    Utils::RNG target_rng_height(-500, 500);
+
+    {
+        glm::vec3 pos = target_pos_offset + Game::Target::generateXZPosition(target_rng_width, target_rng_height, glm::vec2(wall_size.x, wall_size.y));
+        targets.emplace_back(target_vbo, target_texture, default_material, pos, glfwGetTime());
+    }
 
     //Misc.
     Color clear_color(50, 220, 80);

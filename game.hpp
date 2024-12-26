@@ -12,6 +12,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <random>
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
@@ -245,6 +246,22 @@ namespace Drawing
 
 namespace Utils
 {
+    class RNG
+    {
+        std::mt19937 m_generator; // mersenne_twister_engine
+        std::uniform_int_distribution<int> m_distribution;
+
+    public:
+        RNG(int min_val, int max_val);
+        ~RNG() = default;
+
+        int generate();
+        float generateFloatRange(float range_min, float range_max);
+
+        int getMin() const;
+        int getMax() const;
+    };
+
     bool isZero(glm::vec3 vector);
 
     size_t getTextFileLength(const char *path);
@@ -405,6 +422,8 @@ namespace Game
         Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const MaterialProps& material,
                glm::vec3 pos, double spawn_time);
         ~Target() = default;
+
+        static glm::vec3 generateXZPosition(Utils::RNG& width, Utils::RNG height, glm::vec2 wall_size);
 
         glm::vec2 getSize(double time) const;
 
