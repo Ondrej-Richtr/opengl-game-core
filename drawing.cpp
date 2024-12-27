@@ -105,6 +105,11 @@ glm::vec3 Drawing::Camera3D::getDirection() const
     return NORMALIZE_OR_0(m_target - m_pos);
 }
 
+Collision::Ray Drawing::Camera3D::getRay() const
+{
+    return Collision::Ray(m_pos, getDirection());
+}
+
 Drawing::Light::Light(const LightProps& props)
                         : m_props(props) {}
 

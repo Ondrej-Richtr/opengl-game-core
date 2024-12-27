@@ -8,6 +8,16 @@ Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture,
                         : m_vbo(vbo), m_texture(texture), m_material(material),
                           m_pos(pos), m_spawn_time(spawn_time) {}
 
+Game::Target::Target(const Target& other)
+                        : m_vbo(other.m_vbo), m_texture(other.m_texture), m_material(other.m_material),
+                          m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
+
+Game::Target& Game::Target::operator=(const Game::Target& other)
+{
+    memcpy(this, &other, sizeof(Game::Target));
+    return *this;
+}
+
 glm::vec3 Game::Target::generateXZPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size)
 {
     assert(wall_size.x > 0.f);

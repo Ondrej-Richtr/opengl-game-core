@@ -21,6 +21,19 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, window_width, window_height);
 }
 
+//TODO this callback seems pretty pointless since glfwPollEvents should cache the state by itself?
+bool left_mbutton_state = false; // true means pressed, false means released
+
+void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        // left_mbutton_prev_state = left_mbutton_state;
+
+        left_mbutton_state = (action == GLFW_PRESS);
+    }
+}
+
 int test_main(void)
 {
     puts("Program begin.");
@@ -758,7 +771,10 @@ int game_main(void)
     glfwSwapInterval(1); //TODO check this, maybe 0?
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
-    //glfwSetCursorPosCallback(window, windowMouseMoveCallback); 
+    glfwSetMouseButtonCallback(window, mouseButtonsCallback);
+    // try to enable raw mouse motion, only takes effect when the cursor is disabled
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    else fprintf(stderr, "[WARNING] Failed to enable raw mouse motion.\n");
 
     //initializing GLAD
     if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
@@ -1009,14 +1025,22 @@ int game_main(void)
     }
 
     glm::vec3 target_pos_offset(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
-    double target_spawn_frequency = 0.5f; // target per second
-    double target_last_spawn_time = -1.f; // -1 should get us immediate first spawn, maybe use tick == 0 instead?
-
     std::vector<Target> targets;
 
     //targets rng init
     Utils::RNG target_rng_width(-1000, 1000);
     Utils::RNG target_rng_height(-500, 500);
+
+    //Level variables
+    const double level_spawn_rate_init = 0.6f; // target per second
+    const double level_spawn_rate_mult = 1.35f;
+    const size_t level_amount_init = 8;
+    const size_t level_amount_inc = 4;
+
+    double target_last_spawn_time = -1.f; // -1 should get us immediate first spawn, maybe use tick == 0 instead?
+    double level_spawn_rate = level_spawn_rate_init;
+    size_t level = 1;
+    size_t level_targets_hit = 0;
 
     //Misc.
     Color clear_color(50, 220, 80);
@@ -1024,6 +1048,7 @@ int game_main(void)
     float frame_delta = 0.f;
     double last_frame_time = glfwGetTime();
     double last_mouse_x = 0.f, last_mouse_y = 0.f;
+    bool last_left_mbutton = false;
     
     while(!glfwWindowShouldClose(window))
     {
@@ -1031,6 +1056,8 @@ int game_main(void)
         double current_frame_time = glfwGetTime();
         frame_delta = current_frame_time - last_frame_time;
         last_frame_time = current_frame_time;
+
+        glfwPollEvents();
 
         // ---Mouse input---
         double mouse_x = 0.f, mouse_y = 0.f;
@@ -1052,17 +1079,59 @@ int game_main(void)
             camera.setTargetFromPitchYaw(camera_pitch, camera_yaw); //TODO make this better
         }
 
+        const Collision::Ray mouse_ray = camera.getRay();
+
         // ---Keyboard input---
+        bool mbutton_left_is_pressed = left_mbutton_state;
+        bool mbutton_left_is_clicked = left_mbutton_state && !last_left_mbutton;
+
         if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
         if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
         if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
-        glm::vec3 move_dir = Movement::getSimplePlayerDir(window);
+        glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
+
+        // ---Shooting---
+        if (mbutton_left_is_clicked)
+        {
+            //puts("Fire!");
+            for (size_t i = 0; i < targets.size(); ++i)
+            {
+                size_t idx = targets.size() - 1 - i; // iterating from the back so the closest targets get hit first
+
+                glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE * (i + 1)); // adding offset so we reduce z-fighting
+                glm::vec3 pos = targets[idx].m_pos + pos_offset;
+                glm::vec2 size = targets[idx].getSize(current_frame_time);
+                assert(size.x == size.y);
+                float radius = size.x * target_texture_dish_radius;
+
+                Collision::RayCollision rcoll = Collision::rayTarget(mouse_ray, glm::vec3(0.f, 0.f, 1.f), pos, radius);
+                if (rcoll.m_hit)
+                {
+                    targets.erase(targets.begin() + idx);
+                    
+                    ++level_targets_hit;
+                    size_t level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
+                    printf("Hit (%d)! Targets hit: %d/%d\n", idx, level_targets_hit, level_target_amount);
+
+                    assert(level_targets_hit <= level_target_amount);
+                    if (level_targets_hit >= level_target_amount)
+                    {
+                        printf("Level %d completed!\n", level);
+                        ++level;
+                        level_targets_hit = 0;
+                        level_spawn_rate *= level_spawn_rate_mult;
+                    }
+
+                    break;
+                }
+            }
+        }
 
         // ---Target spawning---
         {
-            double time_to_spawn = 1.f / target_spawn_frequency;
+            double time_to_spawn = 1.f / level_spawn_rate;
 
             if (current_frame_time - target_last_spawn_time >= time_to_spawn)
             {
@@ -1078,11 +1147,12 @@ int game_main(void)
         // ---Player movement---
         const float move_per_sec = 4.f;
         const float move_magnitude = move_per_sec * frame_delta;
-        glm::vec3 move_rel = move_magnitude * move_dir; // move vector relative to the camera (view coords)
+        glm::vec3 move_dir_abs = camera.dirCoordsViewToWorld(move_dir_rel); // absolute move dir vector (world coords)
+        glm::vec3 move_abs = move_magnitude * NORMALIZE_OR_0(glm::vec3(move_dir_abs.x, 0.f, move_dir_abs.z)); // we remove the vertical movement
+        // glm::vec3 move_abs = move_magnitude * move_dir_abs;
         
-        if (!Utils::isZero(move_rel))
+        if (!Utils::isZero(move_abs))
         {
-            glm::vec3 move_abs = camera.dirCoordsViewToWorld(move_rel); // absolute move vector (world coords)
             // printf("move_rel: %f|%f|%f\n", move_rel.x, move_rel.y, move_rel.z);
             // printf("move_abs: %f|%f|%f\n", move_abs.x, move_abs.y, move_abs.z);
             camera.move(move_abs);
@@ -1130,9 +1200,12 @@ int game_main(void)
                 light_shader.use();
                 brick_texture.bind();
                 {
+                    glm::vec3 pos = //wall_rcoll.m_hit ? wall_rcoll.m_point :
+                                    glm::vec3(-4.f, 0.35f, -0.5f); //DEBUG
+
                     //vs
                     glm::mat4 model_mat(1.f);
-                    model_mat = glm::translate(model_mat, glm::vec3(-4.f, 0.35f, -0.5f));
+                    model_mat = glm::translate(model_mat, pos);
                     model_mat = glm::scale(model_mat, glm::vec3(0.7f, 0.7f, 0.7f));
 
                     glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
@@ -1194,17 +1267,19 @@ int game_main(void)
                 //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
                 //crosshair
+                const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
                 Drawing::crosshair(screen_line_shader, line_vbo, screen_res,
-                                   glm::vec2(50.f, 30.f), screen_middle, 1.f, ColorF(1.0f, 1.0f, 0.0f));
+                                   glm::vec2(50.f, 30.f), screen_middle, 1.f, crosshair_color);
             }
         }
 
         // ---Draw end---
-        glfwPollEvents();
+        //glfwPollEvents();
         glfwSwapBuffers(window);
 
         last_mouse_x = mouse_x;
         last_mouse_y = mouse_y;
+        last_left_mbutton = left_mbutton_state;
         ++tick;
     }
 

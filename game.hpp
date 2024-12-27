@@ -49,6 +49,8 @@
 // returns size_t length of string (must be string literal or char array with term. char.),
 // -1 as we dont count the term. char.
 #define STR_LEN(S) ((sizeof((S)) / sizeof((S)[0])) - 1)
+// returns whether given float number is close to zero according to FLOAT_TOLERANCE macro
+#define CLOSE_TO_0(n) ((n) <= FLOAT_TOLERANCE && (n) >= -FLOAT_TOLERANCE)
 
 
 //struct definitions
@@ -122,6 +124,11 @@ namespace Game
     class Target;
 };
 
+namespace Collision
+{
+    struct Ray;
+};
+
 //TODO use this
 // struct MainLoopData
 // {
@@ -163,6 +170,8 @@ namespace Drawing
         glm::vec3 dirCoordsViewToWorld(glm::vec3 dir) const;
 
         glm::vec3 getDirection() const;
+
+        Collision::Ray getRay() const;
     };
 
     // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
@@ -409,6 +418,33 @@ namespace Movement
     glm::vec3 getSimplePlayerDir(GLFWwindow* window);
 }
 
+//collision.cpp
+namespace Collision
+{
+    struct Ray
+    {
+        glm::vec3 m_pos, m_dir;
+
+        Ray(glm::vec3 pos, glm::vec3 dir);
+        ~Ray() = default;
+    };
+
+    struct RayCollision
+    {
+        bool m_hit = false;
+        float m_travel = 0.f; // distance that ray had to travel to make this collision
+        glm::vec3 m_point = glm::vec3(0.f);
+
+        RayCollision() = default;
+        RayCollision(float travel, glm::vec3 point);
+        ~RayCollision() = default;
+    };
+
+    RayCollision rayPlane(Ray ray, glm::vec3 plane_normal, glm::vec3 plane_pos);
+
+    RayCollision rayTarget(Ray ray, glm::vec3 target_normal, glm::vec3 target_pos, float target_radius);
+}
+
 //game.hpp
 namespace Game
 {
@@ -427,7 +463,10 @@ namespace Game
 
         Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const MaterialProps& material,
                glm::vec3 pos, double spawn_time);
+        Target(const Target& other);
         ~Target() = default;
+
+        Target& operator=(const Target& other);
 
         static glm::vec3 generateXZPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
 
