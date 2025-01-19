@@ -104,29 +104,9 @@ struct Color
     }
 };
 
-//TODO move somewhere else?
-struct MaterialProps //should correspond to Material struct in shaders
+namespace Lighting
 {
-    Color3F m_ambient, m_diffuse, m_specular;
-    float m_shininess;
-
-    MaterialProps() = default; //DEBUG
-    MaterialProps(Color3F color, float shininess)
-                    : m_ambient(color), m_diffuse(color),
-                      m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
-};
-
-//TODO move somewhere else?
-struct LightProps //should correspond to LightProps struct in shaders
-{
-    Color3F m_ambient, m_diffuse, m_specular;
-
-    LightProps(Color3F color, float ambient_intensity)
-                : m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
-    {
-        assert(ambient_intensity >= 0.f && ambient_intensity <= 1.f);
-        m_ambient = Color3F(ambient_intensity * color.r, ambient_intensity * color.g, ambient_intensity * color.b);
-    }
+    class Light;
 };
 
 namespace Shaders
@@ -187,6 +167,45 @@ namespace Drawing
         glm::vec3 getDirection() const;
 
         Collision::Ray getRay() const;
+    };
+
+    void clear(GLFWwindow* window, Color color);
+
+    void screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                    glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
+
+    void crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+                   glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
+    
+    void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+                const std::vector<std::reference_wrapper<const Lighting::Light>>& lights, const Game::Target& target,
+                double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f));
+}
+
+//lighting.cpp
+namespace Lighting
+{
+    struct MaterialProps //should correspond to Material struct in shaders
+    {
+        Color3F m_ambient, m_diffuse, m_specular;
+        float m_shininess;
+
+        MaterialProps() = default; //DEBUG
+        MaterialProps(Color3F color, float shininess)
+                        : m_ambient(color), m_diffuse(color),
+                        m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
+    };
+
+    struct LightProps //should correspond to LightProps struct in shaders
+    {
+        Color3F m_ambient, m_diffuse, m_specular;
+
+        LightProps(Color3F color, float ambient_intensity)
+                    : m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
+        {
+            assert(ambient_intensity >= 0.f && ambient_intensity <= 1.f);
+            m_ambient = Color3F(ambient_intensity * color.r, ambient_intensity * color.g, ambient_intensity * color.b);
+        }
     };
 
     // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
@@ -257,18 +276,6 @@ namespace Drawing
 
         void setAttenuation(GLfloat const, GLfloat linear, GLfloat quadratic);
     };
-
-    void clear(GLFWwindow* window, Color color);
-
-    void screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
-                    glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
-
-    void crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
-                   glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
-    
-    void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                const std::vector<std::reference_wrapper<const Drawing::Light>>& lights, const Game::Target& target,
-                double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f));
 }
 
 namespace Utils
@@ -335,10 +342,10 @@ namespace Shaders
         void set(const char *uniform_name, const glm::mat3& matrix) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
 
-        void setMaterialProps(const MaterialProps& material) const;
-        bool setLight(const char *uniform_name, const Drawing::Light& light, int idx = -1) const;
+        void setMaterialProps(const Lighting::MaterialProps& material) const;
+        bool setLight(const char *uniform_name, const Lighting::Light& light, int idx = -1) const;
         int setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
-                      const std::vector<std::reference_wrapper<const Drawing::Light>>& lights) const;
+                      const std::vector<std::reference_wrapper<const Lighting::Light>>& lights) const;
     };
 
     GLuint fromString(GLenum type, const char *str);
@@ -526,12 +533,12 @@ namespace Game
 
         const Meshes::VBO& m_vbo;
         const Textures::Texture2D& m_texture;
-        const MaterialProps& m_material;
+        const Lighting::MaterialProps& m_material;
 
         glm::vec3 m_pos;
         double m_spawn_time;
 
-        Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const MaterialProps& material,
+        Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const Lighting::MaterialProps& material,
                glm::vec3 pos, double spawn_time);
         Target(const Target& other);
         ~Target() = default;
@@ -543,7 +550,7 @@ namespace Game
         glm::vec2 getSize(double time) const;
 
         void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                  const std::vector<std::reference_wrapper<const Drawing::Light>>& lights,
+                  const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
 }

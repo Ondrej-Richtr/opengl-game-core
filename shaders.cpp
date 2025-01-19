@@ -145,7 +145,7 @@ void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) co
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-void Shaders::Program::setMaterialProps(const MaterialProps& material) const
+void Shaders::Program::setMaterialProps(const Lighting::MaterialProps& material) const
 {
     //IDEA could use constexpr and templates
     //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
@@ -155,7 +155,7 @@ void Shaders::Program::setMaterialProps(const MaterialProps& material) const
     set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material.m_shininess);
 }
 
-bool Shaders::Program::setLight(const char *uniform_name, const Drawing::Light& light, int idx) const
+bool Shaders::Program::setLight(const char *uniform_name, const Lighting::Light& light, int idx) const
 {
     assert(uniform_name != NULL);
 
@@ -163,11 +163,11 @@ bool Shaders::Program::setLight(const char *uniform_name, const Drawing::Light& 
 }
 
 int Shaders::Program::setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
-                                 const std::vector<std::reference_wrapper<const Drawing::Light>>& lights) const
+                                 const std::vector<std::reference_wrapper<const Lighting::Light>>& lights) const
 {
     int success_count = 0;
 
-    for (size_t i = 0; i < lights.size() && success_count < Drawing::lights_max_amount; ++i)
+    for (size_t i = 0; i < lights.size() && success_count < Lighting::lights_max_amount; ++i)
     {
         if (setLight(uniform_array_name, lights[i], success_count))
         {

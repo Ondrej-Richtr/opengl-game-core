@@ -299,9 +299,10 @@ int test_main(void)
     }
 
     const float light_src_size = 0.2;
-    using DirLight = Drawing::DirLight;
-    using PointLight = Drawing::PointLight;
-    using SpotLight = Drawing::SpotLight;
+    using LightProps = Lighting::LightProps;
+    using DirLight = Lighting::DirLight;
+    using PointLight = Lighting::PointLight;
+    using SpotLight = Lighting::SpotLight;
 
     //sun
     const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
@@ -342,6 +343,8 @@ int test_main(void)
     bool show_flashlight = false;
 
     //Materials
+    using MaterialProps = Lighting::MaterialProps;
+
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
     size_t materials_count = 16;
@@ -773,8 +776,8 @@ int game_main(void)
 
     //other GLFW settings
     glfwSwapInterval(1); //TODO check this, maybe 0?
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
     glfwSetMouseButtonCallback(window, mouseButtonsCallback);
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
@@ -996,9 +999,10 @@ int game_main(void)
     }
 
     const float light_src_size = 0.2;
-    using DirLight = Drawing::DirLight;
-    using PointLight = Drawing::PointLight;
-    using SpotLight = Drawing::SpotLight;
+    using LightProps = Lighting::LightProps;
+    using DirLight = Lighting::DirLight;
+    using PointLight = Lighting::PointLight;
+    using SpotLight = Lighting::SpotLight;
 
     //sun
     const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
@@ -1014,6 +1018,8 @@ int game_main(void)
     bool show_flashlight = false;
 
     //Materials
+    using MaterialProps = Lighting::MaterialProps;
+
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
     //UI
@@ -1200,7 +1206,7 @@ int game_main(void)
 
         // ---Lights---
         //lights array
-        std::vector<std::reference_wrapper<const Drawing::Light>> lights = { sun };
+        std::vector<std::reference_wrapper<const Lighting::Light>> lights = { sun };
 
         //flashlight
         if (show_flashlight)

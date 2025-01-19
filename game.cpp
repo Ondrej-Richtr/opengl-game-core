@@ -3,7 +3,7 @@
 #include "game.hpp"
 
 
-Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const MaterialProps& material,
+Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const Lighting::MaterialProps& material,
                      glm::vec3 pos, double spawn_time)
                         : m_vbo(vbo), m_texture(texture), m_material(material),
                           m_pos(pos), m_spawn_time(spawn_time) {}
@@ -45,7 +45,7 @@ glm::vec2 Game::Target::getSize(double time) const
 }
 
 void Game::Target::draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                        const std::vector<std::reference_wrapper<const Drawing::Light>>& lights,
+                        const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                         double current_frame_time, glm::vec3 pos_offset) const
 {
     Drawing::target(shader, camera, lights, *this, current_frame_time, pos_offset);
