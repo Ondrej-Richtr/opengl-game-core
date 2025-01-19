@@ -241,9 +241,18 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
     return id;
 }
 
-void Shaders::setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride)
+void Shaders::setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride, bool offset_in_bytes)
 {
-    glVertexAttribPointer(location, count, GL_FLOAT, false, stride, (void*)(offset * sizeof(GLfloat)));
+    size_t byte_offset = offset_in_bytes ? offset : offset * sizeof(GLfloat);
+    glVertexAttribPointer(location, count, GL_FLOAT, false, stride, reinterpret_cast<void*>(byte_offset));
+    glEnableVertexAttribArray(location);
+}
+
+void Shaders::setupVertexAttribute_ubyte(GLuint location, size_t count, size_t offset, size_t stride, bool offset_in_bytes)
+{
+    //NOTE: normalization is set to TRUE!
+    size_t byte_offset = offset_in_bytes ? offset : offset * sizeof(GLubyte);
+    glVertexAttribPointer(location, count, GL_UNSIGNED_BYTE, true, stride, reinterpret_cast<void*>(byte_offset));
     glEnableVertexAttribArray(location);
 }
 

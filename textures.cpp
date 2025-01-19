@@ -49,6 +49,35 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
     glBindTexture(GL_TEXTURE_2D, Textures::empty_id);   // unbind the texture just in case
 }
 
+Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigned int height, bool generate_mipmaps)
+            : m_id(Textures::empty_id), m_width(width), m_height(height)
+{
+    // generate and bind the OpenGL texture object
+    glGenTextures(1, &m_id);
+
+    glBindTexture(GL_TEXTURE_2D, m_id);
+
+    // set the texture wrapping to default values
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, Textures::default_wrapping);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, Textures::default_wrapping);
+    // set texture filtering to default values, remove mipmaps if not needed
+    GLint min_filtering = generate_mipmaps ? Textures::default_min_filtering
+                                           : Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filtering);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
+
+    // upload the image data into the texture on gpu
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
+
+    if (generate_mipmaps)
+    {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+
+    // unbind the texture just in case
+    glBindTexture(GL_TEXTURE_2D, Textures::empty_id);
+}
+
 Textures::Texture2D::~Texture2D()
 {
     glDeleteTextures(1, &m_id);

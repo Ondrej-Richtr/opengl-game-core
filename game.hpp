@@ -5,6 +5,16 @@
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
+//nuklear
+//  both header and implementation defines
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#include "nuklear.h"
+
 #include <cstdio>
 #include <cassert>
 #include <cmath>
@@ -20,6 +30,11 @@
 #define DEFAULT_WINDOW_HEIGHT 720
 
 #define UNIFORM_NAME_BUFFER_LEN 512
+// texbuffer length is set to exactly NK_INPUT_MAX as at worst each unicode character is 1 ascii character,
+// if this memory is not enough then nuklear wouldnt store it anyways,
+// this however does not mean that every possible state of our texbuffer would be successfuly loaded into nuklear buffer,
+// a lot of written text per frame, even if stored in our buffer, might not fully work if nuklear buffer would be too small
+#define UNICODE_TEXTBUFFER_LEN  NK_INPUT_MAX
 
 #define UNIFORM_MATERIAL_NAME "material"
 #define UNIFORM_MATERIAL_AMBIENT "ambient"
@@ -296,6 +311,7 @@ namespace Shaders
     static const GLuint attribute_position_verts = 0;
     static const GLuint attribute_position_texcoords = 1;
     static const GLuint attribute_position_normals = 2;
+    static const GLuint attribute_position_color = 3;
 
     struct Program
     {
@@ -329,7 +345,8 @@ namespace Shaders
 
     GLuint programLink(GLuint vs, GLuint fs);
 
-    void setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride);
+    void setupVertexAttribute_float(GLuint location, size_t count, size_t offset, size_t stride, bool offset_in_bytes = false);
+    void setupVertexAttribute_ubyte(GLuint location, size_t count, size_t offset, size_t stride, bool offset_in_bytes = false);
 
     void disableVertexAttribute(GLuint location);
 
@@ -357,6 +374,8 @@ namespace Textures
 
         Texture2D() = default;
         Texture2D(const char *image_path, bool generate_mipmaps = true);
+        Texture2D(const void *img_data, unsigned int width, unsigned int height,
+                  bool generate_mipmaps = true);
         ~Texture2D();
 
         void bind(unsigned int unit = 0) const;
@@ -443,6 +462,57 @@ namespace Collision
     RayCollision rayPlane(Ray ray, glm::vec3 plane_normal, glm::vec3 plane_pos);
 
     RayCollision rayTarget(Ray ray, glm::vec3 target_normal, glm::vec3 target_pos, float target_radius);
+}
+
+namespace UI
+{
+    struct Vertex
+    {
+        GLfloat pos[2]; // important to keep it to 2 floats
+        GLfloat uv[2];
+        GLubyte color[4];
+    };
+
+    struct Font
+    {
+    private:
+        nk_font_atlas m_atlas;
+        nk_font *m_font;
+    public:
+        nk_draw_null_texture m_null_texture;
+        Textures::Texture2D m_texture;
+
+        Font(const char *font_path, float font_height);
+        ~Font();
+
+        const nk_user_font* getFontPtr() const; 
+    };
+
+    struct Context
+    {
+        // static const size_t max_vertex_memory = 512 * 1024;
+        // static const size_t max_element_memory = 128 * 1024;
+
+        nk_context m_ctx;
+        bool m_ctx_initialized;
+        nk_convert_config m_cfg;
+        nk_buffer m_cmd_buffer, m_vert_buffer, m_idx_buffer;
+
+        const Shaders::Program& m_shader;
+        GLuint m_vbo_id, m_ebo_id;
+
+        Context(const Shaders::Program& shader, const UI::Font& font);
+        ~Context();
+
+        bool getInput(GLFWwindow* window, glm::vec2 mouse_pos, bool mouse_left_is_down,
+                      unsigned int textbuffer[], size_t textbuffer_len);
+
+        bool convert();
+
+        bool draw(glm::vec2 screen_res, unsigned int texture_unit = 0);
+
+        void clear();
+    };
 }
 
 //game.hpp

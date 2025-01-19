@@ -17,6 +17,8 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
     window_width = width;
     window_height = height;
 
+    //TODO use glfwGetWindowUserPointer
+
     printf("Window resized to: %dx%d\n", window_width, window_height);
     glViewport(0, 0, window_width, window_height);
 }
@@ -26,6 +28,8 @@ bool left_mbutton_state = false; // true means pressed, false means released
 
 void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods)
 {
+    //TODO use glfwGetWindowUserPointer
+
     if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
         // left_mbutton_prev_state = left_mbutton_state;
@@ -769,7 +773,8 @@ int game_main(void)
 
     //other GLFW settings
     glfwSwapInterval(1); //TODO check this, maybe 0?
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
     glfwSetMouseButtonCallback(window, mouseButtonsCallback);
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
@@ -791,7 +796,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to initialize basic meshes!\n");
         glfwTerminate();
-        return 3;
+        return 4;
     }
 
     //Camera
@@ -913,16 +918,16 @@ int game_main(void)
         return 5;
     }
 
-    const char *orb_path = "assets/orb.jpg";
-    const glm::vec2 orb_texture_world_size(1.f, 1.f); // almost 1:1 aspect ratio
+    // const char *orb_path = "assets/orb.jpg";
+    // const glm::vec2 orb_texture_world_size(1.f, 1.f); // almost 1:1 aspect ratio
 
-    Texture orb_texture(orb_path);
-    if (orb_texture.m_id == Textures::empty_id)
-    {
-        fprintf(stderr, "Failed to create orb texture!\n");
-        glfwTerminate();
-        return 5;
-    }
+    // Texture orb_texture(orb_path);
+    // if (orb_texture.m_id == Textures::empty_id)
+    // {
+    //     fprintf(stderr, "Failed to create orb texture!\n");
+    //     glfwTerminate();
+    //     return 5;
+    // }
 
     const char *target_path = "assets/target_small.png";
     const glm::vec2 target_texture_world_size(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
@@ -951,7 +956,19 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create screen line shader program!\n");
         glfwTerminate();
-        return 7;
+        return 6;
+    }
+
+    //ui shader
+    const char *ui_vs_path = "shaders/ui.vs",
+               *ui_fs_path = "shaders/ui.fs";
+    
+    ShaderP ui_shader(ui_vs_path, ui_fs_path);
+    if (ui_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create UI shader program!\n");
+        glfwTerminate();
+        return 6;
     }
 
     //Light sources
@@ -963,7 +980,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
         glfwTerminate();
-        return 7;
+        return 6;
     }
 
     // loading light shader program
@@ -975,7 +992,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
         glfwTerminate();
-        return 8;
+        return 6;
     }
 
     const float light_src_size = 0.2;
@@ -999,6 +1016,28 @@ int game_main(void)
     //Materials
     MaterialProps default_material(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
+    //UI
+    const char *font_path = "assets/DINEngschrift-Regular.ttf";
+    const float font_size = 22;
+
+    //TODO load stuff into textbuffer
+    unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN] = {};
+    size_t textbuffer_len = 0;
+
+    const UI::Font font(font_path, font_size);
+    if (font.getFontPtr() == NULL)
+    {
+        fprintf(stderr, "Failed to initialize UI font!\n");
+        return 7;
+    }
+
+    UI::Context ui(ui_shader, font);
+    if (!ui.m_ctx_initialized)
+    {
+        fprintf(stderr, "Failed to initialize UI!\n");
+        return 7;
+    }
+
     //Wall and it's vbo
     const glm::vec3 wall_size(5.f, 2.5f, 0.2f);
     const glm::vec3 wall_pos(0.f, wall_size.y / 2.f, 0.f);
@@ -1009,7 +1048,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create wall VBO!\n");
         glfwTerminate();
-        return 9;
+        return 8;
     }
 
     //Targets
@@ -1021,7 +1060,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create target's VBO!\n");
         glfwTerminate();
-        return 10;
+        return 9;
     }
 
     glm::vec3 target_pos_offset(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
@@ -1079,6 +1118,7 @@ int game_main(void)
             camera.setTargetFromPitchYaw(camera_pitch, camera_yaw); //TODO make this better
         }
 
+        const glm::vec2 mouse_pos(static_cast<float>(mouse_x), static_cast<float>(mouse_y));
         const Collision::Ray mouse_ray = camera.getRay();
 
         // ---Keyboard input---
@@ -1173,6 +1213,79 @@ int game_main(void)
             lights.push_back(flashlight);
         }
 
+        // ---UI---
+        //pump the input into UI
+        if (!ui.getInput(window, mouse_pos, mbutton_left_is_pressed, textbuffer, textbuffer_len))
+        {
+            fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
+        }
+
+        //TODO GUI
+        /*if (nk_begin(&ui.m_ctx, "Title", nk_rect(100, 50, 420, 520),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
+        {
+            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
+
+            nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
+            if (nk_button_label(&ui.m_ctx, "BACK"))
+            {
+                puts("BACK");
+            }
+            nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
+
+            if (nk_button_label(&ui.m_ctx, "BACK2"))
+            {
+                puts("BACK2");
+            }
+            nk_label(&ui.m_ctx, "textXX", NK_TEXT_CENTERED);
+
+            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
+            nk_label(&ui.m_ctx, "text22", NK_TEXT_CENTERED);
+
+            // fixed widget pixel width
+            // nk_layout_row_dynamic(&ui.m_ctx, 50, 3);
+            // if (nk_button_label(&ui.m_ctx, "button"))
+            // {
+            //     puts("button pressed");
+            // }
+            // if (nk_button_label(&ui.m_ctx, "button2"))
+            // {
+            //     puts("back to game");
+            // }
+            // if (nk_button_label(&ui.m_ctx, "button3"))
+            // {
+            //     puts("back to game");
+            // }
+
+            // fixed widget window ratio width
+            // nk_layout_row_dynamic(&ui.m_ctx, 30, 2);
+            // if (nk_option_label(&ui.m_ctx, "true", true))
+            // {
+            //     // puts("true switched");
+            // }
+            // if (nk_option_label(&ui.m_ctx, "false", false))
+            // {
+            //     puts("false switched");
+            // }
+        }
+        nk_end(&ui.m_ctx);*/
+
+        if (nk_begin_titled(&ui.m_ctx, "Name", "Title", nk_rect(50, 20, 200, 250),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE))
+        {
+            //TODO
+            // nk_layout_row_static(&ui.m_ctx, 30, 80, 2);
+            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
+            if (nk_button_label(&ui.m_ctx, "a")) {
+                puts("button1 pressed");
+            }
+            //nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
+            // if (nk_button_label(&ui.m_ctx, "button2")) {
+            //     puts("button2 pressed");
+            // }
+        }
+        nk_end(&ui.m_ctx);
+
         // ---Draw begin---
         {
             Drawing::clear(window, clear_color);
@@ -1258,18 +1371,35 @@ int game_main(void)
 
             //2D block
             {
+                glEnable(GL_BLEND); //TODO check this
+                glBlendEquation(GL_FUNC_ADD); //TODO check this
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+
                 glm::vec2 screen_res((float)window_width, (float)window_height);
                 glm::vec2 screen_middle = screen_res / 2.f;
 
                 //line test
                 // Drawing::screenLine(screen_line_shader, line_vbo, screen_res,
-                //                     screen_res / 2.f, glm::vec2(50.f),
+                //                     screen_middle, glm::vec2(50.f),
                 //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
                 //crosshair
                 const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
                 Drawing::crosshair(screen_line_shader, line_vbo, screen_res,
                                    glm::vec2(50.f, 30.f), screen_middle, 1.f, crosshair_color);
+
+                //UI drawing
+                glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+                {
+                    if (!ui.draw(screen_res))
+                    {
+                        fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
+                    }
+                    ui.clear();
+                }
+                glDisable(GL_SCISSOR_TEST);
+
+                glDisable(GL_BLEND);
             }
         }
 

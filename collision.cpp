@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include "game.hpp"
 
-#include "glm/gtx/norm.hpp"
+#include "glm/gtx/norm.hpp" //glm::length2
 
 
 Collision::Ray::Ray(glm::vec3 pos, glm::vec3 dir)
