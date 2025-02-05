@@ -20,7 +20,6 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
     //TODO use glfwGetWindowUserPointer
 
     printf("Window resized to: %dx%d\n", window_width, window_height);
-    glViewport(0, 0, window_width, window_height);
 }
 
 //TODO this callback seems pretty pointless since glfwPollEvents should cache the state by itself?
@@ -482,7 +481,7 @@ int test_main(void)
 
         // ---Draw begin---
         {
-            Drawing::clear(window, clear_color);
+            Drawing::clear(clear_color);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
             const glm::mat4& view_mat = camera.getViewMatrix();
@@ -899,6 +898,16 @@ int game_main(void)
     //Textures
     using Texture = Textures::Texture2D;
 
+    //TODO those values
+    unsigned int fbo3d_init_width = DEFAULT_WINDOW_WIDTH, fbo3d_init_height = DEFAULT_WINDOW_HEIGHT;
+    Texture fbo3d_tex(fbo3d_init_width, fbo3d_init_height, GL_RGB);
+    if (fbo3d_tex.m_id == Textures::empty_id)
+    {
+        fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
+        glfwTerminate();
+        return 5;
+    }
+
     const char *bricks_path = "assets/bricks2.png";
     const glm::vec2 brick_texture_world_size(0.75f, 0.75f); // aspect ration 1:1
 
@@ -944,11 +953,34 @@ int game_main(void)
         return 5;
     }
 
+    //RenderBuffers
+    //TODO render buffer object abstraction
+    GLuint fbo3d_rbo_depth = 0, fbo3d_rbo_stencil = 0;
+    {
+        GLuint rbos[2];
+        glGenRenderbuffers(2, rbos);
+        fbo3d_rbo_depth = rbos[0];
+        fbo3d_rbo_stencil = rbos[1];
+    }
+
+    //depth renderbuffer allocation
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, fbo3d_tex.m_width, fbo3d_tex.m_height);
+
+    //depth renderbuffer allocation
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0); //TODO empty_id
+
     //Shaders
     using ShaderP = Shaders::Program;
 
     const char *default_vs_path = "shaders/default.vs",
                *default_fs_path = "shaders/default.fs",
+            //    *passthrough_pos_vs_path = "shaders/passthrough-pos.vs",
+            //    *passthrough_pos_uv_vs_path = "shaders/passthrough-pos-uv.vs",
+               *transform_vs_path = "shaders/transform.vs",
                *static_color_fs_path = "shaders/static-color.fs";
 
     //line shader
@@ -970,6 +1002,17 @@ int game_main(void)
     if (ui_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create UI shader program!\n");
+        glfwTerminate();
+        return 6;
+    }
+
+    //textured rectangle shader
+    const char *tex_rect_fs_path = "shaders/tex-rect.fs";
+
+    ShaderP tex_rect_shader(transform_vs_path, tex_rect_fs_path);
+    if (tex_rect_shader.m_id == Shaders::empty_id)
+    {
+        fprintf(stderr, "Failed to create textured rectangle shader program!\n");
         glfwTerminate();
         return 6;
     }
@@ -1044,6 +1087,28 @@ int game_main(void)
         return 7;
     }
 
+    //Framebuffers
+    using FrameBuffer = Drawing::FrameBuffer;
+    //TODO
+    FrameBuffer fbo3d{}; // need to use curly braces as for function declaration disambiguation
+    if (fbo3d.m_id == 0) //TODO empty_id
+    {
+        fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
+        return 8;
+    }
+
+    fbo3d.attachAll(fbo3d_tex.asFrameBufferAttachment(),
+                    FrameBuffer::Attachment{ fbo3d_rbo_depth, FrameBuffer::AttachmentType::render },
+                    FrameBuffer::Attachment{ fbo3d_rbo_stencil, FrameBuffer::AttachmentType::render });
+    
+    if (!fbo3d.isComplete())
+    {
+        fprintf(stderr, "FrameBuffer for 3D scene is not complete!\n");
+        return 8;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id // unbind just in case
+
     //Wall and it's vbo
     const glm::vec3 wall_size(5.f, 2.5f, 0.2f);
     const glm::vec3 wall_pos(0.f, wall_size.y / 2.f, 0.f);
@@ -1054,7 +1119,7 @@ int game_main(void)
     {
         fprintf(stderr, "Failed to create wall VBO!\n");
         glfwTerminate();
-        return 8;
+        return 9;
     }
 
     //Targets
@@ -1088,7 +1153,7 @@ int game_main(void)
     size_t level_targets_hit = 0;
 
     //Misc.
-    Color clear_color(50, 220, 80);
+    Color clear_color_3d(50, 220, 80), clear_color_2d(0, 0, 0);
     unsigned int tick = 0;
     float frame_delta = 0.f;
     double last_frame_time = glfwGetTime();
@@ -1294,14 +1359,19 @@ int game_main(void)
 
         // ---Draw begin---
         {
-            Drawing::clear(window, clear_color);
-            glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
-
-            const glm::mat4& view_mat = camera.getViewMatrix();
-            const glm::mat4& proj_mat = camera.getProjectionMatrix();
-
             //3D block
             {
+                //set the viewport according to wanted framebuffer
+                glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height);
+
+                //bind the correct framebuffer
+                fbo3d.bind();
+                Drawing::clear(clear_color_3d);
+                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+
+                const glm::mat4& view_mat = camera.getViewMatrix();
+                const glm::mat4& proj_mat = camera.getProjectionMatrix();
+
                 glEnable(GL_DEPTH_TEST);
 
                 //targets (no face culling for them)
@@ -1377,27 +1447,41 @@ int game_main(void)
 
             //2D block
             {
+                glm::vec2 window_res((float)window_width, (float)window_height);
+                glm::vec2 window_middle = window_res / 2.f;
+
+                //TODO this might be wrong on some displays?
+                //set the viewport according to window size
+                glViewport(0, 0, window_res.x, window_res.y);
+
+                //bind the default framebuffer
+                glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
+                Drawing::clear(clear_color_2d);
+                //TODO maybe useless in 2D block?
+                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+
+                glDisable(GL_CULL_FACE);
                 glEnable(GL_BLEND); //TODO check this
                 glBlendEquation(GL_FUNC_ADD); //TODO check this
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
 
-                glm::vec2 screen_res((float)window_width, (float)window_height);
-                glm::vec2 screen_middle = screen_res / 2.f;
+                //render the 3D scene as a background from it's framebuffer
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), window_res);
 
                 //line test
-                // Drawing::screenLine(screen_line_shader, line_vbo, screen_res,
+                // Drawing::screenLine(screen_line_shader, line_vbo, window_res,
                 //                     screen_middle, glm::vec2(50.f),
                 //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
                 //crosshair
                 const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
-                Drawing::crosshair(screen_line_shader, line_vbo, screen_res,
-                                   glm::vec2(50.f, 30.f), screen_middle, 1.f, crosshair_color);
+                Drawing::crosshair(screen_line_shader, line_vbo, window_res,
+                                   glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
 
                 //UI drawing
                 glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
                 {
-                    if (!ui.draw(screen_res))
+                    if (!ui.draw(window_res))
                     {
                         fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
                     }
@@ -1419,6 +1503,10 @@ int game_main(void)
         ++tick;
     }
 
+    glDeleteBuffers(1, &line_vbo);
+    glDeleteRenderbuffers(1, &fbo3d_rbo_depth);
+    glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
+
     glfwTerminate();
     puts("Game end.");
 
@@ -1428,4 +1516,5 @@ int game_main(void)
 int main(void)
 {
     return game_main();
+    // return test_main();
 }

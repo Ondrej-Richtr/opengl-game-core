@@ -113,7 +113,7 @@ std::unique_ptr<char[]> Utils::getTextFileAsString(const char *path)
     return std::string(result.release());
 }*/
 
-GLint Utils::filteringEnumWithoutMipmap(GLint filtering)
+/*GLint Utils::filteringEnumWithoutMipmap(GLint filtering)
 {
     //IDEA I guess this could be more optimized using bitmasks
     switch (filtering)
@@ -125,7 +125,7 @@ GLint Utils::filteringEnumWithoutMipmap(GLint filtering)
     }
     
     return filtering; // otherwise leave the value as it is
-}
+}*/
 
 glm::mat3 Utils::modelMatrixToNormalMatrix(const glm::mat4& model_mat)
 {

@@ -4,6 +4,26 @@
 #include "stb_image.h"
 
 
+Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum component_type)
+            : m_id(Textures::empty_id), m_width(width), m_height(height)
+{
+    // generate and bind the OpenGL texture object
+    glGenTextures(1, &m_id);
+
+    glBindTexture(GL_TEXTURE_2D, m_id);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, NULL);
+
+    // set the min and max filtering
+    //TODO maybe pointless here?
+    constexpr GLint min_filtering = Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filtering);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
+
+    // unbind the texture just in case
+    glBindTexture(GL_TEXTURE_2D, Textures::empty_id);
+}
+
 Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
             : m_id(Textures::empty_id), m_width(0), m_height(0)
 {
@@ -87,4 +107,9 @@ void Textures::Texture2D::bind(unsigned int unit) const
 {
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_2D, m_id);
+}
+
+Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const
+{
+    return Drawing::FrameBuffer::Attachment{ m_id, Drawing::FrameBuffer::AttachmentType::texture };
 }

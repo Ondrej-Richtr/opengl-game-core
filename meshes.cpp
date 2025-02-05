@@ -13,6 +13,7 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bo
                       m_texcoord_offset(-1), m_normal_offset(-1)
 {
     assert(data_vert_count > 0);
+    assert(!Utils::checkForGLError()); // assert that there were no other errors beforehand (so we can safely use Utils::checkForGLError here)
 
     //offsets
     int size = Meshes::attribute_verts_amount; // vertex position is always present
@@ -54,6 +55,22 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bo
 Meshes::VBO::~VBO()
 {
     glDeleteBuffers(1, &m_id);
+}
+
+Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
+{
+    assert(m_id == Meshes::empty_id); // use this only on empty VBOs!
+
+    memcpy(this, &other, sizeof(Meshes::VBO));
+
+    // set empty values
+    other.m_id = Meshes::empty_id;
+    other.m_vert_count = 0;
+    other.m_stride = 0;
+    other.m_texcoord_offset = 0;
+    other.m_normal_offset = 0;
+
+    return *this;
 }
 
 void Meshes::VBO::bind() const
@@ -308,11 +325,17 @@ Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_worl
     return generateVBOfromData<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
 }
 
+Meshes::VBO Meshes::unit_quad_pos_only;
+// Meshes::VBO Meshes::unit_quad_pos_uv_only;
+
 bool Meshes::initBasicMeshes()
 {
-    assert(Meshes::unit_quad_pos_only.m_id == Meshes::empty_id);
-    Meshes::unit_quad_pos_only = generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f),
-                                                 Meshes::TexcoordStyle::none, false); // no texcoords and no normals
-    
+    assert(unit_quad_pos_only.m_id == Meshes::empty_id);
+
+    unit_quad_pos_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::none, false));
+
+    // unit_quad_pos_uv_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::stretch, false));
+
     return unit_quad_pos_only.m_id != Meshes::empty_id;
+        //    unit_quad_pos_uv_only.m_id != Meshes::empty_id;
 }

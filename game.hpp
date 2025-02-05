@@ -114,6 +114,11 @@ namespace Shaders
     struct Program;
 };
 
+namespace Textures
+{
+    struct Texture2D;
+};
+
 namespace Game
 {
     class Target;
@@ -169,7 +174,36 @@ namespace Drawing
         Collision::Ray getRay() const;
     };
 
-    void clear(GLFWwindow* window, Color color);
+    struct FrameBuffer
+    {
+        enum class AttachmentType { none, render, texture };
+        struct Attachment
+        {
+            GLuint id;
+            AttachmentType type;
+        };
+
+        GLuint m_id;
+
+        FrameBuffer();
+        ~FrameBuffer();
+
+        void bind() const;
+        void unbind() const;
+
+        void attachColorBuffer(Attachment attachment) const;
+        void attachDepthBuffer(Attachment attachment) const;
+        void attachStencilBuffer(Attachment attachment) const;
+
+        void attachAll(Attachment color, Attachment depth, Attachment stencil) const;
+
+        bool isComplete() const;
+    };
+
+    void clear(Color color);
+
+    void texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
+                           glm::vec2 dstPos, glm::vec2 dstSize);
 
     void screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
                     glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
@@ -302,7 +336,19 @@ namespace Utils
     char* getTextFileAsString_C_str(const char *path);
     std::unique_ptr<char[]> getTextFileAsString(const char *path);
 
-    GLint filteringEnumWithoutMipmap(GLint filtering);
+    constexpr GLint filteringEnumWithoutMipmap(GLint filtering)
+    {
+        //IDEA I guess this could be more optimized using bitmasks
+        switch (filtering)
+        {
+        case GL_NEAREST_MIPMAP_NEAREST: return GL_NEAREST;
+        case GL_LINEAR_MIPMAP_NEAREST: return GL_LINEAR;
+        case GL_NEAREST_MIPMAP_LINEAR: return GL_NEAREST;
+        case GL_LINEAR_MIPMAP_LINEAR: return GL_LINEAR;
+        }
+        
+        return filtering; // otherwise leave the value as it is
+    }
 
     glm::mat3 modelMatrixToNormalMatrix(const glm::mat4& model_mat);
 
@@ -380,12 +426,15 @@ namespace Textures
         unsigned int m_width = 0, m_height = 0;
 
         Texture2D() = default;
+        Texture2D(unsigned int width, unsigned int height, GLenum component_type);
         Texture2D(const char *image_path, bool generate_mipmaps = true);
         Texture2D(const void *img_data, unsigned int width, unsigned int height,
                   bool generate_mipmaps = true);
         ~Texture2D();
 
         void bind(unsigned int unit = 0) const;
+
+        Drawing::FrameBuffer::Attachment asFrameBufferAttachment() const;
     };
 }
 
@@ -415,6 +464,8 @@ namespace Meshes
         VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
         ~VBO();
 
+        VBO& operator=(VBO&& other); // this is sadly needed because of global meshes
+
         void bind() const;
         void unbind() const;
     };
@@ -431,9 +482,10 @@ namespace Meshes
     Meshes::VBO generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_world_size,
                                 Meshes::TexcoordStyle style, bool normals);
     
-    //basic static meshes
+    //basic global meshes
     // IMPORTANT: needs to get initialized first by calling initBasicMeshes!
-    static VBO unit_quad_pos_only{};
+    extern VBO unit_quad_pos_only;
+    // extern VBO unit_quad_pos_uv_only;
 
     bool initBasicMeshes();
 }

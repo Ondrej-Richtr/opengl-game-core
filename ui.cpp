@@ -263,23 +263,21 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
                                             color_offset, stride, true); // true specified for offset in bytes
     }
 
-    size_t offset = 0;
+    size_t offset = 0, idx = 0; //DEBUG idx
     const struct nk_draw_command *cmd = NULL;
     //puts("Draw begin");
     nk_draw_foreach(cmd, &m_ctx, &m_cmd_buffer)
     {
         unsigned int elem_count = cmd->elem_count;
-        if (!elem_count) continue;
+        if (!elem_count) {
+            ++idx;
+            continue;
+        };
 
         struct nk_rect clip_rect = cmd->clip_rect;
         int texture_id = cmd->texture.id;
 
-        //DEBUG
-        // clip_rect.x = 0;
-        // clip_rect.y = 0;
-        // clip_rect.w = 1000;
-        // clip_rect.h = 1000;
-        // printf("elems: %d, texture_id: %d, clip_rect: %d|%d %d|%d\n", elem_count, texture_id,
+        // printf("[%u] elems: %d, texture_id: %d, clip_rect: %d|%d %d|%d\n", idx++, elem_count, texture_id,
         //           static_cast<GLint>(clip_rect.x),
         //           static_cast<GLint>(screen_res.y - static_cast<GLint>(clip_rect.y + clip_rect.h)),
         //           static_cast<GLint>(clip_rect.w),
