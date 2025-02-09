@@ -464,7 +464,7 @@ namespace Meshes
         VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
         ~VBO();
 
-        VBO& operator=(VBO&& other); // this is sadly needed because of global meshes
+        VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions
 
         void bind() const;
         void unbind() const;

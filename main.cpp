@@ -1157,6 +1157,10 @@ int game_main(void)
     unsigned int tick = 0;
     float frame_delta = 0.f;
     double last_frame_time = glfwGetTime();
+    const double fps_calculation_interval = 0.5f; // in seconds
+    double last_fps_calculation_time = last_frame_time;
+    unsigned int fps_calculation_counter = 0;
+    unsigned int fps_calculated = 0;
     double last_mouse_x = 0.f, last_mouse_y = 0.f;
     bool last_left_mbutton = false;
     
@@ -1292,68 +1296,35 @@ int game_main(void)
         }
 
         //TODO GUI
-        /*if (nk_begin(&ui.m_ctx, "Title", nk_rect(100, 50, 420, 520),
+        {
+            //styling of the GUI
+            nk_color ui_background_color = nk_rgba(200, 200, 80, 200);
+            ui.m_ctx.style.window.background = ui_background_color;
+            ui.m_ctx.style.window.fixed_background = nk_style_item_color(ui_background_color);
+            ui.m_ctx.style.window.border_color = nk_rgb(255, 67, 67);
+            ui.m_ctx.style.window.border = 3;
+            ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
+        }
+        if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 125, 100),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
         {
-            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
+            char textbuffer[128]{};
+            size_t textbuffer_capacity = sizeof(textbuffer) / sizeof(textbuffer[0]); // including term. char. 
 
-            nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
-            if (nk_button_label(&ui.m_ctx, "BACK"))
+            nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
+
+            //fps calculating and rendering
+            ++fps_calculation_counter;
+            if (current_frame_time >= last_fps_calculation_time + fps_calculation_interval)
             {
-                puts("BACK");
+                const double time_passed = current_frame_time - last_fps_calculation_time;
+                fps_calculated = static_cast<unsigned int>(static_cast<double>(fps_calculation_counter) / time_passed);
+                
+                fps_calculation_counter = 0;
+                last_fps_calculation_time = current_frame_time;
             }
-            nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
-
-            if (nk_button_label(&ui.m_ctx, "BACK2"))
-            {
-                puts("BACK2");
-            }
-            nk_label(&ui.m_ctx, "textXX", NK_TEXT_CENTERED);
-
-            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
-            nk_label(&ui.m_ctx, "text22", NK_TEXT_CENTERED);
-
-            // fixed widget pixel width
-            // nk_layout_row_dynamic(&ui.m_ctx, 50, 3);
-            // if (nk_button_label(&ui.m_ctx, "button"))
-            // {
-            //     puts("button pressed");
-            // }
-            // if (nk_button_label(&ui.m_ctx, "button2"))
-            // {
-            //     puts("back to game");
-            // }
-            // if (nk_button_label(&ui.m_ctx, "button3"))
-            // {
-            //     puts("back to game");
-            // }
-
-            // fixed widget window ratio width
-            // nk_layout_row_dynamic(&ui.m_ctx, 30, 2);
-            // if (nk_option_label(&ui.m_ctx, "true", true))
-            // {
-            //     // puts("true switched");
-            // }
-            // if (nk_option_label(&ui.m_ctx, "false", false))
-            // {
-            //     puts("false switched");
-            // }
-        }
-        nk_end(&ui.m_ctx);*/
-
-        if (nk_begin_titled(&ui.m_ctx, "Name", "Title", nk_rect(50, 20, 200, 250),
-            NK_WINDOW_BORDER | NK_WINDOW_TITLE))
-        {
-            //TODO
-            // nk_layout_row_static(&ui.m_ctx, 30, 80, 2);
-            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
-            if (nk_button_label(&ui.m_ctx, "a")) {
-                puts("button1 pressed");
-            }
-            //nk_label(&ui.m_ctx, "text", NK_TEXT_CENTERED);
-            // if (nk_button_label(&ui.m_ctx, "button2")) {
-            //     puts("button2 pressed");
-            // }
+            snprintf(textbuffer, textbuffer_capacity, "fps: %d", fps_calculated);
+            nk_label(&ui.m_ctx, textbuffer, NK_TEXT_LEFT);
         }
         nk_end(&ui.m_ctx);
 
@@ -1477,6 +1448,8 @@ int game_main(void)
                 const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
                 Drawing::crosshair(screen_line_shader, line_vbo, window_res,
                                    glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
+
+
 
                 //UI drawing
                 glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only

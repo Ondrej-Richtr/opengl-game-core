@@ -73,6 +73,8 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
                         : m_ctx_initialized(false), m_shader(shader),
                           m_vbo_id(0), m_ebo_id(0) //TODO empty id
 {
+    assert(!Utils::checkForGLError());
+
     const nk_user_font *font_ptr = font.getFontPtr();
 
     if (!nk_init_default(&m_ctx, font_ptr))
@@ -110,9 +112,20 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
     nk_buffer_init_default(&m_vert_buffer);
     nk_buffer_init_default(&m_idx_buffer);
 
-    //TODO check for error
     GLuint buffer_obj[2];
     glGenBuffers(2, buffer_obj);
+    if (Utils::checkForGLError())
+    {
+        fprintf(stderr, "Failed to generate GL buffers for UI context!\n");
+
+        nk_free(&m_ctx);
+        nk_buffer_free(&m_cmd_buffer);
+        nk_buffer_free(&m_vert_buffer);
+        nk_buffer_free(&m_idx_buffer);
+
+        return;
+    }
+
     m_vbo_id = buffer_obj[0];
     m_ebo_id = buffer_obj[1];
 
@@ -122,6 +135,9 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
 UI::Context::~Context()
 {
     if (!m_ctx_initialized) return;
+
+    glDeleteBuffers(1, &m_vbo_id);
+    glDeleteBuffers(1, &m_ebo_id);
     
     nk_free(&m_ctx);
 
@@ -216,8 +232,8 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
     assert(m_ctx_initialized); //DEBUG
     if (!m_ctx_initialized) return false;
 
-    // puts("Convert begin");
-    if (!convert()) return false; // fills m_cmd_buffer, m_vert_buffer, m_idx_buffer with new data
+    // fills m_cmd_buffer, m_vert_buffer, m_idx_buffer with new data
+    if (!convert()) return false;
 
     m_shader.use();
     glActiveTexture(GL_TEXTURE0 + texture_unit);
@@ -265,7 +281,6 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
 
     size_t offset = 0, idx = 0; //DEBUG idx
     const struct nk_draw_command *cmd = NULL;
-    //puts("Draw begin");
     nk_draw_foreach(cmd, &m_ctx, &m_cmd_buffer)
     {
         unsigned int elem_count = cmd->elem_count;
@@ -276,13 +291,6 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
 
         struct nk_rect clip_rect = cmd->clip_rect;
         int texture_id = cmd->texture.id;
-
-        // printf("[%u] elems: %d, texture_id: %d, clip_rect: %d|%d %d|%d\n", idx++, elem_count, texture_id,
-        //           static_cast<GLint>(clip_rect.x),
-        //           static_cast<GLint>(screen_res.y - static_cast<GLint>(clip_rect.y + clip_rect.h)),
-        //           static_cast<GLint>(clip_rect.w),
-        //           static_cast<GLint>(clip_rect.h)
-        // );
 
         glBindTexture(GL_TEXTURE_2D, texture_id);
         // we need to mirror the scissor area because OpenGL window coordinates starts at bottom left
@@ -295,7 +303,8 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
         // draw the ui element
         glDrawElements(GL_TRIANGLES, elem_count, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(offset));
 
-        offset += elem_count;
+        //NOTE: this sizeof needs to be in line with type enum passed to glDrawElements (GL_UNSIGNED_SHORT)
+        offset += elem_count * sizeof(GLushort);
     }
 
     //disable the vbo attributes
