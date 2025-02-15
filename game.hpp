@@ -574,7 +574,7 @@ namespace UI
     };
 }
 
-//game.hpp
+//game.cpp
 namespace Game
 {
     class Target
@@ -606,3 +606,6 @@ namespace Game
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
 }
+
+//main-test.cpp
+int test_main();
