@@ -34,12 +34,7 @@ float _calculateAverage(ivec2 rectPos)
 
 int _levelFromAverage(float avg)
 {
-    //TODO optimize this
-    if (avg > 0.8f) return 4;
-    if (avg > 0.6f) return 3;
-    if (avg > 0.4f) return 2;
-    if (avg > 0.2f) return 1;
-    return 0;
+    return int(avg / 0.2f);
 }
 
 vec4 _postproc_greyscale(vec2 tpos)
@@ -64,8 +59,8 @@ vec4 _postproc(vec2 tpos)
     averageVal += _calculateAverage(rectPosDR) / 4.f;
 
     int level = _levelFromAverage(averageVal);
-    // vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.f), off_color = vec4(0.f, 0.f, 0.f, 1.f);
-    vec4 on_color = vec4(105.f/255.f, 18.f/255.f, 168.f/255.f, 1.f), off_color = vec4(17.f/255.f, 45.f/255.f, 94.f/255.f, 1.f);
+    vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.f), off_color = vec4(0.f, 0.f, 0.f, 1.f);
+    // vec4 on_color = vec4(105.f/255.f, 18.f/255.f, 168.f/255.f, 1.f), off_color = vec4(17.f/255.f, 45.f/255.f, 94.f/255.f, 1.f);
     // float rel_level = float(level) / 4.f;
     // vec4 off_color_min = vec4(0.1f, 0.1f, 0.1f, 1.f), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.f);
     // vec4 on_color = texture(inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
