@@ -78,6 +78,7 @@ void main()
     vec2 fragScreenPos = gl_FragCoord.xy;
     vec2 texcoords = (fragScreenPos - rectPos) / rectSize;
 
+    //TODO use scissor test and remove this
     if (texcoords.x < 0.f || texcoords.x >= 1.f ||
         texcoords.y < 0.f || texcoords.y >= 1.f) discard;
     

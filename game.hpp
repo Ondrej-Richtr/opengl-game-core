@@ -129,12 +129,22 @@ namespace Collision
     struct Ray;
 };
 
-//TODO use this
-// struct MainLoopData
-// {
-//     int test;
-//     GLFWwindow* window;
-// };
+//window_manager.cpp
+class WindowManager
+{
+    static GLFWwindow *m_window;
+    static glm::ivec2 m_win_size;
+
+    static void resizeCallback(GLFWwindow* window, int width, int height);
+
+public:
+    static void init(GLFWwindow *window);
+
+    static GLFWwindow* getWindow();
+
+    static glm::ivec2 getSize();
+    static glm::vec2 getSizeF();
+};
 
 //drawing.cpp
 namespace Drawing
@@ -607,5 +617,73 @@ namespace Game
     };
 }
 
+//Game loops
+enum class LoopRetVal { exit, success };
+
+// struct LoopData //TODO
+// {
+//     typedef int InitFnPtr();
+//     typedef LoopRetVal LoopFnPtr(void*);
+
+//     void *data;
+//     InitFnPtr *initFn;
+//     LoopFnPtr *loopFn;
+// };
+
 //main-test.cpp
+struct TestMainLoop //TODO
+{
+    //Camera
+    float mouse_sens, fov, camera_pitch, camera_yaw;
+    Drawing::Camera3D camera;
+
+    //VBOs
+    Meshes::VBO cube_vbo;
+
+    //UI
+    Shaders::Program ui_shader;
+    UI::Font font;
+    UI::Context ui;
+
+    //Shaders
+    Shaders::Program tex_rect_shader, light_src_shader, light_shader;
+    
+    //Textures
+    Textures::Texture2D fbo3d_tex, brick_texture;
+
+    //RenderBuffers
+    GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
+
+    //FrameBuffers
+    Drawing::FrameBuffer fbo3d;
+
+    //Lighting
+    float light_src_size;
+    Lighting::DirLight sun;
+    Color3F pointl_color, pointl_spec_color;
+    float pointl_ambient_intensity;
+    Lighting::PointLight pointl;
+    glm::vec3 mat_cubes_pos;
+    float movingl_x_min, movingl_x_max, movingl_move_per_sec;
+    Lighting::PointLight movingl;
+    Lighting::SpotLight flashlight;
+    bool show_pointl, show_flashlight, movingl_pos_move;
+
+    //Materials
+    Lighting::MaterialProps default_material, materials[16];
+
+    Color clear_color_3d, clear_color_2d;
+    unsigned int tick;
+    double last_frame_time;
+    double last_mouse_x, last_mouse_y;
+
+    int init();
+    ~TestMainLoop();
+
+    LoopRetVal loop();
+};
+
 int test_main();
+
+//main-game.cpp
+int game_main();
