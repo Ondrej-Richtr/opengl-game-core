@@ -4,6 +4,8 @@
 #include "stb_image.h"
 
 
+GLuint default_vao = 0; //TODO 
+
 static int init(void)
 {
     puts("Setup begin.");
@@ -20,12 +22,17 @@ static int init(void)
 
     //setting up OpenGL in GLFW
     //ES
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
+    //TODO macOS
+    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
 
     //initializing the window
     const char window_title[] = "OpenGL Game";
@@ -50,12 +57,26 @@ static int init(void)
 
 
     //initializing GLAD
-    if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+    //ES
+    // if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+    // {
+    //     fprintf(stderr, "GLAD failed to initialize!\n");
+    //     glfwTerminate();
+    //     return 3;
+    // }
+
+    //TODO macOS
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         fprintf(stderr, "GLAD failed to initialize!\n");
         glfwTerminate();
         return 3;
     }
+
+    //DEBUG
+    assert(!Utils::checkForGLErrorsAndPrintThem());
+    //TODO comment
+    assert(!Utils::checkForGLError()); // this should always work unless you fail to ... ?
 
     //Inits
     if (!Meshes::initBasicMeshes())
@@ -64,6 +85,10 @@ static int init(void)
         glfwTerminate();
         return 4;
     }
+
+    //TODO move this into VBOs and maybe make an abstraction?
+    glGenVertexArrays(1, &default_vao);
+    glBindVertexArray(default_vao);
 
     puts("Setup end.");
     return 0;

@@ -369,6 +369,14 @@ namespace Utils
 //shaders.cpp
 namespace Shaders
 {
+    //TODO
+    #define BUILD_OPENGL_330_CORE
+    #ifdef BUILD_OPENGL_330_CORE
+        #define SHADERS_DIR_PATH "shaders/ver330core/"
+    #else
+        #define SHADERS_DIR_PATH "shaders/ver300es/"
+    #endif
+
     //TODO unite those ids?
     static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
 

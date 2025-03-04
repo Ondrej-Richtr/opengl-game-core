@@ -20,6 +20,8 @@ void GameMainLoop::mouseButtonsCallback(GLFWwindow *window, int button, int acti
 
 int GameMainLoop::init()
 {
+    puts("GameMainLoop init begin");
+
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
 
@@ -204,15 +206,15 @@ int GameMainLoop::init()
     //Shaders
     using ShaderP = Shaders::Program;
 
-    const char *default_vs_path = "shaders/default.vs",
-               *default_fs_path = "shaders/default.fs",
-            //    *passthrough_pos_vs_path = "shaders/passthrough-pos.vs",
-            //    *passthrough_pos_uv_vs_path = "shaders/passthrough-pos-uv.vs",
-               *transform_vs_path = "shaders/transform.vs",
-               *static_color_fs_path = "shaders/static-color.fs";
+    const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
+               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+            //    *passthrough_pos_vs_path = SHADERS_DIR_PATH "passthrough-pos.vs",
+            //    *passthrough_pos_uv_vs_path = SHADERS_DIR_PATH "passthrough-pos-uv.vs",
+               *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
+               *static_color_fs_path = SHADERS_DIR_PATH "static-color.fs";
 
     //line shader
-    const char *screen_line_vs_path = "shaders/screen2d-line.vs";
+    const char *screen_line_vs_path = SHADERS_DIR_PATH "screen2d-line.vs";
 
     new (&screen_line_shader) ShaderP(screen_line_vs_path, static_color_fs_path);
     if (screen_line_shader.m_id == Shaders::empty_id)
@@ -222,8 +224,8 @@ int GameMainLoop::init()
     }
 
     //ui shader
-    const char *ui_vs_path = "shaders/ui.vs",
-               *ui_fs_path = "shaders/ui.fs";
+    const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
+               *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
     
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path);
     if (ui_shader.m_id == Shaders::empty_id)
@@ -233,7 +235,7 @@ int GameMainLoop::init()
     }
 
     //textured rectangle shader
-    const char *tex_rect_fs_path = "shaders/tex-rect.fs";
+    const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path);
     if (tex_rect_shader.m_id == Shaders::empty_id)
@@ -243,7 +245,7 @@ int GameMainLoop::init()
     }
 
     // loading special light source shader program (renders light source without light effects etc.)
-    const char *light_src_fs_path = "shaders/light_src.fs";
+    const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     new (&light_src_shader) ShaderP(default_vs_path, light_src_fs_path); // using the default vertex shader
     if (light_src_shader.m_id == Shaders::empty_id)
@@ -253,8 +255,8 @@ int GameMainLoop::init()
     }
 
     // loading light shader program
-    const char *light_vs_path = "shaders/texture.vs";
-    const char *light_fs_path = "shaders/light.fs";
+    const char *light_vs_path = SHADERS_DIR_PATH "texture.vs";
+    const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     new (&light_shader) ShaderP(light_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
     if (light_shader.m_id == Shaders::empty_id)
@@ -397,6 +399,7 @@ int GameMainLoop::init()
     last_mouse_y = 0.f;
     last_left_mbutton = false;
 
+    puts("GameMainLoop init end");
     return 0;
 }
 
@@ -967,15 +970,15 @@ LoopRetVal GameMainLoop::loop()
     //Shaders
     using ShaderP = Shaders::Program;
 
-    const char *default_vs_path = "shaders/default.vs",
-               *default_fs_path = "shaders/default.fs",
-            //    *passthrough_pos_vs_path = "shaders/passthrough-pos.vs",
-            //    *passthrough_pos_uv_vs_path = "shaders/passthrough-pos-uv.vs",
-               *transform_vs_path = "shaders/transform.vs",
-               *static_color_fs_path = "shaders/static-color.fs";
+    const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
+               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+            //    *passthrough_pos_vs_path = SHADERS_DIR_PATH "passthrough-pos.vs",
+            //    *passthrough_pos_uv_vs_path = SHADERS_DIR_PATH "passthrough-pos-uv.vs",
+               *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
+               *static_color_fs_path = SHADERS_DIR_PATH "static-color.fs";
 
     //line shader
-    const char *screen_line_vs_path = "shaders/screen2d-line.vs";
+    const char *screen_line_vs_path = SHADERS_DIR_PATH "screen2d-line.vs";
 
     ShaderP screen_line_shader(screen_line_vs_path, static_color_fs_path);
     if (screen_line_shader.m_id == Shaders::empty_id)
@@ -986,8 +989,8 @@ LoopRetVal GameMainLoop::loop()
     }
 
     //ui shader
-    const char *ui_vs_path = "shaders/ui.vs",
-               *ui_fs_path = "shaders/ui.fs";
+    const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
+               *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
     
     ShaderP ui_shader(ui_vs_path, ui_fs_path);
     if (ui_shader.m_id == Shaders::empty_id)
@@ -998,7 +1001,7 @@ LoopRetVal GameMainLoop::loop()
     }
 
     //textured rectangle shader
-    const char *tex_rect_fs_path = "shaders/tex-rect.fs";
+    const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     ShaderP tex_rect_shader(transform_vs_path, tex_rect_fs_path);
     if (tex_rect_shader.m_id == Shaders::empty_id)
@@ -1010,7 +1013,7 @@ LoopRetVal GameMainLoop::loop()
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
-    const char *light_src_fs_path = "shaders/light_src.fs";
+    const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     ShaderP light_src_shader(default_vs_path, light_src_fs_path); // using the default vertex shader
     if (light_src_shader.m_id == Shaders::empty_id)
@@ -1021,8 +1024,8 @@ LoopRetVal GameMainLoop::loop()
     }
 
     // loading light shader program
-    const char *light_vs_path = "shaders/texture.vs";
-    const char *light_fs_path = "shaders/light.fs";
+    const char *light_vs_path = SHADERS_DIR_PATH "texture.vs";
+    const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     ShaderP light_shader(light_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
     if (light_shader.m_id == Shaders::empty_id)

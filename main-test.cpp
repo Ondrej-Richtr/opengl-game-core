@@ -84,8 +84,8 @@ int TestMainLoop::init()
     const float font_size = 22;
 
     //ui shader
-    const char *ui_vs_path = "shaders/ui.vs",
-               *ui_fs_path = "shaders/ui.fs";
+    const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
+               *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
     
     using ShaderP = Shaders::Program;
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path);
@@ -112,12 +112,12 @@ int TestMainLoop::init()
     }
 
     //Shaders
-    const char *default_vs_path = "shaders/default.vs",
-               *default_fs_path = "shaders/default.fs",
-               *texture_vs_path = "shaders/texture.vs",
-               *texture_fs_path = "shaders/texture.fs",
-               *transform_vs_path = "shaders/transform.vs",
-               *tex_rect_fs_path = "shaders/tex-rect.fs";
+    const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
+               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+               *texture_vs_path = SHADERS_DIR_PATH "texture.vs",
+               *texture_fs_path = SHADERS_DIR_PATH "texture.fs",
+               *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
+               *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     //Textured rectangle shader
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path);
@@ -198,7 +198,7 @@ int TestMainLoop::init()
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
-    const char *light_src_fs_path = "shaders/light_src.fs";
+    const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     new (&light_src_shader) ShaderP(default_vs_path, light_src_fs_path); // using the default vertex shader
     if (light_src_shader.m_id == Shaders::empty_id)
@@ -208,7 +208,7 @@ int TestMainLoop::init()
     }
 
     // loading light shader program
-    const char *light_fs_path = "shaders/light.fs";
+    const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     new (&light_shader) ShaderP(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
     if (light_shader.m_id == Shaders::empty_id)
@@ -414,10 +414,10 @@ LoopRetVal TestMainLoop::loop()
         //3D block
         {
             //set the viewport according to wanted framebuffer
-            glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height);
+            glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height); //TODO *2 on mac
 
             //bind the correct framebuffer
-            fbo3d.bind();
+            // fbo3d.bind();
             Drawing::clear(clear_color_3d);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
@@ -548,11 +548,11 @@ LoopRetVal TestMainLoop::loop()
             glDisable(GL_CULL_FACE);
             glDisable(GL_DEPTH_TEST);
 
-            fbo3d.unbind();
+            // fbo3d.unbind();
         }
 
         //2D block
-        {
+        /*{
             const glm::vec2 win_size = WindowManager::getSizeF();
             // glm::vec2 window_middle = window_res / 2.f;
 
@@ -577,7 +577,7 @@ LoopRetVal TestMainLoop::loop()
             //TODO UI
 
             glDisable(GL_BLEND);
-        }
+        }*/
     }
 
     last_mouse_x = mouse_x;
@@ -781,9 +781,9 @@ LoopRetVal TestMainLoop::loop()
     //Default shader program
     using ShaderP = Shaders::Program;
 
-    const char *default_vs_path = "shaders/default.vs",
-               *default_fs_path = "shaders/default.fs",
-               *transform_vs_path = "shaders/transform.vs";
+    const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
+               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+               *transform_vs_path = SHADERS_DIR_PATH "transform.vs";
     
     ShaderP default_shader(default_vs_path, default_fs_path);
     if (default_shader.m_id == Shaders::empty_id)
@@ -794,7 +794,7 @@ LoopRetVal TestMainLoop::loop()
     }
 
     //Textured rectangle shader
-    const char *tex_rect_fs_path = "shaders/tex-rect.fs";
+    const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     ShaderP tex_rect_shader(transform_vs_path, tex_rect_fs_path);
     if (tex_rect_shader.m_id == Shaders::empty_id)
@@ -806,8 +806,8 @@ LoopRetVal TestMainLoop::loop()
 
     //Textures
     // loading simple texture shader program
-    const char *texture_vs_path = "shaders/texture.vs",
-               *texture_fs_path = "shaders/texture.fs";
+    const char *texture_vs_path = SHADERS_DIR_PATH "texture.vs",
+               *texture_fs_path = SHADERS_DIR_PATH "texture.fs";
     
     ShaderP texture_shader(texture_vs_path, texture_fs_path);
     if (texture_shader.m_id == Shaders::empty_id)
@@ -902,7 +902,7 @@ LoopRetVal TestMainLoop::loop()
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
-    const char *light_src_fs_path = "shaders/light_src.fs";
+    const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     ShaderP light_src_shader(default_vs_path, light_src_fs_path); // using the default vertex shader
     if (light_src_shader.m_id == Shaders::empty_id)
@@ -913,7 +913,7 @@ LoopRetVal TestMainLoop::loop()
     }
 
     // loading light shader program
-    const char *light_fs_path = "shaders/light.fs";
+    const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     ShaderP light_shader(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
     if (light_shader.m_id == Shaders::empty_id)
