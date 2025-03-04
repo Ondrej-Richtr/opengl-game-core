@@ -334,7 +334,8 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
         assert((size_t)lights_set <= lights.size());
         if ((size_t)lights_set < lights.size())
         {
-            fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %d, set amount: %d\n.", lights.size(), lights_set);
+            fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %zu, set amount: %d\n.",
+                    lights.size(), lights_set);
         }
     }
 

@@ -143,3 +143,17 @@ bool Utils::checkForGLError()
 
     return true;
 }
+
+bool Utils::checkForGLErrorsAndPrintThem()
+{
+    bool ret = false;
+    GLenum error = GL_NO_ERROR;
+
+    while ((error = glGetError()) != GL_NO_ERROR)
+    {
+        printf("got error: 0x%x\n", error);
+        ret = true;
+    }
+
+    return ret;
+}

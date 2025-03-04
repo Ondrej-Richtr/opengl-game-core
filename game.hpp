@@ -6,7 +6,7 @@
 #include "glm/vec3.hpp"
 
 //nuklear
-//  both header and implementation defines
+// both header and implementation defines
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 #define NK_INCLUDE_STANDARD_IO
@@ -363,6 +363,7 @@ namespace Utils
     glm::mat3 modelMatrixToNormalMatrix(const glm::mat4& model_mat);
 
     bool checkForGLError();
+    bool checkForGLErrorsAndPrintThem();
 };
 
 //shaders.cpp
@@ -697,7 +698,7 @@ struct GameMainLoop //TODO proper init and deinit of objects
 
     //Textures
     Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, target_texture;
-    const glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, target_texture_world_size; // should have aspect ratio 1:1
+    glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, target_texture_world_size; // should have aspect ratio 1:1
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     //RenderBuffers
@@ -722,7 +723,7 @@ struct GameMainLoop //TODO proper init and deinit of objects
     UI::Context ui;
 
     //FrameBuffers
-    FrameBuffer fbo3d;
+    Drawing::FrameBuffer fbo3d;
 
     //Game
     glm::vec3 wall_size, wall_pos, target_pos_offset;

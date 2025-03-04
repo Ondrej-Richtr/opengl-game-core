@@ -2,9 +2,7 @@
 #include <GLFW/glfw3.h>
 #include "game.hpp"
 
-#include "glm/gtc/matrix_transform.hpp" //DEBUG
-
-#include <algorithm>
+#include "glm/gtc/matrix_transform.hpp"
 
 
 int TestMainLoop::init()
