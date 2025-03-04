@@ -474,7 +474,7 @@ namespace Meshes
         VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
         ~VBO();
 
-        VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions
+        VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions + constructors
 
         void bind() const;
         void unbind() const;
@@ -631,7 +631,7 @@ enum class LoopRetVal { exit, success };
 // };
 
 //main-test.cpp
-struct TestMainLoop //TODO
+struct TestMainLoop //TODO proper deinit of objects
 {
     //Camera
     float mouse_sens, fov, camera_pitch, camera_yaw;
@@ -672,6 +672,7 @@ struct TestMainLoop //TODO
     //Materials
     Lighting::MaterialProps default_material, materials[16];
 
+    //Misc.
     Color clear_color_3d, clear_color_2d;
     unsigned int tick;
     double last_frame_time;
@@ -681,6 +682,78 @@ struct TestMainLoop //TODO
     ~TestMainLoop();
 
     LoopRetVal loop();
+};
+
+//main-game.cpp
+struct GameMainLoop //TODO proper init and deinit of objects
+{
+    //Camera
+    float mouse_sens, fov, camera_pitch, camera_yaw;
+    Drawing::Camera3D camera;
+
+    //VBOs
+    Meshes::VBO cube_vbo;
+    unsigned int line_vbo;
+
+    //Textures
+    Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, target_texture;
+    const glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, target_texture_world_size; // should have aspect ratio 1:1
+    float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
+
+    //RenderBuffers
+    GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
+
+    //Shaders
+    Shaders::Program screen_line_shader, ui_shader, tex_rect_shader, light_src_shader, light_shader;
+
+    //Lighting
+    float light_src_size;
+    Lighting::DirLight sun;
+    Lighting::SpotLight flashlight;
+    bool show_flashlight;
+
+    //Materials
+    Lighting::MaterialProps default_material;
+
+    //UI
+    unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
+    size_t textbuffer_len;
+    UI::Font font;
+    UI::Context ui;
+
+    //FrameBuffers
+    FrameBuffer fbo3d;
+
+    //Game
+    glm::vec3 wall_size, wall_pos, target_pos_offset;
+    Meshes::VBO wall_vbo, target_vbo;
+    std::vector<Game::Target> targets;
+    Utils::RNG target_rng_width, target_rng_height;
+    //TODO constexpr probably
+    const double level_spawn_rate_init = 0.6f; // target per second
+    const double level_spawn_rate_mult = 1.35f;
+    const size_t level_amount_init = 8;
+    const size_t level_amount_inc = 4;
+
+    double target_last_spawn_time, level_spawn_rate;
+    unsigned int level = 1, level_targets_hit;
+
+    //Misc.
+    Color clear_color_3d, clear_color_2d;
+    unsigned int tick;
+    float frame_delta;
+    double last_frame_time, fps_calculation_interval, last_fps_calculation_time;
+    unsigned int fps_calculation_counter, fps_calculated;
+    double last_mouse_x, last_mouse_y;
+    bool last_left_mbutton;
+
+    int init();
+    ~GameMainLoop();
+
+    LoopRetVal loop();
+
+    static bool left_mbutton_state;
+    static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods); //TODO global mouse button manager maybe?
 };
 
 int test_main();

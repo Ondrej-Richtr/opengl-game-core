@@ -94,7 +94,6 @@ int TestMainLoop::init()
     if (ui_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create UI shader program!\n");
-        glfwTerminate();
         return 6;
     }
 
@@ -127,7 +126,6 @@ int TestMainLoop::init()
     if (tex_rect_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
-        glfwTerminate();
         return 7;
     }
 
@@ -140,7 +138,6 @@ int TestMainLoop::init()
     if (fbo3d_tex.m_id == Textures::empty_id)
     {
         fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
-        glfwTerminate();
         return 8;
     }
 
@@ -151,7 +148,6 @@ int TestMainLoop::init()
     if (brick_texture.m_id == Textures::empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
-        glfwTerminate();
         return 8;
     }
 
@@ -210,7 +206,6 @@ int TestMainLoop::init()
     if (light_src_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
-        glfwTerminate();
         return 10;
     }
 
@@ -221,7 +216,6 @@ int TestMainLoop::init()
     if (light_shader.m_id == Shaders::empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
-        glfwTerminate();
         return 10;
     }
 
@@ -310,11 +304,10 @@ LoopRetVal TestMainLoop::loop()
     using LightProps = Lighting::LightProps;
 
     //calculating correct frame delta time
+    //TODO this will be wrong when stacking of game loops gets implemented
     double current_frame_time = glfwGetTime();
     double frame_delta = current_frame_time - last_frame_time;
     last_frame_time = current_frame_time;
-
-    glfwPollEvents();
 
     // ---Mouse input---
     double mouse_x = 0.f, mouse_y = 0.f;
@@ -418,7 +411,7 @@ LoopRetVal TestMainLoop::loop()
     flashlight.m_pos = camera.m_pos;
     flashlight.m_dir = camera.getDirection();
 
-    // ---Draw begin---
+    // ---Drawing---
     {
         //3D block
         {
@@ -588,9 +581,6 @@ LoopRetVal TestMainLoop::loop()
             glDisable(GL_BLEND);
         }
     }
-
-    // ---Draw end---
-    glfwSwapBuffers(window);
 
     last_mouse_x = mouse_x;
     last_mouse_y = mouse_y;

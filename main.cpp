@@ -43,7 +43,11 @@ static int init(void)
     //other GLFW settings
     glfwSwapInterval(1); //TODO check this, maybe 0?
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //glfwSetCursorPosCallback(window, windowMouseMoveCallback); 
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
+    // try to enable raw mouse motion, only takes effect when the cursor is disabled
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    else fprintf(stderr, "[WARNING] Failed to enable raw mouse motion.\n");
+
 
     //initializing GLAD
     if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
@@ -93,11 +97,20 @@ int main(void)
     //TODO check if compile optimizes this and omits pointless dereference
     TestMainLoop& loop = *reinterpret_cast<TestMainLoop*>(&loop_memory); //TODO better cast
     int result = loop.init();
-    if (result) return result;
+    if (result)
+    {
+        //TODO IMPORTANT - deinitializing is not handled in a good way!
+        // loop.~TestMainLoop();
+
+        deinit();
+        return result;
+    }
 
     while(!glfwWindowShouldClose(window))
     {
+        glfwPollEvents();
         loop.loop(); //TODO retval
+        glfwSwapBuffers(window);
     }
 
     //destructors
