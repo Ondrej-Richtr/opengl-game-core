@@ -4,6 +4,7 @@
 #include "stb_image.h"
 
 #include "glm/gtc/matrix_transform.hpp"
+#include <cstring>
 
 
 bool GameMainLoop::left_mbutton_state = false;

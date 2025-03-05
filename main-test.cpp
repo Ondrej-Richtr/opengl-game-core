@@ -417,7 +417,7 @@ LoopRetVal TestMainLoop::loop()
             glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height); //TODO *2 on mac
 
             //bind the correct framebuffer
-            // fbo3d.bind();
+            fbo3d.bind();
             Drawing::clear(clear_color_3d);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
@@ -548,11 +548,11 @@ LoopRetVal TestMainLoop::loop()
             glDisable(GL_CULL_FACE);
             glDisable(GL_DEPTH_TEST);
 
-            // fbo3d.unbind();
+            fbo3d.unbind();
         }
 
         //2D block
-        /*{
+        {
             const glm::vec2 win_size = WindowManager::getSizeF();
             // glm::vec2 window_middle = window_res / 2.f;
 
@@ -577,7 +577,7 @@ LoopRetVal TestMainLoop::loop()
             //TODO UI
 
             glDisable(GL_BLEND);
-        }*/
+        }
     }
 
     last_mouse_x = mouse_x;
