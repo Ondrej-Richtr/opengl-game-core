@@ -24,6 +24,7 @@ int GameMainLoop::init()
     puts("GameMainLoop init begin");
 
     GLFWwindow * const window = WindowManager::getWindow();
+    //TODO win size
     const glm::vec2 win_size = WindowManager::getSizeF();
 
     //mouse callback setup
@@ -669,6 +670,7 @@ LoopRetVal GameMainLoop::loop()
 
         //2D block
         {
+            //TODO win size
             const glm::vec2 win_size = WindowManager::getSizeF();
             glm::vec2 window_middle = win_size / 2.f;
 

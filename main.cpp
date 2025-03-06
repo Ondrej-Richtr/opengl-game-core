@@ -33,6 +33,7 @@ static int init(void)
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
+    //TODO look up GLFW_COCOA_RETINA_FRAMEBUFFER
 
     //initializing the window
     const char window_title[] = "OpenGL Game";

@@ -9,6 +9,7 @@ int TestMainLoop::init()
 {
     puts("TestMainLoop init begin");
 
+    //TODO win size
     const glm::vec2 win_size = WindowManager::getSizeF();
 
     //Camera
@@ -415,6 +416,8 @@ LoopRetVal TestMainLoop::loop()
         {
             //set the viewport according to wanted framebuffer
             glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height); //TODO *2 on mac
+            // const glm::ivec2 win_fbo_size = WindowManager::getFBOSize();
+            // glViewport(0, 0, win_fbo_size.x, win_fbo_size.y);
 
             //bind the correct framebuffer
             fbo3d.bind();

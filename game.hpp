@@ -133,9 +133,10 @@ namespace Collision
 class WindowManager
 {
     static GLFWwindow *m_window;
-    static glm::ivec2 m_win_size;
+    static glm::ivec2 m_win_size, m_framebuffer_size;
 
-    static void resizeCallback(GLFWwindow* window, int width, int height);
+    static void windowResizeCallback(GLFWwindow* window, int width, int height);
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 public:
     static void init(GLFWwindow *window);
@@ -144,6 +145,9 @@ public:
 
     static glm::ivec2 getSize();
     static glm::vec2 getSizeF();
+
+    static glm::ivec2 getFBOSize();
+    static glm::vec2 getFBOSizeF(); 
 };
 
 //drawing.cpp
