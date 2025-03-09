@@ -376,12 +376,6 @@ int GameMainLoop::init()
     new (&target_rng_height) Utils::RNG(-500, 500);
 
     //Level variables
-    //TODO init those
-    // const double level_spawn_rate_init = 0.6f; // target per second
-    // const double level_spawn_rate_mult = 1.35f;
-    // const size_t level_amount_init = 8;
-    // const size_t level_amount_inc = 4;
-
     target_last_spawn_time = -1.f; // -1 should get us immediate first spawn, maybe use tick == 0 instead?
     level_spawn_rate = level_spawn_rate_init;
     level = 1;
@@ -417,6 +411,7 @@ LoopRetVal GameMainLoop::loop()
     GLFWwindow * const window = WindowManager::getWindow();
 
     //calculating correct frame delta time
+    //TODO this will be wrong when stacking of game loops gets implemented
     double current_frame_time = glfwGetTime();
     frame_delta = current_frame_time - last_frame_time;
     last_frame_time = current_frame_time;
@@ -460,7 +455,7 @@ LoopRetVal GameMainLoop::loop()
     // ---Shooting---
     if (mbutton_left_is_clicked)
     {
-        //puts("Fire!");
+        // puts("Fire!");
         for (size_t i = 0; i < targets.size(); ++i)
         {
             size_t idx = targets.size() - 1 - i; // iterating from the back so the closest targets get hit first

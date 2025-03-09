@@ -742,14 +742,15 @@ struct GameMainLoop //TODO proper init and deinit of objects
     Meshes::VBO wall_vbo, target_vbo;
     std::vector<Game::Target> targets;
     Utils::RNG target_rng_width, target_rng_height;
-    //TODO constexpr probably
-    const double level_spawn_rate_init = 0.6f; // target per second
-    const double level_spawn_rate_mult = 1.35f;
-    const size_t level_amount_init = 8;
-    const size_t level_amount_inc = 4;
+    
+    //Level variables
+    static constexpr double level_spawn_rate_init = 0.6f; // target per second
+    static constexpr double level_spawn_rate_mult = 1.35f;
+    static constexpr size_t level_amount_init = 8;
+    static constexpr size_t level_amount_inc = 4;
 
     double target_last_spawn_time, level_spawn_rate;
-    unsigned int level = 1, level_targets_hit;
+    unsigned int level, level_targets_hit;
 
     //Misc.
     Color clear_color_3d, clear_color_2d;

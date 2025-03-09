@@ -119,14 +119,14 @@ int main(void)
     assert(window != NULL);
 
     // Creating struct this way so it's fields won't get initialized before init method call
-    unsigned char loop_memory[sizeof(TestMainLoop)];
+    unsigned char loop_memory[sizeof(GameMainLoop)];
     //TODO check if compile optimizes this and omits pointless dereference
-    TestMainLoop& loop = *reinterpret_cast<TestMainLoop*>(&loop_memory); //TODO better cast
+    GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(&loop_memory); //TODO better cast
     int result = loop.init();
     if (result)
     {
         //TODO IMPORTANT - deinitializing is not handled in a good way!
-        // loop.~TestMainLoop();
+        // loop.~GameMainLoop();
 
         deinit();
         return result;
@@ -140,7 +140,7 @@ int main(void)
     }
 
     //destructors
-    loop.~TestMainLoop();
+    loop.~GameMainLoop();
 
     deinit();
     puts("End main.");
