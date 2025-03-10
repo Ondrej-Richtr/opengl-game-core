@@ -205,7 +205,7 @@ namespace Drawing
         ~FrameBuffer();
 
         void bind() const;
-        void unbind() const;
+        void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern
 
         void attachColorBuffer(Attachment attachment) const;
         void attachDepthBuffer(Attachment attachment) const;
@@ -240,7 +240,6 @@ namespace Lighting
         Color3F m_ambient, m_diffuse, m_specular;
         float m_shininess;
 
-        MaterialProps() = default; //DEBUG
         MaterialProps(Color3F color, float shininess)
                         : m_ambient(color), m_diffuse(color),
                         m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
@@ -383,7 +382,7 @@ namespace Shaders
         #endif
     #endif
 
-    //TODO unite those ids?
+    //TODO unite those ids? + constexpr constants
     static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
 
     static const GLuint attribute_position_verts = 0;
@@ -487,12 +486,16 @@ namespace Meshes
     {
         GLuint m_id = empty_id;
 
-        VAO();
+        VAO() = default;
         ~VAO();
 
+        // explicit init, as we dont want to call generate buffers in default constructor
+        // calling code should check the validity of `m_id` afterwards!
+        void init();
+
         void bind() const;
-        void unbind() const;
-    }
+        void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern
+    };
     #endif
 
     //Vertex buffer object abstraction, should be used mainly for mesh data
@@ -500,6 +503,13 @@ namespace Meshes
     struct VBO
     {
         GLuint m_id = empty_id;
+
+        // VAO is located here as we dont have any Mesh struct yet
+        // Ideally we would want VAO to be outside of VBO and optionally bound by Mesh instead of VBO through VBO::bind
+        #ifdef USE_VAO
+            VAO m_vao;
+        #endif
+        //TODO if we use vao then we probably dont need the following attributes
 
         size_t m_vert_count;    // amount of vertices that this vbo holds
         size_t m_stride;        // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
@@ -512,7 +522,12 @@ namespace Meshes
         VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions + constructors
 
         void bind() const;
-        void unbind() const;
+        void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern, this unbind is however correct when not using VAO!
+
+    private:
+        // helper methods for better readability, the code will be probably moved back to VBO::bind/unbind after VAO refactor
+        void bind_noVAO() const;
+        void unbind_noVAO() const;
     };
 
     //style of UV texcoords
@@ -603,6 +618,7 @@ namespace UI
         nk_buffer m_cmd_buffer, m_vert_buffer, m_idx_buffer;
 
         const Shaders::Program& m_shader;
+        //TODO VBO when USE_VBO macro defined
         GLuint m_vbo_id, m_ebo_id;
 
         Context(const Shaders::Program& shader, const UI::Font& font);

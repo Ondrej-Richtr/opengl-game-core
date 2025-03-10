@@ -580,10 +580,12 @@ LoopRetVal GameMainLoop::loop()
         //3D block
         {
             //set the viewport according to wanted framebuffer
-            glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height);
+            glViewport(0, 0, fbo3d_tex.m_width * 2, fbo3d_tex.m_height * 2); //DEBUG *2
 
             //bind the correct framebuffer
             fbo3d.bind();
+            // glBindFramebuffer(GL_FRAMEBUFFER, 0); //DEBUG
+
             Drawing::clear(clear_color_3d);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
@@ -607,8 +609,7 @@ LoopRetVal GameMainLoop::loop()
             light_shader.use();
             brick_texture.bind();
             {
-                glm::vec3 pos = //wall_rcoll.m_hit ? wall_rcoll.m_point :
-                                glm::vec3(-4.f, 0.35f, -0.5f); //DEBUG
+                glm::vec3 pos = glm::vec3(-4.f, 0.35f, -0.5f);
 
                 //vs
                 glm::mat4 model_mat(1.f);
@@ -657,21 +658,23 @@ LoopRetVal GameMainLoop::loop()
             wall_vbo.bind();
                 glDrawArrays(GL_TRIANGLES, 0, wall_vbo.m_vert_count);
             wall_vbo.unbind();
-            
 
             glDisable(GL_CULL_FACE);
             glDisable(GL_DEPTH_TEST);
+
+            fbo3d.unbind();
         }
 
         //2D block
         {
-            //TODO win size
-            const glm::vec2 win_size = WindowManager::getSizeF();
-            glm::vec2 window_middle = win_size / 2.f;
+            //TODO use correct win size + check whether some functions need it as parameter
+            const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
+            const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
+            glm::vec2 window_middle = win_fbo_size / 2.f;
 
             //TODO this might be wrong on some displays?
             //set the viewport according to window size
-            glViewport(0, 0, win_size.x, win_size.y);
+            glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
@@ -683,36 +686,38 @@ LoopRetVal GameMainLoop::loop()
             glEnable(GL_BLEND); //TODO check this
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
-
+            
             //render the 3D scene as a background from it's framebuffer
-            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_size);
-
+            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
+            // Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(100.f, 100.f), win_fbo_size);
+            
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,
             //                     screen_middle, glm::vec2(50.f),
             //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
+            //TODO fix crosshair drawing
             //crosshair
-            const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
-            Drawing::crosshair(screen_line_shader, line_vbo, win_size,
-                                glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
+            /*const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
+            Drawing::crosshair(screen_line_shader, line_vbo, win_fbo_size,
+                                glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);*/
 
-
-
+            //TODO fix UI drawing
             //UI drawing
-            glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+            /*glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+            if (!ui.draw(win_fbo_size))
             {
-                if (!ui.draw(win_size))
-                {
-                    fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
-                }
-                ui.clear();
+                fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
             }
-            glDisable(GL_SCISSOR_TEST);
+            glDisable(GL_SCISSOR_TEST);*/
 
             glDisable(GL_BLEND);
+
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
     }
+    
+    ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
 
     last_mouse_x = mouse_x;
     last_mouse_y = mouse_y;

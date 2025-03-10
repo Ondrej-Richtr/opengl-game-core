@@ -3,24 +3,63 @@
 #include "game.hpp"
 
 
-Meshes::VAO::VAO() : m_id(Meshes::empty_id)
+#ifdef USE_VAO
+Meshes::VAO::~VAO()
 {
+    // printf("VAO deleted: %d\n", m_id);
+
+    glDeleteVertexArrays(1, &m_id);
+}
+
+void Meshes::VAO::init()
+{
+    assert(m_id == Meshes::empty_id);
     assert(!Utils::checkForGLError());
 
     glGenVertexArrays(1, &m_id);
+
+    // printf("VAO initialized: %d\n", m_id);
 }
 
+void Meshes::VAO::bind() const
+{
+    // printf("VAO bound: %d\n", m_id);
+    glBindVertexArray(m_id);
+}
+
+void Meshes::VAO::unbind() const
+{
+    // printf("VAO unbound: %d\n", m_id);
+    glBindVertexArray(Meshes::empty_id);
+}
+#endif
+
 Meshes::VBO::VBO() : m_id(Meshes::empty_id),
+                     #ifdef USE_VAO
+                        m_vao(),
+                     #endif
                      m_vert_count(0), m_stride(0),
                      m_texcoord_offset(-1), m_normal_offset(-1) {}
 
 Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals)
                     : m_id(Meshes::empty_id),
+                      #ifdef USE_VAO
+                         m_vao(),
+                      #endif
                       m_vert_count(data_vert_count), m_stride(0),
                       m_texcoord_offset(-1), m_normal_offset(-1)
 {
     assert(data_vert_count > 0);
     assert(!Utils::checkForGLError()); // assert that there were no other errors beforehand (so we can safely use Utils::checkForGLError here)
+
+    #ifdef USE_VAO
+        m_vao.init();
+        if (m_vao.m_id == Meshes::empty_id)
+        {
+            fprintf(stderr, "Error occurred when creating VAO for VBO.\n");
+            return;
+        }
+    #endif
 
     //offsets
     int size = Meshes::attribute_verts_amount; // vertex position is always present
@@ -55,8 +94,15 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bo
         glDeleteBuffers(1, &m_id);
         m_id = Meshes::empty_id;
     }
-    
+
     glBindBuffer(GL_ARRAY_BUFFER, Meshes::empty_id); // unbind the buffer afterwards
+
+    #ifdef USE_VAO
+        // setup VAO
+        m_vao.bind();
+        bind_noVAO();
+        m_vao.unbind();
+    #endif
 }
 
 Meshes::VBO::~VBO()
@@ -72,6 +118,11 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
 
     // set empty values
     other.m_id = Meshes::empty_id;
+    #ifdef USE_VAO
+        // this is pretty bad solution, sadly pretty much needed in C++
+        // maybe we will have to define move assignment for VAOs too which would clear other.m_vao
+        other.m_vao.m_id = Meshes::empty_id;
+    #endif
     other.m_vert_count = 0;
     other.m_stride = 0;
     other.m_texcoord_offset = 0;
@@ -83,7 +134,29 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
 void Meshes::VBO::bind() const
 {
     assert(m_id != Meshes::empty_id);
-    
+
+    #ifdef USE_VAO
+        m_vao.bind();
+    #else
+        bind_noVAO();
+    #endif
+}
+
+void Meshes::VBO::unbind() const
+{
+    // assumes that VBO was already bound!
+
+    #ifdef USE_VAO
+        m_vao.unbind();
+    #else
+        unbind_noVAO();
+    #endif
+}
+
+void Meshes::VBO::bind_noVAO() const
+{
+    assert(m_id != Meshes::empty_id);
+
     glBindBuffer(GL_ARRAY_BUFFER, m_id);
 
     //vertex position
@@ -105,10 +178,8 @@ void Meshes::VBO::bind() const
     }
 }
 
-void Meshes::VBO::unbind() const
+void Meshes::VBO::unbind_noVAO() const
 {
-    // assumes that VBO was already bound!
-
     //vertex position
     Shaders::disableVertexAttribute(Shaders::attribute_position_verts);
 
@@ -126,11 +197,13 @@ Meshes::VBO generateVBOfromData(const GLfloat *whole_data, bool texcoords, bool 
 {
     // constructs VBO with mesh data given in whole_data, can ignore texcoord or normals data from the input
     // whole_data MUST have the full usual layout in correct order!
-    // also the whole_data array must be of a length whole_data_len!
+    // also the whole_data array must be of length whole_data_len!
 
     // layout of whole_data must be (in this order): 3 floats for position + 2 floats for texcoords + 3 floats for normal
-    assert(whole_data_len % 8 == 0);   // that means this must hold true as 8 == 3 + 2 + 3
-    assert(whole_data_len > 0);        // empty data makes no sense
+    static_assert(whole_data_len % 8 == 0,
+                  "`generateVBOfromData` function requires whole_data with length divisible by 8! (8 == 3 for vertices + 2 for uv + 3 for normals)");
+    static_assert(whole_data_len > 0, "`generateVBOfromData` function requires non-empty whole_data!"); // empty data makes no sense
+    //TODO constexpr?
     const size_t vert_count = whole_data_len / 8;
 
     if (texcoords && normals) // simple case, dont discard anything -> whole_data is already data that we need

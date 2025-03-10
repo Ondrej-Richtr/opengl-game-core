@@ -4,7 +4,8 @@
 #include "stb_image.h"
 
 
-GLuint default_vao = 0; //TODO 
+//TODO remove this
+// GLuint default_vao = 0;
 
 static int init(void)
 {
@@ -33,7 +34,10 @@ static int init(void)
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
+    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GL_FALSE); //DEBUG
     //TODO look up GLFW_COCOA_RETINA_FRAMEBUFFER
+    //TODO GLFW_SCALE_FRAMEBUFFER
+    //TODO GLFW_SCALE_TO_MONITOR
 
     //initializing the window
     const char window_title[] = "OpenGL Game";
@@ -74,11 +78,6 @@ static int init(void)
         return 3;
     }
 
-    //DEBUG
-    assert(!Utils::checkForGLErrorsAndPrintThem());
-    //TODO comment
-    assert(!Utils::checkForGLError()); // this should always work unless you fail to ... ?
-
     //Inits
     if (!Meshes::initBasicMeshes())
     {
@@ -87,9 +86,9 @@ static int init(void)
         return 4;
     }
 
-    //TODO move this into VBOs and maybe make an abstraction?
-    glGenVertexArrays(1, &default_vao);
-    glBindVertexArray(default_vao);
+    //TODO remove this
+    // glGenVertexArrays(1, &default_vao);
+    // glBindVertexArray(default_vao);
 
     puts("Setup end.");
     return 0;
@@ -112,7 +111,6 @@ int main(void)
         return 1;
     }
 
-    //DEBUG
     puts("Begin main.");
 
     GLFWwindow *window = WindowManager::getWindow();

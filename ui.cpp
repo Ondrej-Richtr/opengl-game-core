@@ -112,6 +112,8 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
     nk_buffer_init_default(&m_vert_buffer);
     nk_buffer_init_default(&m_idx_buffer);
 
+    //TODO VBO when USE_VBO macro defined
+
     GLuint buffer_obj[2];
     glGenBuffers(2, buffer_obj);
     if (Utils::checkForGLError())
@@ -279,13 +281,13 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
                                             color_offset, stride, true); // true specified for offset in bytes
     }
 
-    size_t offset = 0, idx = 0; //DEBUG idx
+    size_t offset = 0;//, idx = 0;
     const struct nk_draw_command *cmd = NULL;
     nk_draw_foreach(cmd, &m_ctx, &m_cmd_buffer)
     {
         unsigned int elem_count = cmd->elem_count;
         if (!elem_count) {
-            ++idx;
+            // ++idx;
             continue;
         };
 
@@ -312,6 +314,7 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
     Shaders::disableVertexAttribute(Shaders::attribute_position_texcoords);
     Shaders::disableVertexAttribute(Shaders::attribute_position_color);
 
+    //TODO unbinding in OpenGL is an anti-pattern
     //unbind the OpenGL buffers just to be sure
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
