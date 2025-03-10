@@ -97,7 +97,6 @@ pub fn build(b: *std.Build) !void {
             exe.addCSourceFiles(.{ .files = &cpp_files, .flags = &.{ "-std=c++17" } });
             exe.addCSourceFiles(.{ .files = &c_files, .flags = &.{ "-std=c99" } });
 
-            //TODO test this
             switch (target.result.os.tag)
             {
                 //TODO correct macOS frameworks
@@ -109,6 +108,7 @@ pub fn build(b: *std.Build) !void {
                     exe.linkFramework("CoreVideo");
                     exe.linkFramework("IOKit");
                 },
+                //TODO correct linux libraries
                 .linux => {
                     exe.addLibraryPath(.{ .cwd_relative = "/usr/lib64/" });
                     exe.linkSystemLibrary("GL");

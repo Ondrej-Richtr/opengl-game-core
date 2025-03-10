@@ -3,6 +3,13 @@
 #include "game.hpp"
 
 
+Meshes::VAO::VAO() : m_id(Meshes::empty_id)
+{
+    assert(!Utils::checkForGLError());
+
+    glGenVertexArrays(1, &m_id);
+}
+
 Meshes::VBO::VBO() : m_id(Meshes::empty_id),
                      m_vert_count(0), m_stride(0),
                      m_texcoord_offset(-1), m_normal_offset(-1) {}

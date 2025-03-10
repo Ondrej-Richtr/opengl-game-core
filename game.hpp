@@ -67,6 +67,8 @@
 // returns whether given float number is close to zero according to FLOAT_TOLERANCE macro
 #define CLOSE_TO_0(n) ((n) <= FLOAT_TOLERANCE && (n) >= -FLOAT_TOLERANCE)
 
+#define BUILD_OPENGL_330_CORE //DEBUG
+
 
 //struct definitions
 struct ColorF
@@ -373,12 +375,12 @@ namespace Utils
 //shaders.cpp
 namespace Shaders
 {
-    //TODO
-    #define BUILD_OPENGL_330_CORE
-    #ifdef BUILD_OPENGL_330_CORE
-        #define SHADERS_DIR_PATH "shaders/ver330core/"
-    #else
-        #define SHADERS_DIR_PATH "shaders/ver300es/"
+    #ifndef SHADERS_DIR_PATH
+        #ifdef BUILD_OPENGL_330_CORE
+            #define SHADERS_DIR_PATH "shaders/ver330core/"
+        #else
+            #define SHADERS_DIR_PATH "shaders/ver300es/"
+        #endif
     #endif
 
     //TODO unite those ids?
@@ -464,6 +466,12 @@ namespace Textures
 //meshes.cpp
 namespace Meshes
 {
+    #ifndef USE_VAO
+        #ifdef BUILD_OPENGL_330_CORE
+            #define USE_VAO
+        #endif
+    #endif
+
     //TODO meshes - verts, normals, texcoords, indices for faces, (material?)
 
     //TODO unite those ids?
@@ -472,6 +480,20 @@ namespace Meshes
     static const size_t attribute_verts_amount = 3;     // vec3
     static const size_t attribute_texcoord_amount = 2;  // vec2
     static const size_t attribute_normal_amount = 3;    // vec3
+
+    //Vertex array object abstraction, should be fairly simple, only used with OpenGL 3.3 core
+    #ifdef USE_VAO
+    struct VAO
+    {
+        GLuint m_id = empty_id;
+
+        VAO();
+        ~VAO();
+
+        void bind() const;
+        void unbind() const;
+    }
+    #endif
 
     //Vertex buffer object abstraction, should be used mainly for mesh data
     //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
