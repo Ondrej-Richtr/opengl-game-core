@@ -3,7 +3,6 @@ const std = @import("std");
 const String = [:0]const u8;
 
 pub const project_name = "shooting_practice";
-pub const glfw_dir_path = "lib";
 
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "movement.cpp", "shaders.cpp",
@@ -101,11 +100,18 @@ pub fn build(b: *std.Build) !void {
             {
                 //TODO correct macOS frameworks
                 .macos => {
+                    const glfw_lib_dir_path = "/opt/homebrew/Cellar/glfw/3.4/lib";
+                    const glfw_include_dir_path = "/opt/homebrew/Cellar/glfw/3.4/include";
+
+                    exe.addLibraryPath(.{ .cwd_relative = glfw_lib_dir_path });
+                    exe.addIncludePath(.{ .cwd_relative = glfw_include_dir_path });
+                    exe.linkSystemLibrary("glfw3");
+
                     exe.linkFramework("Foundation");
                     exe.linkFramework("Cocoa");
                     exe.linkFramework("OpenGL");
-                    exe.linkFramework("CoreAudio");
-                    exe.linkFramework("CoreVideo");
+                    // exe.linkFramework("CoreAudio");
+                    // exe.linkFramework("CoreVideo");
                     exe.linkFramework("IOKit");
                 },
                 //TODO correct linux libraries
@@ -119,7 +125,9 @@ pub fn build(b: *std.Build) !void {
                 },
                 else => {
                     //TODO this is not part of the repo - make glfw compile from scratch?
-                    exe.addLibraryPath(.{ .cwd_relative = glfw_dir_path });
+                    const glfw_lib_dir_path = "lib";
+
+                    exe.addLibraryPath(.{ .cwd_relative = glfw_lib_dir_path });
                     exe.linkSystemLibrary("glfw3");
 
                     exe.linkSystemLibrary("opengl32");
