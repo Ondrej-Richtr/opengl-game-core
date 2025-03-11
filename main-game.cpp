@@ -110,6 +110,7 @@ int GameMainLoop::init()
     size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
                                 / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
     
+    //TODO 2D VBOs?
     glGenBuffers(1, &line_vbo);
     if (!line_vbo)
     {
@@ -580,7 +581,7 @@ LoopRetVal GameMainLoop::loop()
         //3D block
         {
             //set the viewport according to wanted framebuffer
-            glViewport(0, 0, fbo3d_tex.m_width * 2, fbo3d_tex.m_height * 2); //DEBUG *2
+            glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
             //bind the correct framebuffer
             fbo3d.bind();

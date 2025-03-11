@@ -10,6 +10,7 @@ uniform vec2 rectPos;
 uniform vec2 rectSize;
 
 #ifndef POSTPROCESS
+    // #define POSTPROCESS(tpos) (vec4(0.f, 1.f, 1.f, 1.f))
     #define POSTPROCESS(tpos) (_postproc((tpos)))
     // #define POSTPROCESS(tpos) (_postproc_greyscale((tpos)))
     // #define POSTPROCESS(tpos) (texture(inputTexture, (tpos)))

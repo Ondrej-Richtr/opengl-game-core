@@ -736,7 +736,7 @@ struct TestMainLoop //TODO proper deinit of objects
 };
 
 //main-game.cpp
-struct GameMainLoop //TODO proper init and deinit of objects
+struct GameMainLoop //TODO proper deinit of objects
 {
     //Camera
     float mouse_sens, fov, camera_pitch, camera_yaw;

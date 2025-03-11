@@ -556,12 +556,13 @@ LoopRetVal TestMainLoop::loop()
 
         //2D block
         {
-            const glm::vec2 win_size = WindowManager::getSizeF();
+            const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
+            const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
             // glm::vec2 window_middle = window_res / 2.f;
 
             //TODO this might be wrong on some displays?
             //set the viewport according to window size
-            glViewport(0, 0, win_size.x, win_size.y);
+            glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
@@ -575,7 +576,7 @@ LoopRetVal TestMainLoop::loop()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
 
             //render the 3D scene as a background from it's framebuffer
-            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_size);
+            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
 
             //TODO UI
 
