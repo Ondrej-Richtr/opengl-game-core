@@ -283,9 +283,9 @@ void Drawing::screenLine(const Shaders::Program& line_shader, unsigned int line_
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_verts, 2, 0, 2 * sizeof(GLfloat));
+        Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, 2, 0, 2 * sizeof(GLfloat));
             glDrawArrays(GL_LINES, 0, 2);
-        Shaders::disableVertexAttribute(Shaders::attribute_position_verts);
+        Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

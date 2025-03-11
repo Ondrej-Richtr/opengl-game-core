@@ -67,8 +67,6 @@
 // returns whether given float number is close to zero according to FLOAT_TOLERANCE macro
 #define CLOSE_TO_0(n) ((n) <= FLOAT_TOLERANCE && (n) >= -FLOAT_TOLERANCE)
 
-#define BUILD_OPENGL_330_CORE //DEBUG
-
 
 //struct definitions
 struct ColorF
@@ -385,7 +383,7 @@ namespace Shaders
     //TODO unite those ids? + constexpr constants
     static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
 
-    static const GLuint attribute_position_verts = 0;
+    static const GLuint attribute_position_pos = 0;
     static const GLuint attribute_position_texcoords = 1;
     static const GLuint attribute_position_normals = 2;
     static const GLuint attribute_position_color = 3;
@@ -476,27 +474,50 @@ namespace Meshes
     //TODO unite those ids?
     static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
 
-    static const size_t attribute_verts_amount = 3;     // vec3
-    static const size_t attribute_texcoord_amount = 2;  // vec2
-    static const size_t attribute_normal_amount = 3;    // vec3
+    constexpr static unsigned int attribute3d_pos_amount = 3;       // vec3
+    constexpr static unsigned int attribute3d_texcoord_amount = 2;  // vec2
+    constexpr static unsigned int attribute3d_normal_amount = 3;    // vec3
+
+    constexpr static unsigned int attribute2d_pos_amount = 2;       // vec2
+    // constexpr static unsigned int attribute2d_texcoord_amount = 2;  // vec2
+    // constexpr static unsigned int attribute2d_normal_amount = 3;    // vec3
 
     //Vertex array object abstraction, should be fairly simple, only used with OpenGL 3.3 core
     #ifdef USE_VAO
-    struct VAO
-    {
-        GLuint m_id = empty_id;
+        struct VAO
+        {
+            GLuint m_id = empty_id;
 
-        VAO() = default;
-        ~VAO();
+            VAO() = default;
+            ~VAO();
 
-        // explicit init, as we dont want to call generate buffers in default constructor
-        // calling code should check the validity of `m_id` afterwards!
-        void init();
+            // explicit init, as we dont want to call generate buffers in default constructor
+            // calling code should check the validity of `m_id` afterwards!
+            void init();
 
-        void bind() const;
-        void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern
-    };
+            void bind() const;
+            void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern
+        };
     #endif
+
+    struct AttributeConfig
+    {
+        // only position is not optional -> should be always larger than 0
+        unsigned int pos_amount = 0;
+        unsigned int texcoord_amount = 0;
+        unsigned int normal_amount = 0;
+
+        AttributeConfig() = default;
+
+        constexpr AttributeConfig(unsigned int pos_amount, unsigned int texcoord_amount, unsigned int normal_amount)
+                                    : pos_amount(pos_amount), texcoord_amount(texcoord_amount), normal_amount(normal_amount) {}
+    };
+
+    static constexpr AttributeConfig default3DConfig = AttributeConfig{Meshes::attribute3d_pos_amount,
+                                                                        Meshes::attribute3d_texcoord_amount,
+                                                                        Meshes::attribute3d_normal_amount};
+
+    static constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
 
     //Vertex buffer object abstraction, should be used mainly for mesh data
     //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
@@ -511,12 +532,13 @@ namespace Meshes
         #endif
         //TODO if we use vao then we probably dont need the following attributes
 
-        size_t m_vert_count;    // amount of vertices that this vbo holds
-        size_t m_stride;        // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
+        AttributeConfig m_attr_config; // config specifying sizes of each of the vertex attributes (size is in amount of GLfloats)
+        size_t m_vert_count;           // amount of vertices that this vbo holds
+        size_t m_stride;               // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
         int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
 
         VBO(); // default constructor for uninitialized VBO
-        VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals);
+        VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config);
         ~VBO();
 
         VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions + constructors

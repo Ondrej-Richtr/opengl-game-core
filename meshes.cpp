@@ -38,15 +38,17 @@ Meshes::VBO::VBO() : m_id(Meshes::empty_id),
                      #ifdef USE_VAO
                         m_vao(),
                      #endif
+                     m_attr_config(),
                      m_vert_count(0), m_stride(0),
                      m_texcoord_offset(-1), m_normal_offset(-1) {}
 
-Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bool normals)
+Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config = Meshes::default3DConfig)
                     : m_id(Meshes::empty_id),
                       #ifdef USE_VAO
                          m_vao(),
                       #endif
-                      m_vert_count(data_vert_count), m_stride(0),
+                     m_attr_config(attr_config), // TODO check if this is an actual value copy
+                     m_vert_count(data_vert_count), m_stride(0),
                       m_texcoord_offset(-1), m_normal_offset(-1)
 {
     assert(data_vert_count > 0);
@@ -62,18 +64,19 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, bool texcoords, bo
     #endif
 
     //offsets
-    int size = Meshes::attribute_verts_amount; // vertex position is always present
+    assert(m_attr_config.pos_amount > 0);
+    int size = m_attr_config.pos_amount; // vertex position is always present
 
-    if (texcoords) 
+    if (m_attr_config.texcoord_amount > 0)
     {
         m_texcoord_offset = size;
-        size += Meshes::attribute_texcoord_amount;
+        size += m_attr_config.texcoord_amount;
     }
 
-    if (normals) 
+    if (m_attr_config.normal_amount > 0) 
     {
         m_normal_offset = size;
-        size += Meshes::attribute_normal_amount;
+        size += m_attr_config.normal_amount;
     }
 
     //stride is in bytes -> amount of floats included * float size 
@@ -123,6 +126,7 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
         // maybe we will have to define move assignment for VAOs too which would clear other.m_vao
         other.m_vao.m_id = Meshes::empty_id;
     #endif
+    other.m_attr_config = Meshes::VBO::AttributeConfig(); // assign the default (maybe pointless?)
     other.m_vert_count = 0;
     other.m_stride = 0;
     other.m_texcoord_offset = 0;
@@ -160,20 +164,23 @@ void Meshes::VBO::bind_noVAO() const
     glBindBuffer(GL_ARRAY_BUFFER, m_id);
 
     //vertex position
-    Shaders::setupVertexAttribute_float(Shaders::attribute_position_verts, Meshes::attribute_verts_amount,
+    assert(m_attr_config.pos_amount > 0);
+    Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, m_attr_config.pos_amount,
                                         0, m_stride); // vertex position offset is always 0
 
     //vertex texcoords (if present)
     if (m_texcoord_offset >= 0)
     {
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_texcoords, Meshes::attribute_texcoord_amount,
+        assert(m_attr_config.texcoord_amount > 0);
+        Shaders::setupVertexAttribute_float(Shaders::attribute_position_texcoords, m_attr_config.texcoord_amount,
                                             m_texcoord_offset, m_stride);
     }
 
     //vertex normal (if present)
     if (m_normal_offset >= 0)
     {
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_normals, Meshes::attribute_normal_amount,
+        assert(m_attr_config.normal_amount > 0);
+        Shaders::setupVertexAttribute_float(Shaders::attribute_position_normals, m_attr_config.normal_amount,
                                             m_normal_offset, m_stride);
     }
 }
@@ -181,7 +188,7 @@ void Meshes::VBO::bind_noVAO() const
 void Meshes::VBO::unbind_noVAO() const
 {
     //vertex position
-    Shaders::disableVertexAttribute(Shaders::attribute_position_verts);
+    Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
 
     //vertex texcoords (if present)
     if (m_texcoord_offset >= 0) Shaders::disableVertexAttribute(Shaders::attribute_position_texcoords);
@@ -193,7 +200,7 @@ void Meshes::VBO::unbind_noVAO() const
 }
 
 template <size_t whole_data_len>
-Meshes::VBO generateVBOfromData(const GLfloat *whole_data, bool texcoords, bool normals)
+Meshes::VBO generateVBOfromData3D(const GLfloat *whole_data, bool texcoords, bool normals)
 {
     // constructs VBO with mesh data given in whole_data, can ignore texcoord or normals data from the input
     // whole_data MUST have the full usual layout in correct order!
@@ -208,13 +215,19 @@ Meshes::VBO generateVBOfromData(const GLfloat *whole_data, bool texcoords, bool 
 
     if (texcoords && normals) // simple case, dont discard anything -> whole_data is already data that we need
     {
-        return Meshes::VBO(whole_data, vert_count, true, true);
+        return Meshes::VBO(whole_data, vert_count);
     }
 
     GLfloat data[whole_data_len];
 
+    Meshes::VBO::AttributeConfig attr_config; // TODO factories
+
     size_t stride = Meshes::attribute_verts_amount; // vertex position always included
-    if (texcoords) stride += Meshes::attribute_texcoord_amount;
+    if (texcoords)
+    {
+
+        stride += Meshes::attribute3d_texcoord_amount;
+    }
     if (normals) stride += Meshes::attribute_normal_amount;
     assert(stride > 0);
     assert(stride <= 8);
@@ -354,7 +367,7 @@ Meshes::VBO Meshes::generateCubicVBO(glm::vec3 mesh_scale, glm::vec2 texture_wor
          half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
     };
 
-    return generateVBOfromData<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
+    return generateVBOfromData3D<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
 }
 
 Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_world_size,
@@ -402,7 +415,7 @@ Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_worl
         -half_x,  half_y,  0.f,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
     };
 
-    return generateVBOfromData<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
+    return generateVBOfromData3D<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
 }
 
 Meshes::VBO Meshes::unit_quad_pos_only;

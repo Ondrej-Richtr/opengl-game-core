@@ -4,9 +4,6 @@
 #include "stb_image.h"
 
 
-//TODO remove this
-// GLuint default_vao = 0;
-
 static int init(void)
 {
     puts("Setup begin.");
@@ -22,22 +19,22 @@ static int init(void)
     stbi_set_flip_vertically_on_load(true);
 
     //setting up OpenGL in GLFW
-    //ES
-    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    #ifdef BUILD_OPENGL_330_CORE
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    //TODO macOS
-    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
-    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GL_FALSE); //DEBUG
-    //TODO look up GLFW_COCOA_RETINA_FRAMEBUFFER
-    //TODO GLFW_SCALE_FRAMEBUFFER
-    //TODO GLFW_SCALE_TO_MONITOR
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ignored for OpenGL ES
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Mac OS X only, ignored for OpenGL ES
+        glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GL_FALSE);
+        //TODO look up GLFW_COCOA_RETINA_FRAMEBUFFER
+        //TODO GLFW_SCALE_FRAMEBUFFER
+        //TODO GLFW_SCALE_TO_MONITOR
+    #else
+        //ES
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    #endif
 
     //initializing the window
     const char window_title[] = "OpenGL Game";

@@ -265,7 +265,7 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
         //position
         size_t pos_components = 2;
         size_t pos_offset = NK_OFFSETOF(UI::Vertex, pos); // offset is in bytes
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_verts, pos_components,
+        Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, pos_components,
                                             pos_offset, stride, true); // true specified for offset in bytes
 
         //texcoords
@@ -310,7 +310,7 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
     }
 
     //disable the vbo attributes
-    Shaders::disableVertexAttribute(Shaders::attribute_position_verts);
+    Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
     Shaders::disableVertexAttribute(Shaders::attribute_position_texcoords);
     Shaders::disableVertexAttribute(Shaders::attribute_position_color);
 

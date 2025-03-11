@@ -90,6 +90,9 @@ pub fn build(b: *std.Build) !void {
         {
             //game executable
             const exe = b.addExecutable(.{ .name = project_name, .target = target, .optimize = optimize });
+
+            exe.defineCMacro("BUILD_OPENGL_330_CORE", null); //TODO maybe only on macOS?
+
             exe.addIncludePath(.{ .src_path = .{ .owner = b, .sub_path = "include" } });
             exe.linkLibCpp();
 
@@ -98,7 +101,6 @@ pub fn build(b: *std.Build) !void {
 
             switch (target.result.os.tag)
             {
-                //TODO correct macOS frameworks
                 .macos => {
                     const glfw_lib_dir_path = "/opt/homebrew/Cellar/glfw/3.4/lib";
                     const glfw_include_dir_path = "/opt/homebrew/Cellar/glfw/3.4/include";
@@ -143,7 +145,7 @@ pub fn build(b: *std.Build) !void {
 
             //TODO is check command useful for C++ project?
             //check
-            // const exe_check = b.addExecutable(.{ .name = project_name, .root_source_file = main_location, .target = target, .optimize = optimize });
+            // const exe_check = b.addExecutable(.{ .name = project_name, .target = target, .optimize = optimize });
 
             // const check = b.step("check", "Check if " ++ project_name ++ " compiles");
             // check.dependOn(&exe_check.step);

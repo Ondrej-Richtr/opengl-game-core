@@ -73,7 +73,7 @@ int TestMainLoop::init()
                                 / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
 
     //TODO check this
-    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count, true, true);
+    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
     if (cube_vbo.m_id == Meshes::empty_id)
     {
         fprintf(stderr, "Failed to create cube VBO!\n");

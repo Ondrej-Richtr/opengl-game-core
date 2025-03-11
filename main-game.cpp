@@ -92,7 +92,7 @@ int GameMainLoop::init()
     size_t cube_vert_count = (sizeof(cube_vertices) / sizeof(cube_vertices[0]))
                                 / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
 
-    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count, true, true);
+    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
     if (cube_vbo.m_id == Meshes::empty_id)
     {
         fprintf(stderr, "Failed to create cube VBO!\n");
@@ -585,7 +585,6 @@ LoopRetVal GameMainLoop::loop()
 
             //bind the correct framebuffer
             fbo3d.bind();
-            // glBindFramebuffer(GL_FRAMEBUFFER, 0); //DEBUG
 
             Drawing::clear(clear_color_3d);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
