@@ -511,13 +511,16 @@ namespace Meshes
 
         constexpr AttributeConfig(unsigned int pos_amount, unsigned int texcoord_amount, unsigned int normal_amount)
                                     : pos_amount(pos_amount), texcoord_amount(texcoord_amount), normal_amount(normal_amount) {}
+        
+        unsigned int sum() const;
     };
 
-    static constexpr AttributeConfig default3DConfig = AttributeConfig{Meshes::attribute3d_pos_amount,
+    // TODO try to move those somewhere else
+    constexpr AttributeConfig default3DConfig = AttributeConfig{Meshes::attribute3d_pos_amount,
                                                                         Meshes::attribute3d_texcoord_amount,
                                                                         Meshes::attribute3d_normal_amount};
 
-    static constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
+    constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
 
     //Vertex buffer object abstraction, should be used mainly for mesh data
     //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
@@ -538,7 +541,7 @@ namespace Meshes
         int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
 
         VBO(); // default constructor for uninitialized VBO
-        VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config);
+        VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config = default3DConfig);
         ~VBO();
 
         VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions + constructors

@@ -34,6 +34,11 @@ void Meshes::VAO::unbind() const
 }
 #endif
 
+unsigned int Meshes::AttributeConfig::sum() const
+{
+    return pos_amount + texcoord_amount + normal_amount;
+}
+
 Meshes::VBO::VBO() : m_id(Meshes::empty_id),
                      #ifdef USE_VAO
                         m_vao(),
@@ -42,7 +47,7 @@ Meshes::VBO::VBO() : m_id(Meshes::empty_id),
                      m_vert_count(0), m_stride(0),
                      m_texcoord_offset(-1), m_normal_offset(-1) {}
 
-Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config = Meshes::default3DConfig)
+Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config)
                     : m_id(Meshes::empty_id),
                       #ifdef USE_VAO
                          m_vao(),
@@ -126,7 +131,7 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
         // maybe we will have to define move assignment for VAOs too which would clear other.m_vao
         other.m_vao.m_id = Meshes::empty_id;
     #endif
-    other.m_attr_config = Meshes::VBO::AttributeConfig(); // assign the default (maybe pointless?)
+    other.m_attr_config = Meshes::AttributeConfig(); // assign the default with all zeros (maybe pointless?)
     other.m_vert_count = 0;
     other.m_stride = 0;
     other.m_texcoord_offset = 0;
@@ -220,49 +225,60 @@ Meshes::VBO generateVBOfromData3D(const GLfloat *whole_data, bool texcoords, boo
 
     GLfloat data[whole_data_len];
 
-    Meshes::VBO::AttributeConfig attr_config; // TODO factories
+    Meshes::AttributeConfig attr_config{}; // begin with empty config
+    attr_config.pos_amount = Meshes::attribute3d_pos_amount; // vertex position always included
+    if (texcoords) attr_config.texcoord_amount = Meshes::attribute3d_texcoord_amount;
+    if (normals) attr_config.normal_amount = Meshes::attribute3d_normal_amount;
 
-    size_t stride = Meshes::attribute_verts_amount; // vertex position always included
-    if (texcoords)
-    {
-
-        stride += Meshes::attribute3d_texcoord_amount;
-    }
-    if (normals) stride += Meshes::attribute_normal_amount;
+    unsigned int stride = attr_config.sum();
     assert(stride > 0);
     assert(stride <= 8);
 
     const GLfloat *current_whole_data = whole_data;
     GLfloat       *current_data       = data;
 
+    // this is an optimization
+    const unsigned int pos_amount = attr_config.pos_amount,
+                       texcoord_amount = attr_config.texcoord_amount,
+                       normal_amount = attr_config.normal_amount;
+
     for (size_t i = 0; i < vert_count; ++i) // cycle through each vertex in whole_data
     {
         // copy position
-        memcpy(current_data, current_whole_data, Meshes::attribute_verts_amount * sizeof(GLfloat));
+        memcpy(current_data, current_whole_data, pos_amount * sizeof(GLfloat));
+
+        //IDEA maybe advance current_data and current_whole_data pointers after each copy,
+        // that way we might be faster and also get rid off stride and advancing by 8
 
         // texcoord data
         if (texcoords)
         {
+            assert(attr_config.texcoord_amount > 0);
+
             // copy texcoords
-            memcpy(current_data + Meshes::attribute_verts_amount,
-                   current_whole_data + Meshes::attribute_verts_amount,
-                   Meshes::attribute_texcoord_amount * sizeof(GLfloat));
+            memcpy(current_data + pos_amount,
+                   current_whole_data + pos_amount,
+                   texcoord_amount * sizeof(GLfloat));
 
             // copy normal
             if (normals)
             {
-                memcpy(current_data + Meshes::attribute_verts_amount + Meshes::attribute_texcoord_amount,
-                       current_whole_data + Meshes::attribute_verts_amount + Meshes::attribute_texcoord_amount,
-                       Meshes::attribute_normal_amount * sizeof(GLfloat));
+                assert(attr_config.normal_amount > 0);
+
+                memcpy(current_data + pos_amount + texcoord_amount,
+                       current_whole_data + pos_amount + texcoord_amount,
+                       normal_amount * sizeof(GLfloat));
             }
         }
         // no texcoord data
         else if (normals)
         {
+            assert(attr_config.normal_amount > 0);
+
             // just copy normal
-            memcpy(current_data + Meshes::attribute_verts_amount,
-                   current_whole_data + Meshes::attribute_verts_amount,
-                   Meshes::attribute_normal_amount * sizeof(GLfloat));
+            memcpy(current_data + pos_amount,
+                   current_whole_data + pos_amount,
+                   normal_amount * sizeof(GLfloat));
         }
 
         // advance the pointers accordingly
@@ -271,7 +287,7 @@ Meshes::VBO generateVBOfromData3D(const GLfloat *whole_data, bool texcoords, boo
     }
 
     // return the VBO constructed from the partial data
-    return Meshes::VBO(data, vert_count, texcoords, normals);
+    return Meshes::VBO(data, vert_count, attr_config);
 }
 
 Meshes::VBO Meshes::generateCubicVBO(glm::vec3 mesh_scale, glm::vec2 texture_world_size,
