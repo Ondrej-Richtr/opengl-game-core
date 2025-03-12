@@ -254,10 +254,10 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
     vbo.unbind();
 }
 
-void Drawing::screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+void Drawing::screenLine(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                          glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color)
 {
-    assert(line_vbo != 0);
+    assert(line_vbo.m_id != Meshes::empty_id);
     assert(thickness >= 1.f);
 
     // v * scale + translation = u
@@ -282,14 +282,12 @@ void Drawing::screenLine(const Shaders::Program& line_shader, unsigned int line_
         line_shader.set("color", color);
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, 2, 0, 2 * sizeof(GLfloat));
-            glDrawArrays(GL_LINES, 0, 2);
-        Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    line_vbo.bind();
+            glDrawArrays(GL_LINES, 0, line_vbo.m_vert_count);
+    line_vbo.unbind();
 }
 
-void Drawing::crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+void Drawing::crosshair(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                         glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color)
 {
     // horizontal (x) line

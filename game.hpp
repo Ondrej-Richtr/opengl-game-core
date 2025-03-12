@@ -119,6 +119,11 @@ namespace Textures
     struct Texture2D;
 };
 
+namespace Meshes
+{
+    class VBO;
+};
+
 namespace Game
 {
     class Target;
@@ -219,10 +224,10 @@ namespace Drawing
     void texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
                            glm::vec2 dstPos, glm::vec2 dstSize);
 
-    void screenLine(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+    void screenLine(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                     glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
 
-    void crosshair(const Shaders::Program& line_shader, unsigned int line_vbo, glm::vec2 screen_res,
+    void crosshair(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                    glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
     
     void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
@@ -522,8 +527,9 @@ namespace Meshes
 
     constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
 
-    //Vertex buffer object abstraction, should be used mainly for mesh data
+    //Vertex buffer object abstraction, should be used mainly for mesh data - currently only supports GL_STATIC_DRAW
     //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
+    //  uses VAO when `USE_VAO` macro is defined.
     struct VBO
     {
         GLuint m_id = empty_id;
@@ -550,7 +556,7 @@ namespace Meshes
         void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern, this unbind is however correct when not using VAO!
 
     private:
-        // helper methods for better readability, the code will be probably moved back to VBO::bind/unbind after VAO refactor
+        // helper methods for better readability, the code will be probably moved back to VBO::bind/unbind after VAO+Mesh refactor
         void bind_noVAO() const;
         void unbind_noVAO() const;
     };
@@ -768,8 +774,7 @@ struct GameMainLoop //TODO proper deinit of objects
     Drawing::Camera3D camera;
 
     //VBOs
-    Meshes::VBO cube_vbo;
-    unsigned int line_vbo;
+    Meshes::VBO cube_vbo, line_vbo;
 
     //Textures
     Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, target_texture;

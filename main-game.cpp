@@ -110,17 +110,12 @@ int GameMainLoop::init()
     size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
                                 / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
     
-    //TODO 2D VBOs?
-    glGenBuffers(1, &line_vbo);
-    if (!line_vbo)
+    new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::default2DConfig);
+    if (line_vbo.m_id == Meshes::empty_id)
     {
         fprintf(stderr, "Failed to create unit line VBO!\n");
         return 1;
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(line_vertices), line_vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the buffer afterwards
 
     //Textures
     using Texture = Textures::Texture2D;
@@ -402,7 +397,6 @@ int GameMainLoop::init()
 
 GameMainLoop::~GameMainLoop()
 {
-    glDeleteBuffers(1, &line_vbo);
     glDeleteRenderbuffers(1, &fbo3d_rbo_depth);
     glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
 }
@@ -698,9 +692,9 @@ LoopRetVal GameMainLoop::loop()
 
             //TODO fix crosshair drawing
             //crosshair
-            /*const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
+            const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
             Drawing::crosshair(screen_line_shader, line_vbo, win_fbo_size,
-                                glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);*/
+                                glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
 
             //TODO fix UI drawing
             //UI drawing
