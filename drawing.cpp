@@ -250,7 +250,7 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
     }
 
     vbo.bind();
-        glDrawArrays(GL_TRIANGLES, 0, vbo.m_vert_count);
+        glDrawArrays(GL_TRIANGLES, 0, vbo.vertexCount());
     vbo.unbind();
 }
 
@@ -283,7 +283,7 @@ void Drawing::screenLine(const Shaders::Program& line_shader, const Meshes::VBO&
     }
 
     line_vbo.bind();
-            glDrawArrays(GL_LINES, 0, line_vbo.m_vert_count);
+            glDrawArrays(GL_LINES, 0, line_vbo.vertexCount());
     line_vbo.unbind();
 }
 
@@ -338,6 +338,6 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
     }
 
     target.m_vbo.bind();
-        glDrawArrays(GL_TRIANGLES, 0, target.m_vbo.m_vert_count);
+        glDrawArrays(GL_TRIANGLES, 0, target.m_vbo.vertexCount());
     target.m_vbo.unbind();
 }

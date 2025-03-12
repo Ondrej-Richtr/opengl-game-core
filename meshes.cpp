@@ -52,7 +52,7 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig at
                       #ifdef USE_VAO
                          m_vao(),
                       #endif
-                     m_attr_config(attr_config), // TODO check if this is an actual value copy
+                     m_attr_config(attr_config),
                      m_vert_count(data_vert_count), m_stride(0),
                       m_texcoord_offset(-1), m_normal_offset(-1)
 {
@@ -116,6 +116,11 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig at
 Meshes::VBO::~VBO()
 {
     glDeleteBuffers(1, &m_id);
+}
+
+size_t Meshes::VBO::vertexCount() const
+{
+    return m_vert_count;
 }
 
 Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)

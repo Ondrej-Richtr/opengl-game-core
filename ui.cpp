@@ -71,9 +71,22 @@ const nk_user_font* UI::Font::getFontPtr() const
 
 UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
                         : m_ctx_initialized(false), m_shader(shader),
-                          m_vbo_id(0), m_ebo_id(0) //TODO empty id
+                          #ifdef USE_VAO
+                            m_vao(),
+                          #endif
+                          m_vbo_id(Meshes::empty_id), m_ebo_id(0) //TODO empty_id
 {
     assert(!Utils::checkForGLError());
+
+    //TODO implement vao
+    #ifdef USE_VAO
+        m_vao.init();
+        if (m_vao.m_id == Meshes::empty_id)
+        {
+            fprintf(stderr, "Error occurred when creating VAO for UI.\n");
+            return;
+        }
+    #endif
 
     const nk_user_font *font_ptr = font.getFontPtr();
 
@@ -112,8 +125,6 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
     nk_buffer_init_default(&m_vert_buffer);
     nk_buffer_init_default(&m_idx_buffer);
 
-    //TODO VBO when USE_VBO macro defined
-
     GLuint buffer_obj[2];
     glGenBuffers(2, buffer_obj);
     if (Utils::checkForGLError())
@@ -130,6 +141,14 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
 
     m_vbo_id = buffer_obj[0];
     m_ebo_id = buffer_obj[1];
+
+    #ifdef USE_VAO
+        // setup VAO
+        m_vao.bind();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_id);
+        setupVBOAttributes(); // VBO gets bound inside
+        m_vao.unbind();
+    #endif
 
     m_ctx_initialized = true;
 }
@@ -211,7 +230,7 @@ bool UI::Context::convert()
     assert(m_ctx_initialized); //DEBUG
     if (!m_ctx_initialized) return false;
     
-    //TODO
+    //TODO better error message based on value of result
     // result is one of:
     // * NK_CONVERT_SUCCESS              | Signals a successful draw command to vertex buffer conversion
     // * NK_CONVERT_INVALID_PARAM        | An invalid argument was passed in the function call
@@ -239,9 +258,30 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
 
     m_shader.use();
     glActiveTexture(GL_TEXTURE0 + texture_unit);
+
+    //bind the screen resolution uniform
+    m_shader.set("screenRes", screen_res);
     
+    //copy the (converted) data from Nuklear buffers into OpenGL buffers
+    assert(m_vbo_id != Meshes::empty_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
+    glBufferData(GL_ARRAY_BUFFER, m_vert_buffer.allocated, nk_buffer_memory(&m_vert_buffer), GL_STREAM_DRAW);
+
+    assert(m_ebo_id != 0); //TODO empty id
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_id);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_idx_buffer.allocated, nk_buffer_memory(&m_idx_buffer), GL_STREAM_DRAW);
+
+    // bind the VAO if we are using it
+    #ifdef USE_VAO
+        m_vao.bind();
+    #else // else we need to setup VBO vertex attributes ourselves
+        setupVBOAttributes();
+    #endif
+
+    //TODO remove this
+    /*
     //bind the respective OpenGL buffers
-    assert(m_vbo_id != 0); //TODO empty id
+    assert(m_vbo_id != Mehses::empty_id);
     assert(m_ebo_id != 0); //TODO empty id
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_id);
@@ -259,27 +299,7 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
     m_shader.set("screenRes", screen_res);
 
     //setup the vbo attributes (buffer is already bound)
-    {
-        size_t stride = sizeof(UI::Vertex); //TODO alignment (just in case, seems like it's not needed with current UI::Vertex format)
-
-        //position
-        size_t pos_components = 2;
-        size_t pos_offset = NK_OFFSETOF(UI::Vertex, pos); // offset is in bytes
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, pos_components,
-                                            pos_offset, stride, true); // true specified for offset in bytes
-
-        //texcoords
-        size_t texcoords_components = 2;
-        size_t texcoords_offset = NK_OFFSETOF(UI::Vertex, uv); // offset is in bytes
-        Shaders::setupVertexAttribute_float(Shaders::attribute_position_texcoords, texcoords_components,
-                                            texcoords_offset, stride, true); // true specified for offset in bytes
-
-        //color
-        size_t color_components = 4;
-        size_t color_offset = NK_OFFSETOF(UI::Vertex, color); // offset is in bytes
-        Shaders::setupVertexAttribute_ubyte(Shaders::attribute_position_color, color_components,
-                                            color_offset, stride, true); // true specified for offset in bytes
-    }
+    */
 
     size_t offset = 0;//, idx = 0;
     const struct nk_draw_command *cmd = NULL;
@@ -309,15 +329,17 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
         offset += elem_count * sizeof(GLushort);
     }
 
-    //disable the vbo attributes
-    Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
-    Shaders::disableVertexAttribute(Shaders::attribute_position_texcoords);
-    Shaders::disableVertexAttribute(Shaders::attribute_position_color);
-
     //TODO unbinding in OpenGL is an anti-pattern
     //unbind the OpenGL buffers just to be sure
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    #ifdef USE_VAO
+        m_vao.unbind();
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    #else
+        disableVBOAttributes(); // when not using VAO we need to disable the VBO attributes manually
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    #endif
 
     return true;
 }
@@ -331,4 +353,39 @@ void UI::Context::clear()
     nk_buffer_clear(&m_idx_buffer);
 
     nk_clear(&m_ctx);
+}
+
+void UI::Context::setupVBOAttributes() const
+{
+    assert(m_vbo_id != Meshes::empty_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id); // just to make sure the vbo is really bound
+
+    size_t stride = sizeof(UI::Vertex); //TODO alignment (just in case, seems like it's not needed with current UI::Vertex format)
+
+    //position
+    size_t pos_components = 2;
+    size_t pos_offset = NK_OFFSETOF(UI::Vertex, pos); // offset is in bytes
+    Shaders::setupVertexAttribute_float(Shaders::attribute_position_pos, pos_components,
+                                        pos_offset, stride, true); // true specified for offset in bytes
+
+    //texcoords
+    size_t texcoords_components = 2;
+    size_t texcoords_offset = NK_OFFSETOF(UI::Vertex, uv); // offset is in bytes
+    Shaders::setupVertexAttribute_float(Shaders::attribute_position_texcoords, texcoords_components,
+                                        texcoords_offset, stride, true); // true specified for offset in bytes
+
+    //color
+    size_t color_components = 4;
+    size_t color_offset = NK_OFFSETOF(UI::Vertex, color); // offset is in bytes
+    Shaders::setupVertexAttribute_ubyte(Shaders::attribute_position_color, color_components,
+                                        color_offset, stride, true); // true specified for offset in bytes
+}
+
+void UI::Context::disableVBOAttributes() const
+{
+    // assumes that the correct VBO is bound!
+
+    Shaders::disableVertexAttribute(Shaders::attribute_position_pos);
+    Shaders::disableVertexAttribute(Shaders::attribute_position_texcoords);
+    Shaders::disableVertexAttribute(Shaders::attribute_position_color);
 }

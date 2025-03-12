@@ -534,14 +534,18 @@ namespace Meshes
         #endif
         //TODO if we use vao then we probably dont need the following attributes
 
+    private:
         AttributeConfig m_attr_config; // config specifying sizes of each of the vertex attributes (size is in amount of GLfloats)
         size_t m_vert_count;           // amount of vertices that this vbo holds
         size_t m_stride;               // stride in bytes (vec3 position + (optional) vec2 texcoords + (optional) vec3 normal)
         int m_texcoord_offset, m_normal_offset; // offsets into the vbo NOT in bytes, -1 means that attribute is not included
 
+    public:
         VBO(); // default constructor for uninitialized VBO
         VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config = default3DConfig);
         ~VBO();
+
+        size_t vertexCount() const;
 
         VBO& operator=(VBO&& other); // this is sadly needed because of global meshes and generate functions + constructors
 
@@ -615,6 +619,7 @@ namespace Collision
 
 namespace UI
 {
+    // vertex struct that servers ONLY as a model of data that gets passed into UI shader from Nuklear through UI Context's VBO
     struct Vertex
     {
         GLfloat pos[2]; // important to keep it to 2 floats
@@ -648,7 +653,9 @@ namespace UI
         nk_buffer m_cmd_buffer, m_vert_buffer, m_idx_buffer;
 
         const Shaders::Program& m_shader;
-        //TODO VBO when USE_VBO macro defined
+        #ifdef USE_VAO
+            Meshes::VAO m_vao;
+        #endif
         GLuint m_vbo_id, m_ebo_id;
 
         Context(const Shaders::Program& shader, const UI::Font& font);
@@ -662,6 +669,11 @@ namespace UI
         bool draw(glm::vec2 screen_res, unsigned int texture_unit = 0);
 
         void clear();
+    
+    private:
+        void setupVBOAttributes() const;
+        
+        void disableVBOAttributes() const;
     };
 }
 

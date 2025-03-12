@@ -444,7 +444,7 @@ LoopRetVal TestMainLoop::loop()
             }
 
             cube_vbo.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.m_vert_count);
+                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
             cube_vbo.unbind();
 
             //moving point light source cube
@@ -462,7 +462,7 @@ LoopRetVal TestMainLoop::loop()
             }
 
             cube_vbo.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.m_vert_count);
+                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
             cube_vbo.unbind();
 
             //material cubes
@@ -505,7 +505,7 @@ LoopRetVal TestMainLoop::loop()
                 //     Shaders::setupVertexAttribute_float(0, 3, cube_verts_pos_offset, cube_vert_attrib * sizeof(GLfloat));
                 //     Shaders::setupVertexAttribute_float(1, 2, cube_verts_texcoord_offset, cube_vert_attrib * sizeof(GLfloat));
                 //     Shaders::setupVertexAttribute_float(2, 3, cube_verts_normal_offset, cube_vert_attrib * sizeof(GLfloat));
-                    glDrawArrays(GL_TRIANGLES, 0, cube_vbo.m_vert_count);
+                    glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
                 //     Shaders::disableVertexAttribute(0);
                 //     Shaders::disableVertexAttribute(1);
                 //     Shaders::disableVertexAttribute(2);
@@ -545,7 +545,7 @@ LoopRetVal TestMainLoop::loop()
             }
 
             cube_vbo.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.m_vert_count);
+                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
             cube_vbo.unbind();
 
             glDisable(GL_CULL_FACE);

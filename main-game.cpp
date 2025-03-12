@@ -624,7 +624,7 @@ LoopRetVal GameMainLoop::loop()
             }
 
             cube_vbo.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.m_vert_count);
+                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
             cube_vbo.unbind();
 
             //wall
@@ -650,7 +650,7 @@ LoopRetVal GameMainLoop::loop()
             }
 
             wall_vbo.bind();
-                glDrawArrays(GL_TRIANGLES, 0, wall_vbo.m_vert_count);
+                glDrawArrays(GL_TRIANGLES, 0, wall_vbo.vertexCount());
             wall_vbo.unbind();
 
             glDisable(GL_CULL_FACE);
@@ -698,12 +698,12 @@ LoopRetVal GameMainLoop::loop()
 
             //TODO fix UI drawing
             //UI drawing
-            /*glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+            glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
             if (!ui.draw(win_fbo_size))
             {
                 fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
             }
-            glDisable(GL_SCISSOR_TEST);*/
+            glDisable(GL_SCISSOR_TEST);
 
             glDisable(GL_BLEND);
 
