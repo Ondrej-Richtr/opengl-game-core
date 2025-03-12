@@ -460,6 +460,50 @@ int GameMainLoop::init()
     return 0;
 }
 
+void GameMainLoop::deinitCamera()
+{
+}
+
+void GameMainLoop::deinitVBOs()
+{
+}
+
+void GameMainLoop::deinitTextures()
+{
+}
+
+void GameMainLoop::deinitRenderBuffers()
+{
+}
+
+void GameMainLoop::deinitShaders()
+{
+}
+
+void GameMainLoop::deinitLighting()
+{
+}
+
+void GameMainLoop::deinitMaterials()
+{
+}
+
+void GameMainLoop::deinitUI()
+{
+}
+
+void GameMainLoop::deinitFrameBuffers()
+{
+}
+
+void GameMainLoop::deinitGameStuff()
+{
+}
+
+void GameMainLoop::deinitMisc()
+{
+}
+
 GameMainLoop::~GameMainLoop()
 {
     glDeleteRenderbuffers(1, &fbo3d_rbo_depth);

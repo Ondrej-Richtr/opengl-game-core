@@ -860,6 +860,19 @@ private:
     bool initUI();
     bool initFrameBuffers();
     bool initGameStuff();
+    bool initMisc();
+
+    void deinitCamera();
+    void deinitVBOs();
+    void deinitTextures();
+    void deinitRenderBuffers();
+    void deinitShaders();
+    void deinitLighting();
+    void deinitMaterials();
+    void deinitUI();
+    void deinitFrameBuffers();
+    void deinitGameStuff();
+    void deinitMisc();
 };
 
 int test_main();
