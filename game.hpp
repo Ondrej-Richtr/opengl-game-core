@@ -845,8 +845,21 @@ struct GameMainLoop //TODO proper deinit of objects
 
     LoopRetVal loop();
 
+    //TODO global mouse button manager for all main loops
     static bool left_mbutton_state;
-    static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods); //TODO global mouse button manager maybe?
+    static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
+
+private:
+    bool initCamera();
+    bool initVBOs();
+    bool initTextures();
+    bool initRenderBuffers();
+    bool initShaders();
+    bool initLighting();
+    bool initMaterials();
+    bool initUI();
+    bool initFrameBuffers();
+    bool initGameStuff();
 };
 
 int test_main();

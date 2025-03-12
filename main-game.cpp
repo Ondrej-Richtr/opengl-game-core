@@ -9,6 +9,7 @@
 
 bool GameMainLoop::left_mbutton_state = false;
 
+//TODO global manager for mouse callbacks! Call from different init will remove this one!
 void GameMainLoop::mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods)
 {
     //TODO use glfwGetWindowUserPointer or make a manager for this callback
@@ -17,6 +18,72 @@ void GameMainLoop::mouseButtonsCallback(GLFWwindow *window, int button, int acti
     {
         GameMainLoop::left_mbutton_state = (action == GLFW_PRESS);
     }
+}
+
+bool GameMainLoop::initCamera()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initVBOs()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initTextures()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initRenderBuffers()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initShaders()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initLighting()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initMaterials()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initUI()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initFrameBuffers()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initGameStuff()
+{
+    //TODO move init code here
+    return false;
+}
+
+bool GameMainLoop::initMisc()
+{
+    //TODO move init code here
+    return false;
 }
 
 int GameMainLoop::init()
