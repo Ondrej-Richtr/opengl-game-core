@@ -98,9 +98,6 @@ static void deinit()
 
 int main(void)
 {
-    // return game_main();
-    // return test_main();
-
     int setup_ret = init();
     if (setup_ret)
     {

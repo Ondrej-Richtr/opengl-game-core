@@ -110,7 +110,7 @@ int GameMainLoop::init()
     size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
                                 / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
     
-    new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::default2DConfig);
+    new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::VBO::default2DConfig);
     if (line_vbo.m_id == Meshes::empty_id)
     {
         fprintf(stderr, "Failed to create unit line VBO!\n");

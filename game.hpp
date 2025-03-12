@@ -520,13 +520,6 @@ namespace Meshes
         unsigned int sum() const;
     };
 
-    // TODO try to move those somewhere else
-    constexpr AttributeConfig default3DConfig = AttributeConfig{Meshes::attribute3d_pos_amount,
-                                                                        Meshes::attribute3d_texcoord_amount,
-                                                                        Meshes::attribute3d_normal_amount};
-
-    constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
-
     //Vertex buffer object abstraction, should be used mainly for mesh data - currently only supports GL_STATIC_DRAW
     //  consists of (in this order) - vertex positions, vertex texture coordinates (optional), vertex normals (optional)
     //  uses VAO when `USE_VAO` macro is defined.
@@ -554,6 +547,12 @@ namespace Meshes
 
         void bind() const;
         void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern, this unbind is however correct when not using VAO!
+
+        static constexpr AttributeConfig default3DConfig = AttributeConfig{Meshes::attribute3d_pos_amount,
+                                                                           Meshes::attribute3d_texcoord_amount,
+                                                                           Meshes::attribute3d_normal_amount};
+
+        static constexpr AttributeConfig default2DConfig  = AttributeConfig{Meshes::attribute2d_pos_amount, 0, 0};
 
     private:
         // helper methods for better readability, the code will be probably moved back to VBO::bind/unbind after VAO+Mesh refactor
