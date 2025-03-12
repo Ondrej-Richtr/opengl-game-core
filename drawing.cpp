@@ -211,7 +211,6 @@ void Drawing::FrameBuffer::attachAll(Drawing::FrameBuffer::Attachment color,
 
 bool Drawing::FrameBuffer::isComplete() const
 {
-    // TODO unbind afterwards?
     if (m_id == 0) return false; //TODO empty_id
 
     bind();

@@ -2,6 +2,8 @@ const std = @import("std");
 
 const String = [:0]const u8;
 
+// Public constants related to build configuration.
+// Please keep list of cpp and c files updated with all file that need to get compiled.
 pub const project_name = "shooting_practice";
 
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
@@ -9,12 +11,13 @@ pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "li
                                  "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
 pub const c_files = [_]String{ "glad.c", "nuklear.c", "stb_image.c" };
 
+pub const cpp_std_ver = "c++17";
+pub const c_std_ver = "c99";
+
+
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-
-    //TODO this
-    // const main_location = std.Build.LazyPath{ .src_path = .{ .owner = b, .sub_path = "main.cpp" } };
 
     switch (target.result.os.tag)
     {
@@ -96,8 +99,8 @@ pub fn build(b: *std.Build) !void {
             exe.addIncludePath(.{ .src_path = .{ .owner = b, .sub_path = "include" } });
             exe.linkLibCpp();
 
-            exe.addCSourceFiles(.{ .files = &cpp_files, .flags = &.{ "-std=c++17" } });
-            exe.addCSourceFiles(.{ .files = &c_files, .flags = &.{ "-std=c99" } });
+            exe.addCSourceFiles(.{ .files = &cpp_files, .flags = &.{ "-std=" ++ cpp_std_ver } });
+            exe.addCSourceFiles(.{ .files = &c_files, .flags = &.{ "-std=" ++ c_std_ver } });
 
             switch (target.result.os.tag)
             {

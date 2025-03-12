@@ -78,7 +78,6 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
 {
     assert(!Utils::checkForGLError());
 
-    //TODO implement vao
     #ifdef USE_VAO
         m_vao.init();
         if (m_vao.m_id == Meshes::empty_id)
@@ -230,8 +229,7 @@ bool UI::Context::convert()
     assert(m_ctx_initialized); //DEBUG
     if (!m_ctx_initialized) return false;
     
-    //TODO better error message based on value of result
-    // result is one of:
+    // result is one of: (or multiple in case of full buffers)
     // * NK_CONVERT_SUCCESS              | Signals a successful draw command to vertex buffer conversion
     // * NK_CONVERT_INVALID_PARAM        | An invalid argument was passed in the function call
     // * NK_CONVERT_COMMAND_BUFFER_FULL  | The provided buffer for storing draw commands is full or failed to allocate more memory
@@ -239,16 +237,30 @@ bool UI::Context::convert()
     // * NK_CONVERT_ELEMENT_BUFFER_FULL  | The provided buffer for storing indices is full or failed to allocate more memory
     nk_flags result = nk_convert(&m_ctx, &m_cmd_buffer, &m_vert_buffer, &m_idx_buffer, &m_cfg);
 
-    if (result != NK_CONVERT_SUCCESS)
+    if (result == NK_CONVERT_SUCCESS) return true;
+
+    if (result == NK_CONVERT_INVALID_PARAM)
     {
-        fprintf(stderr, "[WARNING] Conversion of UI failed! Error value: '%d'!\n", result);
+        fprintf(stderr, "[WARNING] Conversion of UI failed! Unexpected NULL parameter.\n");
         return false;
     }
 
-    return true;
+    if (result & NK_CONVERT_COMMAND_BUFFER_FULL)
+            fprintf(stderr, "[WARNING] Conversion of UI failed! Command buffer is full.\n");
+    if (result & NK_CONVERT_VERTEX_BUFFER_FULL)
+            fprintf(stderr, "[WARNING] Conversion of UI failed! Vertex buffer is full.\n");
+    if (result & NK_CONVERT_ELEMENT_BUFFER_FULL)
+            fprintf(stderr, "[WARNING] Conversion of UI failed! Element buffer is full.\n");
+    // print generic error if neither of the previous cases printed
+    if ((result & (NK_CONVERT_COMMAND_BUFFER_FULL |
+                   NK_CONVERT_VERTEX_BUFFER_FULL |
+                   NK_CONVERT_ELEMENT_BUFFER_FULL)) == 0)
+            fprintf(stderr, "[WARNING] Conversion of UI failed! Error value: '%d'!\n", result);
+    
+    return false;
 }
 
-bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO read screen_res from some manager
+bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit)
 {
     assert(m_ctx_initialized); //DEBUG
     if (!m_ctx_initialized) return false;
@@ -277,29 +289,6 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit) //TODO r
     #else // else we need to setup VBO vertex attributes ourselves
         setupVBOAttributes();
     #endif
-
-    //TODO remove this
-    /*
-    //bind the respective OpenGL buffers
-    assert(m_vbo_id != Mehses::empty_id);
-    assert(m_ebo_id != 0); //TODO empty id
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_id);
-
-    //copy the (converted) data from Nuklear buffers into OpenGL buffers
-    // printf("cmd allocated: %d, total: %d\n", m_cmd_buffer.allocated, nk_buffer_total(&m_cmd_buffer));
-    // printf("vert allocated: %d, total: %d\n", m_vert_buffer.allocated, nk_buffer_total(&m_vert_buffer));
-    // printf("idx allocated: %d, total: %d\n", m_idx_buffer.allocated, nk_buffer_total(&m_idx_buffer));
-    glBufferData(GL_ARRAY_BUFFER, m_vert_buffer.allocated, nk_buffer_memory(&m_vert_buffer), GL_STREAM_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_idx_buffer.allocated, nk_buffer_memory(&m_idx_buffer), GL_STREAM_DRAW);
-    // glBufferData(GL_ARRAY_BUFFER, nk_buffer_total(&m_vert_buffer), nk_buffer_memory(&m_vert_buffer), GL_STREAM_DRAW);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, nk_buffer_total(&m_idx_buffer), nk_buffer_memory(&m_idx_buffer), GL_STREAM_DRAW);
-
-    //bind the screen resolution uniform
-    m_shader.set("screenRes", screen_res);
-
-    //setup the vbo attributes (buffer is already bound)
-    */
 
     size_t offset = 0;//, idx = 0;
     const struct nk_draw_command *cmd = NULL;

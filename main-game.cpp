@@ -24,7 +24,6 @@ int GameMainLoop::init()
     puts("GameMainLoop init begin");
 
     GLFWwindow * const window = WindowManager::getWindow();
-    //TODO win size
     const glm::vec2 win_size = WindowManager::getSizeF();
 
     //mouse callback setup
@@ -179,15 +178,14 @@ int GameMainLoop::init()
 
         GLuint rbos[2];
         glGenRenderbuffers(2, rbos);
-        fbo3d_rbo_depth = rbos[0];
-        fbo3d_rbo_stencil = rbos[1];
-        //TODO check for errors
-
         if (Utils::checkForGLError())
         {
             fprintf(stderr, "Failed to create RenderBuffers for 3D FrameBuffer!\n");
             return 3;
         }
+
+        fbo3d_rbo_depth = rbos[0];
+        fbo3d_rbo_stencil = rbos[1];
     }
 
     //depth renderbuffer allocation
