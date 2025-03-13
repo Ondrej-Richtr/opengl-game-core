@@ -1,0 +1,7 @@
+# Lines marked with '#' at the beginning are comments.
+# This file stores todo entries for todo program, you typically shouldn't modify this file directly (but it's up to you).
+# Note that after each run of todo program this file gets wiped out and rewritten again, which means any other comments other then those three will get deleted.
+ |0. 0. 0|13. 3. 2025|proper deinit for TestMainLoop too
+ |0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
+ |0. 0. 0|13. 3. 2025|unified GL empty ids
+ |0. 0. 0|13. 3. 2025|main menu + maybe with settings
