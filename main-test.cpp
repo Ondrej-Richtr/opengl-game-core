@@ -74,7 +74,7 @@ int TestMainLoop::init()
 
     //TODO check this
     new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
-    if (cube_vbo.m_id == Meshes::empty_id)
+    if (cube_vbo.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create cube VBO!\n");
         return 5;
@@ -90,7 +90,7 @@ int TestMainLoop::init()
     
     using ShaderP = Shaders::Program;
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path);
-    if (ui_shader.m_id == Shaders::empty_id)
+    if (ui_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create UI shader program!\n");
         return 6;
@@ -122,7 +122,7 @@ int TestMainLoop::init()
 
     //Textured rectangle shader
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path);
-    if (tex_rect_shader.m_id == Shaders::empty_id)
+    if (tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
         return 7;
@@ -134,7 +134,7 @@ int TestMainLoop::init()
     //TODO those values
     unsigned int fbo3d_init_width = DEFAULT_WINDOW_WIDTH, fbo3d_init_height = DEFAULT_WINDOW_HEIGHT;
     new (&fbo3d_tex) Texture(fbo3d_init_width, fbo3d_init_height, GL_RGB);
-    if (fbo3d_tex.m_id == Textures::empty_id)
+    if (fbo3d_tex.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
         return 8;
@@ -144,7 +144,7 @@ int TestMainLoop::init()
                *orb_path    = "assets/orb.jpg";
 
     new (&brick_texture) Texture(bricks_path);
-    if (brick_texture.m_id == Textures::empty_id)
+    if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
         return 8;
@@ -171,13 +171,13 @@ int TestMainLoop::init()
     // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
     // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, 0); //TODO empty_id
+    glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
     //Framebuffers
     using FrameBuffer = Drawing::FrameBuffer;
 
     new (&fbo3d) FrameBuffer();
-    if (fbo3d.m_id == 0) //TODO empty_id
+    if (fbo3d.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
         return 9;
@@ -195,14 +195,14 @@ int TestMainLoop::init()
         return 9;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id // unbind just in case
+    glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
     const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     new (&light_src_shader) ShaderP(default_vs_path, light_src_fs_path); // using the default vertex shader
-    if (light_src_shader.m_id == Shaders::empty_id)
+    if (light_src_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
         return 10;
@@ -212,7 +212,7 @@ int TestMainLoop::init()
     const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     new (&light_shader) ShaderP(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
-    if (light_shader.m_id == Shaders::empty_id)
+    if (light_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
         return 10;
@@ -565,7 +565,7 @@ LoopRetVal TestMainLoop::loop()
             glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
 
             //bind the default framebuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
+            glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
             Drawing::clear(clear_color_2d);
             //TODO maybe useless in 2D block?
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
@@ -790,7 +790,7 @@ LoopRetVal TestMainLoop::loop()
                *transform_vs_path = SHADERS_DIR_PATH "transform.vs";
     
     ShaderP default_shader(default_vs_path, default_fs_path);
-    if (default_shader.m_id == Shaders::empty_id)
+    if (default_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create default shader program!\n");
         glfwTerminate();
@@ -801,7 +801,7 @@ LoopRetVal TestMainLoop::loop()
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     ShaderP tex_rect_shader(transform_vs_path, tex_rect_fs_path);
-    if (tex_rect_shader.m_id == Shaders::empty_id)
+    if (tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
         glfwTerminate();
@@ -814,7 +814,7 @@ LoopRetVal TestMainLoop::loop()
                *texture_fs_path = SHADERS_DIR_PATH "texture.fs";
     
     ShaderP texture_shader(texture_vs_path, texture_fs_path);
-    if (texture_shader.m_id == Shaders::empty_id)
+    if (texture_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create simple texture shader program!\n");
         glfwTerminate();
@@ -826,7 +826,7 @@ LoopRetVal TestMainLoop::loop()
     //TODO those values
     unsigned int fbo3d_init_width = DEFAULT_WINDOW_WIDTH, fbo3d_init_height = DEFAULT_WINDOW_HEIGHT;
     Texture fbo3d_tex(fbo3d_init_width, fbo3d_init_height, GL_RGB);
-    if (fbo3d_tex.m_id == Textures::empty_id)
+    if (fbo3d_tex.m_id == empty)
     {
         fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
         glfwTerminate();
@@ -837,7 +837,7 @@ LoopRetVal TestMainLoop::loop()
                *orb_path    = "assets/orb.jpg";
 
     Texture brick_texture(bricks_path);
-    if (brick_texture.m_id == Textures::empty_id)
+    if (brick_texture.m_id == empty)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
         glfwTerminate();
@@ -848,7 +848,7 @@ LoopRetVal TestMainLoop::loop()
     texture_shader.set("inputTexture1", 0);
 
     Texture orb_texture(orb_path);
-    if (orb_texture.m_id == Textures::empty_id)
+    if (orb_texture.m_id == empty)
     {
         fprintf(stderr, "Failed to create orb texture!\n");
         glfwTerminate();
@@ -878,13 +878,13 @@ LoopRetVal TestMainLoop::loop()
     // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
     // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, 0); //TODO empty_id
+    glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
     //Framebuffers
     using FrameBuffer = Drawing::FrameBuffer;
     //TODO
     FrameBuffer fbo3d{}; // need to use curly braces as for function declaration disambiguation
-    if (fbo3d.m_id == 0) //TODO empty_id
+    if (fbo3d.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
         return 8;
@@ -902,14 +902,14 @@ LoopRetVal TestMainLoop::loop()
         return 8;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id // unbind just in case
+    glBindFramebuffer(GL_FRAMEBUFFER, empty_id)
 
     //Light sources
     // loading special light source shader program (renders light source without light effects etc.)
     const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     ShaderP light_src_shader(default_vs_path, light_src_fs_path); // using the default vertex shader
-    if (light_src_shader.m_id == Shaders::empty_id)
+    if (light_src_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
         glfwTerminate();
@@ -920,7 +920,7 @@ LoopRetVal TestMainLoop::loop()
     const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     ShaderP light_shader(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
-    if (light_shader.m_id == Shaders::empty_id)
+    if (light_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
         glfwTerminate();
@@ -1363,7 +1363,7 @@ LoopRetVal TestMainLoop::loop()
                 glViewport(0, 0, window_res.x, window_res.y);
 
                 //bind the default framebuffer
-                glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
+                glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
                 Drawing::clear(clear_color_2d);
                 //TODO maybe useless in 2D block?
                 glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing

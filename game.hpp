@@ -67,6 +67,9 @@
 // returns whether given float number is close to zero according to FLOAT_TOLERANCE macro
 #define CLOSE_TO_0(n) ((n) <= FLOAT_TOLERANCE && (n) >= -FLOAT_TOLERANCE)
 
+//constants
+constexpr GLuint empty_id = 0;
+
 
 //struct definitions
 struct ColorF
@@ -385,13 +388,10 @@ namespace Shaders
         #endif
     #endif
 
-    //TODO unite those ids? + constexpr constants
-    static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
-
-    static const GLuint attribute_position_pos = 0;
-    static const GLuint attribute_position_texcoords = 1;
-    static const GLuint attribute_position_normals = 2;
-    static const GLuint attribute_position_color = 3;
+    static constexpr GLuint attribute_position_pos = 0;
+    static constexpr GLuint attribute_position_texcoords = 1;
+    static constexpr GLuint attribute_position_normals = 2;
+    static constexpr GLuint attribute_position_color = 3;
 
     struct Program
     {
@@ -438,14 +438,11 @@ namespace Shaders
 //textures.cpp
 namespace Textures
 {
-    //TODO unite those ids?
-    static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
-
     // some default values for texture initialization,
     // currently there are no overrides for this as they are not needed yet
-    static const GLint default_wrapping = GL_REPEAT;
-    static const GLint default_min_filtering = GL_LINEAR_MIPMAP_LINEAR;
-    static const GLint default_max_filtering = GL_LINEAR;
+    static constexpr GLint default_wrapping = GL_REPEAT;
+    static constexpr GLint default_min_filtering = GL_LINEAR_MIPMAP_LINEAR;
+    static constexpr GLint default_max_filtering = GL_LINEAR;
 
     struct Texture2D // struct representing an ingame texture with 4 channels (RGBA)
     {
@@ -475,9 +472,6 @@ namespace Meshes
     #endif
 
     //TODO meshes - verts, normals, texcoords, indices for faces, (material?)
-
-    //TODO unite those ids?
-    static const GLuint empty_id = 0; // id that is considered empty / invalid by OpenGL
 
     constexpr static unsigned int attribute3d_pos_amount = 3;       // vec3
     constexpr static unsigned int attribute3d_texcoord_amount = 2;  // vec2

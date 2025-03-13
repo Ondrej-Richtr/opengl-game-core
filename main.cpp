@@ -112,16 +112,12 @@ int main(void)
 
     // Creating struct this way so it's fields won't get initialized before init method call
     unsigned char loop_memory[sizeof(GameMainLoop)];
-    //TODO check if compile optimizes this and omits pointless dereference
+    //TODO check if optimizer optimizes this and omits pointless dereference
     GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(&loop_memory); //TODO better cast
     int result = loop.init();
     if (result)
     {
-        //TODO IMPORTANT - deinitializing is not handled in a good way!
-        // loop.~GameMainLoop();
-
         fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", result);
-
         deinit();
         return result;
     }

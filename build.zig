@@ -12,7 +12,7 @@ pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "li
 pub const c_files = [_]String{ "glad.c", "nuklear.c", "stb_image.c" };
 
 pub const cpp_std_ver = "c++17";
-pub const c_std_ver = "c99";
+pub const c_std_ver = "c99"; // good idea to use c99 or newer, GLFW 3.4 seems to require at least c99
 
 
 pub fn build(b: *std.Build) !void {

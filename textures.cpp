@@ -5,7 +5,7 @@
 
 
 Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum component_type)
-            : m_id(Textures::empty_id), m_width(width), m_height(height)
+            : m_id(empty_id), m_width(width), m_height(height)
 {
     // generate and bind the OpenGL texture object
     glGenTextures(1, &m_id);
@@ -26,11 +26,11 @@ Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum c
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     // unbind the texture just in case
-    glBindTexture(GL_TEXTURE_2D, Textures::empty_id);
+    glBindTexture(GL_TEXTURE_2D, empty_id);
 }
 
 Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
-            : m_id(Textures::empty_id), m_width(0), m_height(0)
+            : m_id(empty_id), m_width(0), m_height(0)
 {
     // load the image data using stbi
     int wanted_channels = 4, // we force 4 channels as we always want RGBA textures
@@ -70,12 +70,12 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 
-    stbi_image_free(data);                              // we can free the image data - their copy should be on gpu
-    glBindTexture(GL_TEXTURE_2D, Textures::empty_id);   // unbind the texture just in case
+    stbi_image_free(data);                  // we can free the image data - their copy should be on gpu
+    glBindTexture(GL_TEXTURE_2D, empty_id); // unbind the texture just in case
 }
 
 Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigned int height, bool generate_mipmaps)
-            : m_id(Textures::empty_id), m_width(width), m_height(height)
+            : m_id(empty_id), m_width(width), m_height(height)
 {
     // generate and bind the OpenGL texture object
     glGenTextures(1, &m_id);
@@ -100,7 +100,7 @@ Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigne
     }
 
     // unbind the texture just in case
-    glBindTexture(GL_TEXTURE_2D, Textures::empty_id);
+    glBindTexture(GL_TEXTURE_2D, empty_id);
 }
 
 Textures::Texture2D::~Texture2D()

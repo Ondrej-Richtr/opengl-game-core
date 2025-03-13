@@ -108,7 +108,7 @@ Collision::Ray Drawing::Camera3D::getRay() const
 }
 
 Drawing::FrameBuffer::FrameBuffer()
-                        : m_id(0) //TODO empty_id
+                        : m_id(empty_id)
 {
     glGenFramebuffers(1, &m_id);
 }
@@ -120,14 +120,14 @@ Drawing::FrameBuffer::~FrameBuffer()
 
 void Drawing::FrameBuffer::bind() const
 {
-    assert(m_id != 0); //TODO empty_id
+    assert(m_id != empty_id);
     
     glBindFramebuffer(GL_FRAMEBUFFER, m_id);
 }
 
 void Drawing::FrameBuffer::unbind() const
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
+    glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 }
 
 void Drawing::FrameBuffer::attachColorBuffer(Drawing::FrameBuffer::Attachment attachment) const
@@ -137,14 +137,14 @@ void Drawing::FrameBuffer::attachColorBuffer(Drawing::FrameBuffer::Attachment at
     switch (attachment.type)
     {
     case Drawing::FrameBuffer::AttachmentType::none:
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures::empty_id, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, empty_id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::texture:
-        assert(attachment.id != Textures::empty_id);
+        assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
-        assert(attachment.id != 0); //TODO empty_id
+        assert(attachment.id != empty_id);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, attachment.id);
         break;
     default:
@@ -160,14 +160,14 @@ void Drawing::FrameBuffer::attachDepthBuffer(Drawing::FrameBuffer::Attachment at
     switch (attachment.type)
     {
     case Drawing::FrameBuffer::AttachmentType::none:
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Textures::empty_id, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, empty_id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::texture:
-        assert(attachment.id != Textures::empty_id);
+        assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
-        assert(attachment.id != 0); //TODO empty_id
+        assert(attachment.id != empty_id);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, attachment.id);
         break;
     default:
@@ -183,14 +183,14 @@ void Drawing::FrameBuffer::attachStencilBuffer(Drawing::FrameBuffer::Attachment 
     switch (attachment.type)
     {
     case Drawing::FrameBuffer::AttachmentType::none:
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Textures::empty_id, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, empty_id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::texture:
-        assert(attachment.id != Textures::empty_id);
+        assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
-        assert(attachment.id != 0); //TODO empty_id
+        assert(attachment.id != empty_id);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment.id);
         break;
     default:
@@ -210,7 +210,7 @@ void Drawing::FrameBuffer::attachAll(Drawing::FrameBuffer::Attachment color,
 
 bool Drawing::FrameBuffer::isComplete() const
 {
-    if (m_id == 0) return false; //TODO empty_id
+    if (m_id == empty_id) return false;
 
     bind();
 
@@ -231,7 +231,7 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
                                 glm::vec2 dstPos, glm::vec2 dstSize)
 {
     const Meshes::VBO& vbo = Meshes::unit_quad_pos_only;
-    assert(vbo.m_id != Meshes::empty_id);
+    assert(vbo.m_id != empty_id);
 
     glm::mat4 transform(1.f);
     transform = glm::scale(transform, glm::vec3(2.f));
@@ -255,7 +255,7 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
 void Drawing::screenLine(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                          glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color)
 {
-    assert(line_vbo.m_id != Meshes::empty_id);
+    assert(line_vbo.m_id != empty_id);
     assert(thickness >= 1.f);
 
     // v * scale + translation = u

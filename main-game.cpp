@@ -93,7 +93,7 @@ bool GameMainLoop::initVBOs()
                                 / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
 
     new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
-    if (cube_vbo.m_id == Meshes::empty_id)
+    if (cube_vbo.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create cube VBO!\n");
         cube_vbo.~VBO();
@@ -112,7 +112,7 @@ bool GameMainLoop::initVBOs()
                                 / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
     
     new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::VBO::default2DConfig);
-    if (line_vbo.m_id == Meshes::empty_id)
+    if (line_vbo.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create unit line VBO!\n");
         cube_vbo.~VBO();
@@ -136,7 +136,7 @@ bool GameMainLoop::initTextures()
     //TODO those values - maybe update them or make them one of presets changeable in settings?
     unsigned int fbo3d_init_width = DEFAULT_WINDOW_WIDTH, fbo3d_init_height = DEFAULT_WINDOW_HEIGHT;
     new (&fbo3d_tex) Texture(fbo3d_init_width, fbo3d_init_height, GL_RGB);
-    if (fbo3d_tex.m_id == Textures::empty_id)
+    if (fbo3d_tex.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
         fbo3d_tex.~Texture2D();
@@ -147,7 +147,7 @@ bool GameMainLoop::initTextures()
     brick_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
 
     new (&brick_texture) Texture(bricks_path);
-    if (brick_texture.m_id == Textures::empty_id)
+    if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
         fbo3d_tex.~Texture2D();
@@ -159,7 +159,7 @@ bool GameMainLoop::initTextures()
     brick_alt_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
 
     new (&brick_alt_texture) Texture(bricks_alt_path);
-    if (brick_alt_texture.m_id == Textures::empty_id)
+    if (brick_alt_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick alternative texture!\n");
         fbo3d_tex.~Texture2D();
@@ -172,7 +172,7 @@ bool GameMainLoop::initTextures()
     // orb_texture_world_size = glm::vec2(1.f, 1.f); // almost 1:1 aspect ratio
 
     // new (&orb_texture) Texture(orb_path);
-    // if (orb_texture.m_id == Textures::empty_id)
+    // if (orb_texture.m_id == empty_id)
     // {
     //     fprintf(stderr, "Failed to create orb texture!\n");
             // orb_texture.~Texture2D();
@@ -186,7 +186,7 @@ bool GameMainLoop::initTextures()
     target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     new (&target_texture) Texture(target_path);
-    if (target_texture.m_id == Textures::empty_id)
+    if (target_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create target texture!\n");
         fbo3d_tex.~Texture2D();
@@ -236,7 +236,7 @@ bool GameMainLoop::initRenderBuffers()
     // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
     // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, 0); //TODO empty_id
+    glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
     return true;
 }
@@ -262,7 +262,7 @@ bool GameMainLoop::initShaders()
     const char *screen_line_vs_path = SHADERS_DIR_PATH "screen2d-line.vs";
 
     new (&screen_line_shader) ShaderP(screen_line_vs_path, static_color_fs_path);
-    if (screen_line_shader.m_id == Shaders::empty_id)
+    if (screen_line_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create screen line shader program!\n");
         screen_line_shader.~Program();
@@ -274,7 +274,7 @@ bool GameMainLoop::initShaders()
                *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
     
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path);
-    if (ui_shader.m_id == Shaders::empty_id)
+    if (ui_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create UI shader program!\n");
         screen_line_shader.~Program();
@@ -286,7 +286,7 @@ bool GameMainLoop::initShaders()
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path);
-    if (tex_rect_shader.m_id == Shaders::empty_id)
+    if (tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
         screen_line_shader.~Program();
@@ -299,7 +299,7 @@ bool GameMainLoop::initShaders()
     const char *light_src_fs_path = SHADERS_DIR_PATH "light_src.fs";
     
     new (&light_src_shader) ShaderP(default_vs_path, light_src_fs_path); // using the default vertex shader
-    if (light_src_shader.m_id == Shaders::empty_id)
+    if (light_src_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create light source shader program!\n");
         screen_line_shader.~Program();
@@ -314,7 +314,7 @@ bool GameMainLoop::initShaders()
     const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
 
     new (&light_shader) ShaderP(light_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
-    if (light_shader.m_id == Shaders::empty_id)
+    if (light_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");
         screen_line_shader.~Program();
@@ -418,7 +418,7 @@ bool GameMainLoop::initFrameBuffers()
     using FrameBuffer = Drawing::FrameBuffer;
     
     new (&fbo3d) FrameBuffer();
-    if (fbo3d.m_id == 0) //TODO empty_id
+    if (fbo3d.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
         fbo3d.~FrameBuffer();
@@ -437,7 +437,7 @@ bool GameMainLoop::initFrameBuffers()
         return false;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id // unbind just in case
+    glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 
     return true;
 }
@@ -456,10 +456,10 @@ bool GameMainLoop::initGameStuff()
     // rewrite the potential garbage values to 0 and id to empty_id
     // memset is here just in case, but the id might be needed for following move assign operator
     memset(&wall_vbo, 0, sizeof(wall_vbo));
-    wall_vbo.m_id = Meshes::empty_id;
+    wall_vbo.m_id = empty_id;
     wall_vbo = std::move(Meshes::generateCubicVBO(wall_size, brick_alt_texture_world_size,
                                                   Meshes::TexcoordStyle::repeat, true));
-    if (wall_vbo.m_id == Meshes::empty_id)
+    if (wall_vbo.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create wall VBO!\n");
         wall_vbo.~VBO();
@@ -472,10 +472,10 @@ bool GameMainLoop::initGameStuff()
     // rewrite the potential garbage values to 0 and id to empty_id
     // memset is here just in case, but the id might be needed for following move assign operator
     memset(&target_vbo, 0, sizeof(target_vbo)); // not needed for now
-    target_vbo.m_id = Meshes::empty_id;
+    target_vbo.m_id = empty_id;
     target_vbo = std::move(Meshes::generateQuadVBO(glm::vec2(1.f), target_texture_world_size,
                                                    Meshes::TexcoordStyle::stretch, true));
-    if (target_vbo.m_id == Meshes::empty_id)
+    if (target_vbo.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create target's VBO!\n");
         wall_vbo.~VBO();
@@ -903,7 +903,7 @@ LoopRetVal GameMainLoop::loop()
             glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
 
             //bind the default framebuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO empty_id
+            glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
             Drawing::clear(clear_color_2d);
             //TODO maybe useless in 2D block?
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing

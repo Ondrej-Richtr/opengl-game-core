@@ -41,7 +41,7 @@ UI::Font::Font(const char *font_path, float font_height)
     // we use placement new here as that means we dont have to define move assign operator for Textures::Texture2D
     m_texture.~Texture2D(); // call the destructor just in case
     new(&m_texture) Textures::Texture2D(img, img_width, img_height, false); // false for no mipmaps
-    if (m_texture.m_id == Textures::empty_id)
+    if (m_texture.m_id == empty_id)
     {
         fprintf(stderr, "Could not create texture from baked font that was loaded from file: '%s'!\n", font_path);
 
@@ -74,13 +74,13 @@ UI::Context::Context(const Shaders::Program& shader, const UI::Font& font)
                           #ifdef USE_VAO
                             m_vao(),
                           #endif
-                          m_vbo_id(Meshes::empty_id), m_ebo_id(0) //TODO empty_id
+                          m_vbo_id(empty_id), m_ebo_id(empty_id)
 {
     assert(!Utils::checkForGLError());
 
     #ifdef USE_VAO
         m_vao.init();
-        if (m_vao.m_id == Meshes::empty_id)
+        if (m_vao.m_id == empty_id)
         {
             fprintf(stderr, "Error occurred when creating VAO for UI.\n");
             return;
@@ -275,11 +275,11 @@ bool UI::Context::draw(glm::vec2 screen_res, unsigned int texture_unit)
     m_shader.set("screenRes", screen_res);
     
     //copy the (converted) data from Nuklear buffers into OpenGL buffers
-    assert(m_vbo_id != Meshes::empty_id);
+    assert(m_vbo_id != empty_id);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
     glBufferData(GL_ARRAY_BUFFER, m_vert_buffer.allocated, nk_buffer_memory(&m_vert_buffer), GL_STREAM_DRAW);
 
-    assert(m_ebo_id != 0); //TODO empty id
+    assert(m_ebo_id != empty_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_id);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_idx_buffer.allocated, nk_buffer_memory(&m_idx_buffer), GL_STREAM_DRAW);
 
@@ -346,7 +346,7 @@ void UI::Context::clear()
 
 void UI::Context::setupVBOAttributes() const
 {
-    assert(m_vbo_id != Meshes::empty_id);
+    assert(m_vbo_id != empty_id);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id); // just to make sure the vbo is really bound
 
     size_t stride = sizeof(UI::Vertex); //TODO alignment (just in case, seems like it's not needed with current UI::Vertex format)

@@ -3,5 +3,10 @@
 # Note that after each run of todo program this file gets wiped out and rewritten again, which means any other comments other then those three will get deleted.
  |0. 0. 0|13. 3. 2025|proper deinit for TestMainLoop too
  |0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
- |0. 0. 0|13. 3. 2025|unified GL empty ids
  |0. 0. 0|13. 3. 2025|main menu + maybe with settings
+ |0. 0. 0|13. 3. 2025|web build
+ |0. 0. 0|13. 3. 2025|stacking of main loops
+ |0. 0. 0|13. 3. 2025|get and compile glfw from their gitrepo + add option to link system glfw instead
+ |0. 0. 0|13. 3. 2025|maybe for glfw use https://github.com/lpstankus/zig-glfw (pass options to it with https://ziggit.dev/t/pass-build-option-to-a-dependency/4196/14)
+ |0. 0. 0|13. 3. 2025|include system for shaders
+ |0. 0. 0|13. 3. 2025|shaders ver100

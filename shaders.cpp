@@ -14,10 +14,10 @@ Shaders::Program::Program(GLuint vs_id, GLuint fs_id)
 {}
 
 Shaders::Program::Program(const char *vs_path, const char *fs_path)
-                    : m_id(Shaders::empty_id)
+                    : m_id(empty_id)
 {
     // constructs shader program based on source code of vertex and fragment shader located at given paths,
-    // caller should always check whether constructor failed -> m_id == Shaders::empty_id
+    // caller should always check whether constructor failed -> m_id == empty_id
     
     // char *vs_source = Utils::getTextFileAsString(vs_path),
     //      *fs_source = Utils::getTextFileAsString(fs_path);
@@ -44,7 +44,7 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
     }
     
     m_id = Shaders::programLink(vs_id, fs_id);
-    if (m_id == Shaders::empty_id)
+    if (m_id == empty_id)
     {
         fprintf(stderr, "Shader program failed to link!\n");
     }
@@ -217,7 +217,7 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
     {
         printf("Failed to create shader program!\n");
 
-        return Shaders::empty_id;
+        return empty_id;
     }
 
     glAttachShader(id, vs);
@@ -234,10 +234,10 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
         printf("Failed to link shader program, error msg: '%s'\n", (char*)&msg);
 
         glDeleteProgram(id);
-        return Shaders::empty_id;
+        return empty_id;
     }
 
-    assert(id != Shaders::empty_id);
+    assert(id != empty_id);
     return id;
 }
 

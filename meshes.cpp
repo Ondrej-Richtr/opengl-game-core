@@ -13,7 +13,7 @@ Meshes::VAO::~VAO()
 
 void Meshes::VAO::init()
 {
-    assert(m_id == Meshes::empty_id);
+    assert(m_id == empty_id);
     assert(!Utils::checkForGLError());
 
     glGenVertexArrays(1, &m_id);
@@ -30,7 +30,7 @@ void Meshes::VAO::bind() const
 void Meshes::VAO::unbind() const
 {
     // printf("VAO unbound: %d\n", m_id);
-    glBindVertexArray(Meshes::empty_id);
+    glBindVertexArray(empty_id);
 }
 #endif
 
@@ -39,7 +39,7 @@ unsigned int Meshes::AttributeConfig::sum() const
     return pos_amount + texcoord_amount + normal_amount;
 }
 
-Meshes::VBO::VBO() : m_id(Meshes::empty_id),
+Meshes::VBO::VBO() : m_id(empty_id),
                      #ifdef USE_VAO
                         m_vao(),
                      #endif
@@ -48,7 +48,7 @@ Meshes::VBO::VBO() : m_id(Meshes::empty_id),
                      m_texcoord_offset(-1), m_normal_offset(-1) {}
 
 Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig attr_config)
-                    : m_id(Meshes::empty_id),
+                    : m_id(empty_id),
                       #ifdef USE_VAO
                          m_vao(),
                       #endif
@@ -61,7 +61,7 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig at
 
     #ifdef USE_VAO
         m_vao.init();
-        if (m_vao.m_id == Meshes::empty_id)
+        if (m_vao.m_id == empty_id)
         {
             fprintf(stderr, "Error occurred when creating VAO for VBO.\n");
             return;
@@ -100,11 +100,11 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig at
     {
         fprintf(stderr, "Error occurred when creating VBO.\n");
         glDeleteBuffers(1, &m_id);
-        m_id = Meshes::empty_id;
+        m_id = empty_id;
         return;
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, Meshes::empty_id); // unbind the buffer afterwards
+    glBindBuffer(GL_ARRAY_BUFFER, empty_id); // unbind the buffer afterwards
 
     #ifdef USE_VAO
         // setup VAO
@@ -126,16 +126,16 @@ size_t Meshes::VBO::vertexCount() const
 
 Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
 {
-    assert(m_id == Meshes::empty_id); // use this only on empty VBOs!
+    assert(m_id == empty_id); // use this only on empty VBOs!
 
     memcpy(this, &other, sizeof(Meshes::VBO));
 
     // set empty values
-    other.m_id = Meshes::empty_id;
+    other.m_id = empty_id;
     #ifdef USE_VAO
         // this is pretty bad solution, sadly pretty much needed in C++
         // maybe we will have to define move assignment for VAOs too which would clear other.m_vao
-        other.m_vao.m_id = Meshes::empty_id;
+        other.m_vao.m_id = empty_id;
     #endif
     other.m_attr_config = Meshes::AttributeConfig(); // assign the default with all zeros (maybe pointless?)
     other.m_vert_count = 0;
@@ -148,7 +148,7 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
 
 void Meshes::VBO::bind() const
 {
-    assert(m_id != Meshes::empty_id);
+    assert(m_id != empty_id);
 
     #ifdef USE_VAO
         m_vao.bind();
@@ -170,7 +170,7 @@ void Meshes::VBO::unbind() const
 
 void Meshes::VBO::bind_noVAO() const
 {
-    assert(m_id != Meshes::empty_id);
+    assert(m_id != empty_id);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_id);
 
@@ -207,7 +207,7 @@ void Meshes::VBO::unbind_noVAO() const
     //vertex normal (if present)
     if (m_normal_offset >= 0) Shaders::disableVertexAttribute(Shaders::attribute_position_normals);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Meshes::empty_id);
+    glBindBuffer(GL_ARRAY_BUFFER, empty_id);
 }
 
 template <size_t whole_data_len>
@@ -444,12 +444,12 @@ Meshes::VBO Meshes::unit_quad_pos_only;
 
 bool Meshes::initBasicMeshes()
 {
-    assert(unit_quad_pos_only.m_id == Meshes::empty_id);
+    assert(unit_quad_pos_only.m_id == empty_id);
 
     unit_quad_pos_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::none, false));
 
     // unit_quad_pos_uv_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::stretch, false));
 
-    return unit_quad_pos_only.m_id != Meshes::empty_id;
-        //    unit_quad_pos_uv_only.m_id != Meshes::empty_id;
+    return unit_quad_pos_only.m_id != empty_id;
+        //    unit_quad_pos_uv_only.m_id != empty_id;
 }
