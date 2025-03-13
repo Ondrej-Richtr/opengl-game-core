@@ -20,16 +20,112 @@ void GameMainLoop::mouseButtonsCallback(GLFWwindow *window, int button, int acti
     }
 }
 
-bool GameMainLoop::initCamera()
+void GameMainLoop::initCamera()
 {
-    //TODO move init code here
-    return false;
+    const glm::vec2 win_size = WindowManager::getSizeF();
+
+    mouse_sens = 0.08f;
+    fov = 80.f;
+    const glm::vec3 camera_init_pos(0.f, 0.7f, 2.5f);
+    //const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
+    //camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
+    camera_pitch = 0.f;
+    camera_yaw = -90.f;
+    new (&camera) Drawing::Camera3D(fov, win_size.x / win_size.y, camera_init_pos, camera_pitch, camera_yaw);
+}
+
+void GameMainLoop::deinitCamera()
+{
+    //TODO deinit - check this
+    camera.~Camera3D();
 }
 
 bool GameMainLoop::initVBOs()
 {
-    //TODO move init code here
-    return false;
+    //Cube and it's vbo
+    float cube_vertices[] = // counter-clockwise vertex winding order
+    {
+        //pos                //texcoords    //normals
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,    0.0f, 0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,    1.0f, 0.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,    0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    };
+    size_t cube_vert_attrib = 8; //amount of cube attributes - 3x pos + 2x texcoords + 3x normals
+    size_t cube_vert_count = (sizeof(cube_vertices) / sizeof(cube_vertices[0]))
+                                / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
+
+    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
+    if (cube_vbo.m_id == Meshes::empty_id)
+    {
+        fprintf(stderr, "Failed to create cube VBO!\n");
+        return false;
+    }
+
+    //Unit line and it's vbo
+    float line_vertices[] =
+    {
+        //position
+        0.f, 0.f,
+        1.f, 1.f,
+    };
+    size_t line_vert_attrib = 2; //amount of line attributes - 2x pos
+    size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
+                                / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
+    
+    new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::VBO::default2DConfig);
+    if (line_vbo.m_id == Meshes::empty_id)
+    {
+        fprintf(stderr, "Failed to create unit line VBO!\n");
+        cube_vbo.~VBO();
+        return false;
+    }
+
+    return true;
+}
+
+void GameMainLoop::deinitVBOs()
+{
+    //TODO deinit
+    cube_vbo.~VBO();
+    line_vbo.~VBO();
 }
 
 bool GameMainLoop::initTextures()
@@ -91,95 +187,18 @@ int GameMainLoop::init()
     puts("GameMainLoop init begin");
 
     GLFWwindow * const window = WindowManager::getWindow();
-    const glm::vec2 win_size = WindowManager::getSizeF();
 
     //mouse callback setup
     glfwSetMouseButtonCallback(window, &GameMainLoop::mouseButtonsCallback);
 
     //Camera
-    using Camera = Drawing::Camera3D;
+    initCamera();
 
-    mouse_sens = 0.08f;
-    fov = 80.f;
-    const glm::vec3 camera_init_pos(0.f, 0.7f, 2.5f);
-    //const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
-    //camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
-    camera_pitch = 0.f;
-    camera_yaw = -90.f;
-    new (&camera) Camera(fov, win_size.x / win_size.y, camera_init_pos, camera_pitch, camera_yaw);
-
-    //Cube and it's vbo
-    float cube_vertices[] = // counter-clockwise vertex winding order
+    //VBOs
+    if (!initVBOs())
     {
-        //pos                //texcoords    //normals
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,    0.0f, 0.0f, -1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,    0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,    1.0f, 0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,    0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-    };
-    size_t cube_vert_attrib = 8; //amount of cube attributes - 3x pos + 2x texcoords + 3x normals
-    size_t cube_vert_count = (sizeof(cube_vertices) / sizeof(cube_vertices[0]))
-                                / cube_vert_attrib; //amount of vertices - elements in array divided by attribute size
-
-    new (&cube_vbo) Meshes::VBO(cube_vertices, cube_vert_count);
-    if (cube_vbo.m_id == Meshes::empty_id)
-    {
-        fprintf(stderr, "Failed to create cube VBO!\n");
-        return 1;
-    }
-
-    //Unit line and it's vbo
-    float line_vertices[] =
-    {
-        //position
-        0.f, 0.f,
-        1.f, 1.f,
-    };
-    size_t line_vert_attrib = 2; //amount of line attributes - 2x pos
-    size_t line_vert_count = (sizeof(line_vertices) / sizeof(line_vertices[0]))
-                                / line_vert_attrib; //amount of vertices - elements in array divided by attribute size
-    
-    new (&line_vbo) Meshes::VBO(line_vertices, line_vert_count, Meshes::VBO::default2DConfig);
-    if (line_vbo.m_id == Meshes::empty_id)
-    {
-        fprintf(stderr, "Failed to create unit line VBO!\n");
+        //TODO goto cleanup routine?
+        deinitCamera();
         return 1;
     }
 
@@ -458,14 +477,6 @@ int GameMainLoop::init()
 
     puts("GameMainLoop init end");
     return 0;
-}
-
-void GameMainLoop::deinitCamera()
-{
-}
-
-void GameMainLoop::deinitVBOs()
-{
 }
 
 void GameMainLoop::deinitTextures()

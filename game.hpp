@@ -850,28 +850,29 @@ struct GameMainLoop //TODO proper deinit of objects
     static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
 
 private:
+    //partial init and their repsective deinits, they are only supposed to be called during main `init` method!
+    //destructor does the job of deinits automatically, but we can't call destructor before the whole init is completed
     bool initCamera();
-    bool initVBOs();
-    bool initTextures();
-    bool initRenderBuffers();
-    bool initShaders();
-    bool initLighting();
-    bool initMaterials();
-    bool initUI();
-    bool initFrameBuffers();
-    bool initGameStuff();
-    bool initMisc();
-
     void deinitCamera();
+    bool initVBOs();
     void deinitVBOs();
+    bool initTextures();
     void deinitTextures();
+    bool initRenderBuffers();
     void deinitRenderBuffers();
+    bool initShaders();
     void deinitShaders();
+    bool initLighting();
     void deinitLighting();
+    bool initMaterials();
     void deinitMaterials();
+    bool initUI();
     void deinitUI();
+    bool initFrameBuffers();
     void deinitFrameBuffers();
+    bool initGameStuff();
     void deinitGameStuff();
+    bool initMisc();
     void deinitMisc();
 };
 
