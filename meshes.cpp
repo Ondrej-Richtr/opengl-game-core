@@ -101,6 +101,7 @@ Meshes::VBO::VBO(const GLfloat *data, size_t data_vert_count, AttributeConfig at
         fprintf(stderr, "Error occurred when creating VBO.\n");
         glDeleteBuffers(1, &m_id);
         m_id = Meshes::empty_id;
+        return;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, Meshes::empty_id); // unbind the buffer afterwards
@@ -220,8 +221,7 @@ Meshes::VBO generateVBOfromData3D(const GLfloat *whole_data, bool texcoords, boo
     static_assert(whole_data_len % 8 == 0,
                   "`generateVBOfromData` function requires whole_data with length divisible by 8! (8 == 3 for vertices + 2 for uv + 3 for normals)");
     static_assert(whole_data_len > 0, "`generateVBOfromData` function requires non-empty whole_data!"); // empty data makes no sense
-    //TODO constexpr?
-    const size_t vert_count = whole_data_len / 8;
+    constexpr size_t vert_count = whole_data_len / 8;
 
     if (texcoords && normals) // simple case, dont discard anything -> whole_data is already data that we need
     {
