@@ -120,6 +120,8 @@ int main(void)
         //TODO IMPORTANT - deinitializing is not handled in a good way!
         // loop.~GameMainLoop();
 
+        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", result);
+
         deinit();
         return result;
     }

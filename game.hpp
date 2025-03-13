@@ -176,7 +176,7 @@ namespace Drawing
 
         void setTarget(glm::vec3 target);       // setter for camera target, in the future we might want to cache view matrix
         void moveTarget(glm::vec3 move_vec);    // move camera target by given vector
-        void setTargetFromPitchYaw(float pitch, float yaw); //TODO
+        void setTargetFromPitchYaw(float pitch, float yaw);
 
         void move(glm::vec3 move_vec);          // combines movePosition and moveTarget
         
@@ -532,7 +532,7 @@ namespace Meshes
         #ifdef USE_VAO
             VAO m_vao;
         #endif
-        //TODO if we use vao then we probably dont need the following attributes
+        //IDEA if we use vao then we probably dont need the following attributes
 
     private:
         AttributeConfig m_attr_config; // config specifying sizes of each of the vertex attributes (size is in amount of GLfloats)
@@ -713,15 +713,15 @@ namespace Game
 //Game loops
 enum class LoopRetVal { exit, success };
 
-// struct LoopData //TODO
-// {
-//     typedef int InitFnPtr();
-//     typedef LoopRetVal LoopFnPtr(void*);
+/*struct LoopData
+{
+    typedef int InitFnPtr();
+    typedef LoopRetVal LoopFnPtr(void*);
 
-//     void *data;
-//     InitFnPtr *initFn;
-//     LoopFnPtr *loopFn;
-// };
+    void *data;
+    InitFnPtr *initFn;
+    LoopFnPtr *loopFn;
+};*/
 
 //main-test.cpp
 struct TestMainLoop //TODO proper deinit of objects
@@ -778,7 +778,7 @@ struct TestMainLoop //TODO proper deinit of objects
 };
 
 //main-game.cpp
-struct GameMainLoop //TODO proper deinit of objects
+struct GameMainLoop
 {
     //Camera
     float mouse_sens, fov, camera_pitch, camera_yaw;
@@ -852,7 +852,7 @@ struct GameMainLoop //TODO proper deinit of objects
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!
     //destructor does the job of deinits automatically, but we can't call destructor before the whole init is completed
-    bool initCamera();
+    void initCamera();
     void deinitCamera();
     bool initVBOs();
     void deinitVBOs();
@@ -862,9 +862,9 @@ private:
     void deinitRenderBuffers();
     bool initShaders();
     void deinitShaders();
-    bool initLighting();
+    void initLighting();
     void deinitLighting();
-    bool initMaterials();
+    void initMaterials();
     void deinitMaterials();
     bool initUI();
     void deinitUI();
@@ -872,11 +872,4 @@ private:
     void deinitFrameBuffers();
     bool initGameStuff();
     void deinitGameStuff();
-    bool initMisc();
-    void deinitMisc();
 };
-
-int test_main();
-
-//main-game.cpp
-int game_main();

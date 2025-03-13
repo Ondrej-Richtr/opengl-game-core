@@ -54,7 +54,6 @@ void Drawing::Camera3D::moveTarget(glm::vec3 move_vec)
 
 void Drawing::Camera3D::setTargetFromPitchYaw(float pitch, float yaw)
 {
-    //TODO
     const float sin_pitch = sin(glm::radians(pitch));
     const float cos_pitch = cos(glm::radians(pitch));
     const float sin_yaw = sin(glm::radians(yaw));
