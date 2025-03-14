@@ -59,21 +59,22 @@ static int init(void)
 
 
     //initializing GLAD
-    //ES
-    // if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
-    // {
-    //     fprintf(stderr, "GLAD failed to initialize!\n");
-    //     glfwTerminate();
-    //     return 3;
-    // }
-
-    //TODO macOS
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        fprintf(stderr, "GLAD failed to initialize!\n");
-        glfwTerminate();
-        return 3;
-    }
+    #ifdef BUILD_OPENGL_330_CORE
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        {
+            fprintf(stderr, "GLAD failed to initialize OpenGL 3.3 core!\n");
+            glfwTerminate();
+            return 3;
+        }
+    #else
+        //ES
+        if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+        {
+            fprintf(stderr, "GLAD failed to initialize OpenGLES 2.0!\n");
+            glfwTerminate();
+            return 3;
+        }
+    #endif
 
     //Inits
     if (!Meshes::initBasicMeshes())
