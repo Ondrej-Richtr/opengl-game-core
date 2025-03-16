@@ -114,9 +114,9 @@ int TestMainLoop::init()
 
     //Shaders
     const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
-               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+            //    *default_fs_path = SHADERS_DIR_PATH "default.fs",
                *texture_vs_path = SHADERS_DIR_PATH "texture.vs",
-               *texture_fs_path = SHADERS_DIR_PATH "texture.fs",
+            //    *texture_fs_path = SHADERS_DIR_PATH "texture.fs",
                *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
                *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
 
@@ -147,6 +147,13 @@ int TestMainLoop::init()
     if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
+        return 8;
+    }
+
+    new (&orb_texture) Texture(orb_path);
+    if (orb_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create orb texture!\n");
         return 8;
     }
 
@@ -278,6 +285,7 @@ int TestMainLoop::init()
     show_pointl = true;
 
     clear_color_3d = Color(50, 220, 80);
+    // clear_color_3d = Color(0, 0, 0); //DEBUG
     clear_color_2d = Color(0, 0, 0);
 
     tick = 0;
@@ -577,6 +585,7 @@ LoopRetVal TestMainLoop::loop()
 
             //render the 3D scene as a background from it's framebuffer
             Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
+            // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, orb_texture, glm::vec2(0.f), win_fbo_size);
 
             //TODO UI
 

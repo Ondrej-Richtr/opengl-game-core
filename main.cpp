@@ -3,6 +3,9 @@
 #include "game.hpp"
 #include "stb_image.h"
 
+#ifdef PLATFORM_WEB
+    #include <emscripten/emscripten.h>
+#endif
 
 static int init(void)
 {
@@ -84,10 +87,6 @@ static int init(void)
         return 4;
     }
 
-    //TODO remove this
-    // glGenVertexArrays(1, &default_vao);
-    // glBindVertexArray(default_vao);
-
     puts("Setup end.");
     return 0;
 }
@@ -97,7 +96,7 @@ static void deinit()
     glfwTerminate();
 }
 
-int main(void)
+int desktop_main(void)
 {
     int setup_ret = init();
     if (setup_ret)
@@ -136,4 +135,70 @@ int main(void)
     deinit();
     puts("End main.");
     return result;
+}
+
+#ifdef PLATFORM_WEB
+extern "C" {
+void emsc_set_window_size(int width, int height)
+{
+    //TODO
+    printf("emsc_set_window_size called with: %dx%d\n", width, height);
+
+    GLFWwindow *window = WindowManager::getWindow();
+    if (window != NULL)
+    {
+        WindowManager::windowResizeCallback(window, width, height);
+    }
+}
+
+void web_loop()
+{
+    puts("web_loop called");
+}
+}
+
+int web_main()
+{
+    puts("web_main begin");
+
+    int setup_ret = init();
+    if (setup_ret)
+    {
+        fprintf(stderr, "Setup failed with value: %d\n", setup_ret);
+        return 1;
+    }
+
+    puts("Begin main.");
+
+    // Creating struct this way so it's fields won't get initialized before init method call
+    unsigned char loop_memory[sizeof(GameMainLoop)];
+    //TODO check if optimizer optimizes this and omits pointless dereference
+    GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(&loop_memory); //TODO better cast
+    int result = loop.init();
+    if (result)
+    {
+        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", result);
+        deinit();
+        return result;
+    }
+
+    emscripten_set_main_loop(web_loop, 0, true);
+
+    //destructors
+    loop.~GameMainLoop();
+
+    deinit();
+    puts("web_main end");
+    return result;
+    // return 0;
+}
+#endif
+
+int main()
+{
+    #ifdef PLATFORM_WEB
+        return web_main();
+    #else
+        return desktop_main();
+    #endif
 }

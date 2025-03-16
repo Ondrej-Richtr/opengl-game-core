@@ -32,7 +32,7 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path)
 
     GLuint vs_id = Shaders::fromString(GL_VERTEX_SHADER, vs_source.get()),
            fs_id = Shaders::fromString(GL_FRAGMENT_SHADER, fs_source.get());
-    if (!vs_id || !fs_id)
+    if (vs_id == empty_id || fs_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize vertex and fragment shaders when constructing shader program!\n");
         // fprintf(stderr, "vs_id == 0: %d\n", vs_id == 0);
@@ -187,7 +187,7 @@ GLuint Shaders::fromString(GLenum type, const char *str)
     {
         printf("Failed to create shader(type 0x%x)!\n", type);
 
-        return 0;
+        return empty_id;
     }
 
     glShaderSource(id, 1, &str, NULL);
@@ -204,7 +204,7 @@ GLuint Shaders::fromString(GLenum type, const char *str)
         printf("Failed to compile shader(type 0x%x), error msg: '%s'\n", type, (char*)&msg);
 
         glDeleteShader(id);
-        return 0;
+        return empty_id;
     }
 
     return id;
@@ -213,7 +213,7 @@ GLuint Shaders::fromString(GLenum type, const char *str)
 GLuint Shaders::programLink(GLuint vs, GLuint fs)
 {
     GLuint id = glCreateProgram();
-    if (!id)
+    if (id == empty_id)
     {
         printf("Failed to create shader program!\n");
 

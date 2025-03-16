@@ -168,18 +168,19 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
-    // const char *orb_path = "assets/orb.jpg";
-    // orb_texture_world_size = glm::vec2(1.f, 1.f); // almost 1:1 aspect ratio
+    const char *orb_path = "assets/orb.jpg";
+    orb_texture_world_size = glm::vec2(1.f, 1.f); // almost 1:1 aspect ratio
 
-    // new (&orb_texture) Texture(orb_path);
-    // if (orb_texture.m_id == empty_id)
-    // {
-    //     fprintf(stderr, "Failed to create orb texture!\n");
-            // orb_texture.~Texture2D();
-            // fbo3d_tex.~Texture2D();
-        // brick_texture.~Texture2D();
-        //     return false;
-    // }
+    new (&orb_texture) Texture(orb_path);
+    if (orb_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create orb texture!\n");
+        fbo3d_tex.~Texture2D();
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        return false;
+    }
 
     const char *target_path = "assets/target_small.png";
     target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
@@ -192,6 +193,7 @@ bool GameMainLoop::initTextures()
         fbo3d_tex.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
         target_texture.~Texture2D();
         return false;
     }
@@ -204,6 +206,7 @@ void GameMainLoop::deinitTextures()
     fbo3d_tex.~Texture2D();
     brick_texture.~Texture2D();
     brick_alt_texture.~Texture2D();
+    orb_texture.~Texture2D();
     target_texture.~Texture2D();
 }
 
@@ -252,7 +255,7 @@ bool GameMainLoop::initShaders()
     using ShaderP = Shaders::Program;
 
     const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
-               *default_fs_path = SHADERS_DIR_PATH "default.fs",
+            //    *default_fs_path = SHADERS_DIR_PATH "default.fs",
             //    *passthrough_pos_vs_path = SHADERS_DIR_PATH "passthrough-pos.vs",
             //    *passthrough_pos_uv_vs_path = SHADERS_DIR_PATH "passthrough-pos-uv.vs",
                *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
@@ -341,7 +344,7 @@ void GameMainLoop::initLighting()
 {
     using LightProps = Lighting::LightProps;
     using DirLight = Lighting::DirLight;
-    using PointLight = Lighting::PointLight;
+    // using PointLight = Lighting::PointLight;
     using SpotLight = Lighting::SpotLight;
     
     light_src_size = 0.2;
@@ -611,6 +614,7 @@ int GameMainLoop::init()
 
     //Misc.
     clear_color_3d = Color(50, 220, 80);
+    // clear_color_3d = Color(10, 10, 10); //DEBUG
     clear_color_2d = Color(0, 0, 0);
     tick = 0;
     frame_delta = 0.f;
@@ -914,8 +918,8 @@ LoopRetVal GameMainLoop::loop()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
             //render the 3D scene as a background from it's framebuffer
+            // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
             Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
-            // Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(100.f, 100.f), win_fbo_size);
             
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,

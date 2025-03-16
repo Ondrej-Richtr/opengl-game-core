@@ -9,7 +9,7 @@
 
 Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
                             float near_plane, float far_plane)
-                    : m_pos(pos), m_target(target), m_proj_mat(), m_view_mat()
+                    : m_pos(pos), m_target(target), m_view_mat(), m_proj_mat()
 {
     updateViewMatrix(); // properly sets m_view_mat
     m_proj_mat = glm::perspective(glm::radians(fov), aspect_ration, near_plane, far_plane);
@@ -17,7 +17,7 @@ Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::
 
 Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, float pitch, float yaw,
                             float near_plane, float far_plane)
-                    : m_pos(pos), m_target(), m_proj_mat(), m_view_mat()
+                    : m_pos(pos), m_target(), m_view_mat(), m_proj_mat()
 {
     setTargetFromPitchYaw(pitch, yaw);  // properly sets m_target and m_view_mat
     //updateViewMatrix();               // properly sets m_view_mat
@@ -243,6 +243,38 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
         tex_rect_shader.set("transform", transform);
 
         //fs
+        tex_rect_shader.set("rectPos", dstPos);
+        tex_rect_shader.set("rectSize", dstSize);
+    }
+
+    vbo.bind();
+        glDrawArrays(GL_TRIANGLES, 0, vbo.vertexCount());
+    vbo.unbind();
+}
+
+void Drawing::texturedRectangle2(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
+                                 const Textures::Texture2D& background, const Textures::Texture2D& foreground,
+                                 glm::vec2 dstPos, glm::vec2 dstSize)
+{
+    const Meshes::VBO& vbo = Meshes::unit_quad_pos_only;
+    assert(vbo.m_id != empty_id);
+
+    glm::mat4 transform(1.f);
+    transform = glm::scale(transform, glm::vec3(2.f));
+
+    tex_rect_shader.use();
+    textureRect.bind(0);
+    background.bind(1);
+    foreground.bind(2);
+    {
+        //vs
+        tex_rect_shader.set("transform", transform);
+
+        //fs
+        tex_rect_shader.set("inputTexture", 0);
+        tex_rect_shader.set("inputTextureBG", 1);
+        tex_rect_shader.set("inputTextureFG", 2);
+        
         tex_rect_shader.set("rectPos", dstPos);
         tex_rect_shader.set("rectSize", dstSize);
     }

@@ -9,4 +9,5 @@
  |0. 0. 0|13. 3. 2025|get and compile glfw from their gitrepo + add option to link system glfw instead
  |0. 0. 0|13. 3. 2025|maybe for glfw use https://github.com/lpstankus/zig-glfw (pass options to it with https://ziggit.dev/t/pass-build-option-to-a-dependency/4196/14)
  |0. 0. 0|13. 3. 2025|include system for shaders
- |0. 0. 0|13. 3. 2025|shaders ver100
+ |0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
+ |0. 0. 0|16. 3. 2025|add cubemaps + prebaked lighting and stuff?

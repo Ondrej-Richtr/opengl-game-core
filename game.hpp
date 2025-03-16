@@ -124,7 +124,7 @@ namespace Textures
 
 namespace Meshes
 {
-    class VBO;
+    struct VBO;
 };
 
 namespace Game
@@ -143,10 +143,10 @@ class WindowManager
     static GLFWwindow *m_window;
     static glm::ivec2 m_win_size, m_framebuffer_size;
 
+public:
     static void windowResizeCallback(GLFWwindow* window, int width, int height);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-public:
     static void init(GLFWwindow *window);
 
     static GLFWwindow* getWindow();
@@ -226,6 +226,10 @@ namespace Drawing
 
     void texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
                            glm::vec2 dstPos, glm::vec2 dstSize);
+
+    void texturedRectangle2(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
+                            const Textures::Texture2D& background, const Textures::Texture2D& foreground,
+                            glm::vec2 dstPos, glm::vec2 dstSize);
 
     void screenLine(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                     glm::vec2 v1, glm::vec2 v2, float thickness, ColorF color);
@@ -388,6 +392,7 @@ namespace Shaders
         #endif
     #endif
 
+    //TODO because of support for ver100 we need to calculate those positions after compiling the shader
     static constexpr GLuint attribute_position_pos = 0;
     static constexpr GLuint attribute_position_texcoords = 1;
     static constexpr GLuint attribute_position_normals = 2;
@@ -736,7 +741,7 @@ struct TestMainLoop //TODO proper deinit of objects
     Shaders::Program tex_rect_shader, light_src_shader, light_shader;
     
     //Textures
-    Textures::Texture2D fbo3d_tex, brick_texture;
+    Textures::Texture2D fbo3d_tex, brick_texture, orb_texture;
 
     //RenderBuffers
     GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
@@ -782,8 +787,8 @@ struct GameMainLoop
     Meshes::VBO cube_vbo, line_vbo;
 
     //Textures
-    Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, target_texture;
-    glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, target_texture_world_size; // should have aspect ratio 1:1
+    Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, orb_texture, target_texture;
+    glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     //RenderBuffers

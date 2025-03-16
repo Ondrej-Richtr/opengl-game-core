@@ -1,4 +1,4 @@
-#version 300 es
+#version 330 core
 precision highp float;
 
 layout(origin_upper_left) in vec4 gl_FragCoord;
@@ -6,14 +6,18 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 out vec4 FragColor;
 
 uniform sampler2D inputTexture;
+uniform sampler2D inputTextureBG;
+uniform sampler2D inputTextureFG;
 uniform vec2 rectPos;
 uniform vec2 rectSize;
 
+#define chonk 1
+
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tpos) (vec4(0.f, 1.f, 1.f, 1.f))
-    // #define POSTPROCESS(tpos) (_postproc((tpos)))
+    #define POSTPROCESS(tpos) (_postproc((tpos)))
     // #define POSTPROCESS(tpos) (_postproc_greyscale((tpos)))
-    #define POSTPROCESS(tpos) (texture(inputTexture, (tpos)))
+    // #define POSTPROCESS(tpos) (texture(inputTextureBG, (tpos)))
 #endif
 
 ivec2 uvToCoord(vec2 uv)
@@ -48,11 +52,12 @@ vec4 _postproc_greyscale(vec2 tpos)
 vec4 _postproc(vec2 tpos)
 {
     ivec2 rectPos = uvToCoord(tpos);
-    int mask = ~int(1);
+    int offset = 1 << chonk;
+    int mask = ~int(offset);
     ivec2 rectPosUL = rectPos & mask;
-    ivec2 rectPosUR = ivec2(rectPosUL.x + 1, rectPosUL.y);
-    ivec2 rectPosDL = ivec2(rectPosUL.x, rectPosUL.y + 1);
-    ivec2 rectPosDR = ivec2(rectPosUL.x, rectPosUL.y + 1);
+    ivec2 rectPosUR = ivec2(rectPosUL.x + offset, rectPosUL.y);
+    ivec2 rectPosDL = ivec2(rectPosUL.x, rectPosUL.y + offset);
+    ivec2 rectPosDR = ivec2(rectPosUL.x + offset, rectPosUL.y + offset);
 
     float averageVal = _calculateAverage(rectPosUL) / 4.f;
     averageVal += _calculateAverage(rectPosUR) / 4.f;
@@ -60,11 +65,13 @@ vec4 _postproc(vec2 tpos)
     averageVal += _calculateAverage(rectPosDR) / 4.f;
 
     int level = _levelFromAverage(averageVal);
-    vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.f), off_color = vec4(0.f, 0.f, 0.f, 1.f);
+    // vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.f), off_color = vec4(0.f, 0.f, 0.f, 1.f);
     // vec4 on_color = vec4(105.f/255.f, 18.f/255.f, 168.f/255.f, 1.f), off_color = vec4(17.f/255.f, 45.f/255.f, 94.f/255.f, 1.f);
     // float rel_level = float(level) / 4.f;
     // vec4 off_color_min = vec4(0.1f, 0.1f, 0.1f, 1.f), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.f);
     // vec4 on_color = texture(inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
+    // vec4 on_color = texture(inputTextureFG, tpos), off_color = texture(inputTextureBG, tpos);
+    vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.f), off_color = texture(inputTextureBG, tpos);
 
     if (rectPosUL == rectPos) return level >= 1 ? on_color : off_color;
     if (rectPosUR == rectPos) return level >= 4 ? on_color : off_color;
@@ -76,6 +83,11 @@ vec4 _postproc(vec2 tpos)
 
 void main()
 {
+    //mark all input textures as used
+    inputTexture;
+    inputTextureBG;
+    inputTextureFG;
+
     vec2 fragScreenPos = gl_FragCoord.xy;
     vec2 texcoords = (fragScreenPos - rectPos) / rectSize;
 
