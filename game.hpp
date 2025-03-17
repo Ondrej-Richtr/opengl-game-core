@@ -29,6 +29,11 @@
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
 
+#define ATTRIBUTE_DEFAULT_NAME_POS "aPos"
+#define ATTRIBUTE_DEFAULT_NAME_TEXCOORDS "aTexCoord"
+#define ATTRIBUTE_DEFAULT_NAME_NORMALS "aNormal"
+#define ATTRIBUTE_DEFAULT_NAME_COLOR "aColor"
+
 #define UNIFORM_NAME_BUFFER_LEN 512
 // texbuffer length is set to exactly NK_INPUT_MAX as at worst each unicode character is 1 ascii character,
 // if this memory is not enough then nuklear wouldnt store it anyways,
@@ -389,6 +394,13 @@ namespace Shaders
             #define SHADERS_DIR_PATH "shaders/ver330core/"
         #else
             #define SHADERS_DIR_PATH "shaders/ver300es/"
+        #endif
+    #endif
+
+    #ifndef USE_VER100_SHADERS
+        #ifndef BUILD_OPENGL_330_CORE
+            //TODO ver100 shaders
+            #define USE_VER100_SHADERS
         #endif
     #endif
 

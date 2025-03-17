@@ -1,6 +1,6 @@
 #version 300 es
 
-layout (location = 0) in vec3 aPos;
+in vec3 aPos;
 
 uniform mat4 transform;
 

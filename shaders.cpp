@@ -180,6 +180,17 @@ int Shaders::Program::setLights(const char *uniform_array_name, const char *unif
     return success_count;
 }
 
+static void setDefaultAttributeLocations(GLuint program_id)
+{
+    assert(program_id != empty_id);
+    assert(!Utils::checkForGLError());
+
+    glBindAttribLocation(program_id, Shaders::attribute_position_pos, ATTRIBUTE_DEFAULT_NAME_POS);
+    glBindAttribLocation(program_id, Shaders::attribute_position_texcoords, ATTRIBUTE_DEFAULT_NAME_TEXCOORDS);
+    glBindAttribLocation(program_id, Shaders::attribute_position_normals, ATTRIBUTE_DEFAULT_NAME_NORMALS);
+    glBindAttribLocation(program_id, Shaders::attribute_position_color, ATTRIBUTE_DEFAULT_NAME_COLOR);
+}
+
 GLuint Shaders::fromString(GLenum type, const char *str)
 {
     unsigned int id = glCreateShader(type);
@@ -198,6 +209,7 @@ GLuint Shaders::fromString(GLenum type, const char *str)
 
     if (!success)
     {
+        //TODO print the info log only when building for debug
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetShaderInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
@@ -220,6 +232,8 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
         return empty_id;
     }
 
+    setDefaultAttributeLocations(id);
+
     glAttachShader(id, vs);
     glAttachShader(id, fs);
     glLinkProgram(id);
@@ -228,6 +242,7 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
     glGetProgramiv(id, GL_LINK_STATUS, &success);
     
     if (!success) {
+        //TODO print the info log only when building for debug
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetProgramInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure

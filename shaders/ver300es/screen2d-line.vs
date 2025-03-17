@@ -1,6 +1,6 @@
 #version 300 es
 
-layout (location = 0) in vec2 aPos;
+in vec2 aPos;
 
 uniform mat3 transform;
 uniform vec2 screenRes;

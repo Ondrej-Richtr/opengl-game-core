@@ -1,8 +1,8 @@
 #version 300 es
 
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aTexCoord;
-layout (location = 2) in vec3 aNormal;
+in vec3 aPos;
+in vec2 aTexCoord;
+in vec3 aNormal;
 
 out vec3 FragPos;
 out vec2 TexCoord;

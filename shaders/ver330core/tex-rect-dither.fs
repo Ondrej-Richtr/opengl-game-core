@@ -1,7 +1,7 @@
 #version 330 core
 precision highp float;
 
-layout(origin_upper_left) in vec4 gl_FragCoord;
+layout (origin_upper_left) in vec4 gl_FragCoord;
 
 out vec4 FragColor;
 
