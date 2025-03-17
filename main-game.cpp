@@ -287,8 +287,13 @@ bool GameMainLoop::initShaders()
 
     //textured rectangle shader
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
+    std::vector<Shaders::IncludeDefine> vs_includes{},
+                                        fs_includes = {
+                                                        //DEBUG
+                                                        // Shaders::IncludeDefine("POSTPROCESS(tpos)", "(vec4(0.f, 1.f, 1.f, 1.f))")
+                                                      };
 
-    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path);
+    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, vs_includes, fs_includes);
     if (tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");

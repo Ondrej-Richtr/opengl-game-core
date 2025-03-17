@@ -1,4 +1,3 @@
-#version 330 core
 precision highp float;
 
 #define LIGHTS_MAX_AMOUNT 10 //TODO implement includes

@@ -1,5 +1,3 @@
-#version 330 core
-
 in vec2 aPos;
 
 uniform mat3 transform;

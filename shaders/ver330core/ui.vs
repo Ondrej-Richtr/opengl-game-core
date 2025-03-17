@@ -1,5 +1,3 @@
-#version 330 core
-
 in vec2 aPos;         // in screen relative coordinates
 in vec2 aTexCoord;
 in vec4 aColor;

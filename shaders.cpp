@@ -9,34 +9,36 @@
 #define ERR_MSG_MAX_LEN 1024
 
 
+Shaders::IncludeDefine::IncludeDefine(const char *name, const char *value)
+                            : m_name(name), m_value(value)
+{
+    assert(m_name != NULL);
+}
+
 Shaders::Program::Program(GLuint vs_id, GLuint fs_id)
                     : m_id(Shaders::programLink(vs_id, fs_id))
 {}
 
-Shaders::Program::Program(const char *vs_path, const char *fs_path)
+Shaders::Program::Program(const char *vs_path, const char *fs_path,
+                          std::vector<IncludeDefine> vs_includes, std::vector<IncludeDefine> fs_includes)
                     : m_id(empty_id)
 {
     // constructs shader program based on source code of vertex and fragment shader located at given paths,
     // caller should always check whether constructor failed -> m_id == empty_id
     
-    // char *vs_source = Utils::getTextFileAsString(vs_path),
-    //      *fs_source = Utils::getTextFileAsString(fs_path);
     std::unique_ptr<char[]> vs_source = Utils::getTextFileAsString(vs_path),
                             fs_source = Utils::getTextFileAsString(fs_path);
-    
     if (!vs_source || !fs_source)
     {
         fprintf(stderr, "Failed to load vertex or fragment shader source code when constructing shader program!\n");
         return;
     }
 
-    GLuint vs_id = Shaders::fromString(GL_VERTEX_SHADER, vs_source.get()),
-           fs_id = Shaders::fromString(GL_FRAGMENT_SHADER, fs_source.get());
+    GLuint vs_id = Shaders::fromStringWithIncludeSystem(GL_VERTEX_SHADER, vs_source.get(), vs_includes),
+           fs_id = Shaders::fromStringWithIncludeSystem(GL_FRAGMENT_SHADER, fs_source.get(), fs_includes);
     if (vs_id == empty_id || fs_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize vertex and fragment shaders when constructing shader program!\n");
-        // fprintf(stderr, "vs_id == 0: %d\n", vs_id == 0);
-        // fprintf(stderr, "fs_id == 0: %d\n", fs_id == 0);
         glDeleteShader(vs_id);
         glDeleteShader(fs_id);
         
@@ -191,17 +193,17 @@ static void setDefaultAttributeLocations(GLuint program_id)
     glBindAttribLocation(program_id, Shaders::attribute_position_color, ATTRIBUTE_DEFAULT_NAME_COLOR);
 }
 
-GLuint Shaders::fromString(GLenum type, const char *str)
+GLuint Shaders::fromString(GLenum type, const char *src)
 {
     unsigned int id = glCreateShader(type);
-    if (!id)
+    if (id == empty_id)
     {
-        printf("Failed to create shader(type 0x%x)!\n", type);
+        fprintf(stderr, "Failed to create shader(type 0x%x)!\n", type);
 
         return empty_id;
     }
 
-    glShaderSource(id, 1, &str, NULL);
+    glShaderSource(id, 1, &src, NULL);
     glCompileShader(id);
 
     int success = 0;
@@ -213,7 +215,98 @@ GLuint Shaders::fromString(GLenum type, const char *str)
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetShaderInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
-        printf("Failed to compile shader(type 0x%x), error msg: '%s'\n", type, (char*)&msg);
+        fprintf(stderr, "Failed to compile shader(type 0x%x), error msg: '%s'\n", type, (char*)&msg);
+
+        glDeleteShader(id);
+        return empty_id;
+    }
+
+    return id;
+}
+
+GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::vector<IncludeDefine> includes)
+{
+    //consturcts the OpenGL shader of given type with `str` source contents and given includes
+    // the order is: version macro, includes, source
+    // return OpenGL id of the constructed shader or `empty_id` if error
+    const size_t includes_size = includes.size();
+    if (includes_size > Shaders::IncludeDefine::max_includes)
+    {
+        fprintf(stderr, "Too many includes specified(%zu) when creating shader(type 0x%x)! Max number of includes is: %zu\n",
+                includes_size, type, Shaders::IncludeDefine::max_includes);
+        return empty_id;
+    }
+
+    // source array of strings that will make up the complete source of the shader,
+    // consists of `SHADER_VER_LINE`, given includes and source loaded from either .vs or .fs file. (1 + includes.size() + 1)
+    const char *source_array[1 + Shaders::IncludeDefine::max_includes + 1] = { SHADER_VER_LINE, NULL }; // insert ver line first
+    GLsizei source_array_len = 1; // start at 1 as we already included the `SHADER_VER_LINE`
+
+    // copy #define lines from includes vector into text buffer and insert their const char pointers into source_array
+    char includes_buffer[Shaders::IncludeDefine::max_includes][Shaders::IncludeDefine::max_include_line_len + 1] = { 0 };
+
+    for (size_t i = 0; i < includes_size; ++i)
+    {
+        char *includes_buffer_line = includes_buffer[i];
+        const IncludeDefine include = includes[i];
+        assert(include.m_name != NULL);
+
+        int written = -1;
+        if (include.m_value != NULL)
+        {
+            written = snprintf(includes_buffer_line,
+                               Shaders::IncludeDefine::max_include_line_len + 1, // +1 as snprintf counts the term. char.
+                               "#define %s %s\n", include.m_name, include.m_value);
+        }
+        else
+        {
+            written = snprintf(includes_buffer_line,
+                               Shaders::IncludeDefine::max_include_line_len + 1, // +1 as snprintf counts the term. char.
+                               "#define %s\n", include.m_name);
+        }
+
+        if (written < 0)
+        {
+            fprintf(stderr, "Error when formating shader include line with name: '%s' and value: '%s'\n",
+                    include.m_name, include.m_value);
+            return empty_id;
+        }
+
+        if (written > Shaders::IncludeDefine::max_include_line_len)
+        {
+            fprintf(stderr, "Error when copying shader include line with name: '%s'."
+                            " The value string '%s' is too long, needed size was: %d, max allowed: %zu\n",
+                    include.m_name, include.m_value, written, Shaders::IncludeDefine::max_include_line_len);
+            return empty_id;
+        }
+
+        source_array[source_array_len++] = includes_buffer_line;
+    }
+    assert(source_array_len <= 1 + Shaders::IncludeDefine::max_includes);
+
+    //finally include the given file source string
+    source_array[source_array_len++] = str;
+
+    unsigned int id = glCreateShader(type);
+    if (id == empty_id)
+    {
+        fprintf(stderr, "Failed to create shader(type 0x%x)!\n", type);
+        return empty_id;
+    }
+
+    glShaderSource(id, source_array_len, source_array, NULL);
+    glCompileShader(id);
+
+    int success = 0;
+    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        //TODO print the info log only when building for debug
+        GLchar msg[ERR_MSG_MAX_LEN + 1];
+        glGetShaderInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
+        msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
+        fprintf(stderr, "Failed to compile shader(type 0x%x), error msg: '%s'\n", type, (char*)&msg);
 
         glDeleteShader(id);
         return empty_id;
@@ -227,7 +320,7 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
     GLuint id = glCreateProgram();
     if (id == empty_id)
     {
-        printf("Failed to create shader program!\n");
+        fprintf(stderr, "Failed to create shader program!\n");
 
         return empty_id;
     }
@@ -246,7 +339,7 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetProgramInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
-        printf("Failed to link shader program, error msg: '%s'\n", (char*)&msg);
+        fprintf(stderr, "Failed to link shader program, error msg: '%s'\n", (char*)&msg);
 
         glDeleteProgram(id);
         return empty_id;

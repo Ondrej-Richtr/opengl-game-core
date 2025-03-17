@@ -390,11 +390,7 @@ namespace Utils
 namespace Shaders
 {
     #ifndef SHADERS_DIR_PATH
-        #ifdef BUILD_OPENGL_330_CORE
-            #define SHADERS_DIR_PATH "shaders/ver330core/"
-        #else
-            #define SHADERS_DIR_PATH "shaders/ver300es/"
-        #endif
+        #define SHADERS_DIR_PATH "shaders/ver330core/"
     #endif
 
     #ifndef USE_VER100_SHADERS
@@ -404,11 +400,27 @@ namespace Shaders
         #endif
     #endif
 
+    #ifdef USE_VER100_SHADERS
+        #define SHADER_VER_LINE "#version 100\n"
+    #else
+        #define SHADER_VER_LINE "#version 330 core\n"
+    #endif
+
     //TODO because of support for ver100 we need to calculate those positions after compiling the shader
-    static constexpr GLuint attribute_position_pos = 0;
-    static constexpr GLuint attribute_position_texcoords = 1;
-    static constexpr GLuint attribute_position_normals = 2;
-    static constexpr GLuint attribute_position_color = 3;
+    constexpr GLuint attribute_position_pos = 0;
+    constexpr GLuint attribute_position_texcoords = 1;
+    constexpr GLuint attribute_position_normals = 2;
+    constexpr GLuint attribute_position_color = 3;
+
+    struct IncludeDefine
+    {
+        static constexpr size_t max_includes = 32;
+        static constexpr size_t max_include_line_len = 256;
+
+        const char *m_name, *m_value;
+
+        IncludeDefine(const char *name, const char *value = NULL);
+    };
 
     struct Program
     {
@@ -416,7 +428,8 @@ namespace Shaders
 
         Program() = default;
         Program(GLuint vs_id, GLuint fs_id);
-        Program(const char *vs_path, const char *fs_path);
+        Program(const char *vs_path, const char *fs_path,
+                std::vector<IncludeDefine> vs_includes = {}, std::vector<IncludeDefine> fs_includes = {});
         ~Program();
 
         void use() const;
@@ -438,7 +451,8 @@ namespace Shaders
                       const std::vector<std::reference_wrapper<const Lighting::Light>>& lights) const;
     };
 
-    GLuint fromString(GLenum type, const char *str);
+    GLuint fromString(GLenum type, const char *src);
+    GLuint fromStringWithIncludeSystem(GLenum type, const char *src, std::vector<IncludeDefine> includes);
 
     GLuint programLink(GLuint vs, GLuint fs);
 
