@@ -1,9 +1,9 @@
-in vec2 aPos;         // in screen relative coordinates
-in vec2 aTexCoord;
-in vec4 aColor;
+IN_ATTR vec2 aPos;         // in screen relative coordinates
+IN_ATTR vec2 aTexCoord;
+IN_ATTR vec4 aColor;
 
-out vec2 TexCoord;
-out vec4 Color;
+OUT_ATTR vec2 TexCoord;
+OUT_ATTR vec4 Color;
 
 uniform vec2 screenRes;
 

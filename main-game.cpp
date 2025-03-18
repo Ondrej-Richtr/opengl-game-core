@@ -275,8 +275,18 @@ bool GameMainLoop::initShaders()
     //ui shader
     const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
                *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
+    std::vector<Shaders::IncludeDefine> ui_vs_includes = {
+                                                        //DEBUG
+                                                        // Shaders::IncludeDefine("IN_ATTR", "in"),
+                                                        // Shaders::IncludeDefine("OUT_ATTR", "out"),
+                                                      },
+                                        ui_fs_includes = {
+                                                        //DEBUG
+                                                        // Shaders::IncludeDefine("IN_ATTR", "in"),
+                                                        // Shaders::IncludeDefine("OUT_ATTR", "out"),
+                                                      };
     
-    new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path);
+    new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path, ui_vs_includes, ui_fs_includes);
     if (ui_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create UI shader program!\n");

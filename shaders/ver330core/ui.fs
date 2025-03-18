@@ -1,9 +1,9 @@
 precision mediump float;
 
-in vec2 TexCoord;
-in vec4 Color;
+IN_ATTR vec2 TexCoord;
+IN_ATTR vec4 Color;
 
-out vec4 FragColor;
+OUT_ATTR vec4 FragColor;
 
 uniform sampler2D inputTexture;
 

@@ -2,7 +2,7 @@ precision highp float;
 
 layout (origin_upper_left) in vec4 gl_FragCoord;
 
-out vec4 FragColor;
+OUT_ATTR vec4 FragColor;
 
 uniform sampler2D inputTexture;
 uniform vec2 rectPos;

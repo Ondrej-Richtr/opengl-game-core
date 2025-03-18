@@ -402,9 +402,13 @@ namespace Shaders
 
     #ifdef USE_VER100_SHADERS
         #define SHADER_VER_LINE "#version 100\n"
+        #define SHADER_ATTR_DEFINES "#define IN_ATTR attribute\n#define OUT_ATTR varying\n" //TODO
     #else
         #define SHADER_VER_LINE "#version 330 core\n"
+        #define SHADER_ATTR_DEFINES "#define IN_ATTR in\n#define OUT_ATTR out\n"
     #endif
+
+    #define SHADER_VER_INCLUDE_LINES SHADER_VER_LINE SHADER_ATTR_DEFINES
 
     //TODO because of support for ver100 we need to calculate those positions after compiling the shader
     constexpr GLuint attribute_position_pos = 0;
@@ -504,13 +508,13 @@ namespace Meshes
 
     //TODO meshes - verts, normals, texcoords, indices for faces, (material?)
 
-    constexpr static unsigned int attribute3d_pos_amount = 3;       // vec3
-    constexpr static unsigned int attribute3d_texcoord_amount = 2;  // vec2
-    constexpr static unsigned int attribute3d_normal_amount = 3;    // vec3
+    constexpr unsigned int attribute3d_pos_amount = 3;       // vec3
+    constexpr unsigned int attribute3d_texcoord_amount = 2;  // vec2
+    constexpr unsigned int attribute3d_normal_amount = 3;    // vec3
 
-    constexpr static unsigned int attribute2d_pos_amount = 2;       // vec2
-    // constexpr static unsigned int attribute2d_texcoord_amount = 2;  // vec2
-    // constexpr static unsigned int attribute2d_normal_amount = 3;    // vec3
+    constexpr unsigned int attribute2d_pos_amount = 2;       // vec2
+    // constexpr unsigned int attribute2d_texcoord_amount = 2;  // vec2
+    // constexpr unsigned int attribute2d_normal_amount = 3;    // vec3
 
     //Vertex array object abstraction, should be fairly simple, only used with OpenGL 3.3 core
     #ifdef USE_VAO
