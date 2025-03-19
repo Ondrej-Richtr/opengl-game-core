@@ -11,3 +11,5 @@
  |0. 0. 0|13. 3. 2025|include system for shaders
  |0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
  |0. 0. 0|16. 3. 2025|add cubemaps + prebaked lighting and stuff?
+ |0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp precision is allowed
+ |0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders

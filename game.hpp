@@ -395,20 +395,22 @@ namespace Shaders
 
     #ifndef USE_VER100_SHADERS
         #ifndef BUILD_OPENGL_330_CORE
-            //TODO ver100 shaders
             #define USE_VER100_SHADERS
         #endif
     #endif
 
     #ifdef USE_VER100_SHADERS
         #define SHADER_VER_LINE "#version 100\n"
-        #define SHADER_ATTR_DEFINES "#define IN_ATTR attribute\n#define OUT_ATTR varying\n" //TODO
+        #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR attribute\n#define OUT_ATTR varying\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n\n"
     #else
         #define SHADER_VER_LINE "#version 330 core\n"
-        #define SHADER_ATTR_DEFINES "#define IN_ATTR in\n#define OUT_ATTR out\n"
+        #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR in\n#define OUT_ATTR out\n"
+        #define SHADER_ATTR_DEFINES_FS SHADER_ATTR_DEFINES_VS
     #endif
 
-    #define SHADER_VER_INCLUDE_LINES SHADER_VER_LINE SHADER_ATTR_DEFINES
+    #define SHADER_VER_INCLUDE_LINES_VS SHADER_VER_LINE SHADER_ATTR_DEFINES_VS
+    #define SHADER_VER_INCLUDE_LINES_FS SHADER_VER_LINE SHADER_ATTR_DEFINES_FS
 
     //TODO because of support for ver100 we need to calculate those positions after compiling the shader
     constexpr GLuint attribute_position_pos = 0;

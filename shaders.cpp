@@ -229,6 +229,9 @@ GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::v
     //consturcts the OpenGL shader of given type with `str` source contents and given includes
     // the order is: version related macros, includes, source
     // return OpenGL id of the constructed shader or `empty_id` if error
+    assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
+    bool is_fragment_shader = type == GL_FRAGMENT_SHADER;
+
     const size_t includes_size = includes.size();
     if (includes_size > Shaders::IncludeDefine::max_includes)
     {
@@ -239,7 +242,9 @@ GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::v
 
     // source array of strings that will make up the complete source of the shader,
     // consists of `SHADER_VER_INCLUDE_LINES`, given includes and source loaded from either .vs or .fs file. (1 + includes.size() + 1)
-    const char *source_array[1 + Shaders::IncludeDefine::max_includes + 1] = { SHADER_VER_INCLUDE_LINES, NULL }; // insert version includes first
+    const char *source_array[1 + Shaders::IncludeDefine::max_includes + 1] = { is_fragment_shader ?
+                                                                               SHADER_VER_INCLUDE_LINES_FS :
+                                                                               SHADER_VER_INCLUDE_LINES_VS, NULL }; // insert version includes first
     GLsizei source_array_len = 1; // start at 1 as we already included the `SHADER_VER_INCLUDE_LINES`
 
     // copy #define lines from includes vector into text buffer and insert their const char pointers into source_array
