@@ -1,4 +1,4 @@
-in vec2 aPos;
+IN_ATTR vec2 aPos;
 
 uniform mat3 transform;
 uniform vec2 screenRes;

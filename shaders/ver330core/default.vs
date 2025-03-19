@@ -1,4 +1,4 @@
-in vec3 aPos;
+IN_ATTR vec3 aPos;
 
 uniform mat4 model;
 uniform mat4 view;

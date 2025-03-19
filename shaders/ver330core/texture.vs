@@ -1,10 +1,10 @@
-in vec3 aPos;
-in vec2 aTexCoord;
-in vec3 aNormal;
+IN_ATTR vec3 aPos;
+IN_ATTR vec2 aTexCoord;
+IN_ATTR vec3 aNormal;
 
-out vec3 FragPos;
-out vec2 TexCoord;
-out vec3 Normal;
+OUT_ATTR vec3 FragPos;
+OUT_ATTR vec2 TexCoord;
+OUT_ATTR vec3 Normal;
 
 uniform mat4 model;
 uniform mat3 normalMat;

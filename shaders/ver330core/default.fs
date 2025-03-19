@@ -1,8 +1,8 @@
 precision highp float;
 
-in vec4 gl_FragCoord;
+IN_ATTR vec4 gl_FragCoord;
 
-out vec4 FragColor;
+OUT_ATTR vec4 FragColor;
 
 uniform vec4 inputColor;
 

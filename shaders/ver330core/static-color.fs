@@ -1,6 +1,6 @@
 precision highp float;
 
-out vec4 FragColor;
+OUT_ATTR vec4 FragColor;
 
 uniform vec4 color;
 

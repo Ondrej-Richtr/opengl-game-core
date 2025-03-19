@@ -1,11 +1,11 @@
 precision highp float;
 
-//in vec4 gl_FragCoord;
-in vec3 FragPos;            //position in world space
-in vec2 TexCoord;
-in vec3 Normal;
+//IN_ATTR vec4 gl_FragCoord;
+IN_ATTR vec3 FragPos;            //position in world space
+IN_ATTR vec2 TexCoord;
+IN_ATTR vec3 Normal;
 
-out vec4 FragColor;
+OUT_ATTR vec4 FragColor;
 
 uniform sampler2D inputTexture1;
 uniform sampler2D inputTexture2;
