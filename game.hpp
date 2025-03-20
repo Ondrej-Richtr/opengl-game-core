@@ -493,6 +493,12 @@ namespace Textures
     static constexpr GLint default_min_filtering = GL_LINEAR_MIPMAP_LINEAR;
     static constexpr GLint default_max_filtering = GL_LINEAR;
 
+    #ifdef PLATFORM_WEB
+        constexpr bool default_generate_mipmaps = false;
+    #else
+        constexpr bool default_generate_mipmaps = true;
+    #endif
+
     struct Texture2D // struct representing an ingame texture with 4 channels (RGBA)
     {
         unsigned int m_id = empty_id; // OpenGL texture id
@@ -500,9 +506,9 @@ namespace Textures
 
         Texture2D() = default;
         Texture2D(unsigned int width, unsigned int height, GLenum component_type);
-        Texture2D(const char *image_path, bool generate_mipmaps = true);
+        Texture2D(const char *image_path, bool generate_mipmaps = default_generate_mipmaps);
         Texture2D(const void *img_data, unsigned int width, unsigned int height,
-                  bool generate_mipmaps = true);
+                  bool generate_mipmaps = default_generate_mipmaps);
         ~Texture2D();
 
         void bind(unsigned int unit = 0) const;

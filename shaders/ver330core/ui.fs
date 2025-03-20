@@ -7,6 +7,6 @@ uniform sampler2D inputTexture;
 
 void main()
 {
-    vec4 sampled = texture(inputTexture, TexCoord);
+    vec4 sampled = texture2D(inputTexture, TexCoord);
     OUTPUT_COLOR(Color * sampled);
 }

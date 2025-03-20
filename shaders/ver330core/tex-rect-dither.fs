@@ -62,13 +62,13 @@ vec4 _postproc(vec2 tpos)
     averageVal += _calculateAverage(rectPosDR) / 4.0;
 
     int level = _levelFromAverage(averageVal);
-    // vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.0), off_color = vec4(0.0, 0.0, 0.0, 1.0);
+    // vec4 on_color = vec4(0.8f, 0.8, 0.5, 1.0), off_color = vec4(0.0, 0.0, 0.0, 1.0);
     // vec4 on_color = vec4(105.0/255.0, 18.0/255.0, 168.0/255.0, 1.0), off_color = vec4(17.0/255.0, 45.0/255.0, 94.0/255.0, 1.0);
     // float rel_level = float(level) / 4.0;
-    // vec4 off_color_min = vec4(0.1f, 0.1f, 0.1f, 1.0), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.0);
+    // vec4 off_color_min = vec4(0.1, 0.1, 0.1, 1.0), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.0);
     // vec4 on_color = texture(inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
     // vec4 on_color = texture(inputTextureFG, tpos), off_color = texture(inputTextureBG, tpos);
-    vec4 on_color = vec4(0.8f, 0.8f, 0.5f, 1.0), off_color = texture(inputTextureBG, tpos);
+    vec4 on_color = vec4(0.8, 0.8, 0.5, 1.0), off_color = texture(inputTextureBG, tpos);
 
     if (rectPosUL == rectPos) return level >= 1 ? on_color : off_color;
     if (rectPosUR == rectPos) return level >= 4 ? on_color : off_color;
