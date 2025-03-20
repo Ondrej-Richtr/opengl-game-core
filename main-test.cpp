@@ -216,9 +216,17 @@ int TestMainLoop::init()
     }
 
     // loading light shader program
-    const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
+    const char *light_vs_path = SHADERS_DIR_PATH "texture.vs", // using the texture vertex shader (maybe change this?)
+               *light_fs_path = SHADERS_DIR_PATH "light.fs";
+    std::vector<Shaders::ShaderInclude> light_vs_includes = {},
+                                        light_fs_includes =
+                                            {
+                                                // TODO synchronize this value with `lights_max_amount` constexpr
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("LIGHTS_MAX_AMOUNT", "10")),
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35f")),
+                                            };
 
-    new (&light_shader) ShaderP(texture_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
+    new (&light_shader) ShaderP(light_vs_path, light_fs_path, light_vs_includes, light_fs_includes);
     if (light_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");

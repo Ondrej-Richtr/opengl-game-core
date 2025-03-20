@@ -1,7 +1,7 @@
 precision highp float;
 
-#define LIGHTS_MAX_AMOUNT 10 //TODO implement includes
-#define ALPHA_MIN_THRESHOLD 0.35f // 0.35f looks good
+// #define LIGHTS_MAX_AMOUNT 10
+// #define ALPHA_MIN_THRESHOLD 0.35f // 0.35f looks good
 
 struct Material
 {
@@ -39,7 +39,7 @@ IN_ATTR vec3 Normal;
 uniform sampler2D inputTexture;
 uniform vec3 cameraPos;     //position in world space
 uniform Material material;
-uniform Light lights[LIGHTS_MAX_AMOUNT];
+uniform Light lights[LIGHTS_MAX_AMOUNT]; //TODO this might not work everywhere!
 uniform int lightsCount;
 
 vec3 calc_dir_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 dir)

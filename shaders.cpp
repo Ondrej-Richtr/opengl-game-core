@@ -15,12 +15,18 @@ Shaders::IncludeDefine::IncludeDefine(const char *name, const char *value)
     assert(m_name != NULL);
 }
 
+Shaders::ShaderInclude::ShaderInclude(const char *str)
+                            : is_define(false), str(str) { assert(str != NULL); }
+
+Shaders::ShaderInclude::ShaderInclude(IncludeDefine &&define)
+                            : is_define(true), define(define) {}
+
 Shaders::Program::Program(GLuint vs_id, GLuint fs_id)
                     : m_id(Shaders::programLink(vs_id, fs_id))
 {}
 
 Shaders::Program::Program(const char *vs_path, const char *fs_path,
-                          std::vector<IncludeDefine> vs_includes, std::vector<IncludeDefine> fs_includes)
+                          const std::vector<ShaderInclude>& vs_includes, const std::vector<ShaderInclude>& fs_includes)
                     : m_id(empty_id)
 {
     // constructs shader program based on source code of vertex and fragment shader located at given paths,
@@ -224,7 +230,7 @@ GLuint Shaders::fromString(GLenum type, const char *src)
     return id;
 }
 
-GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::vector<IncludeDefine> includes)
+GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, const std::vector<ShaderInclude>& includes)
 {
     //consturcts the OpenGL shader of given type with `str` source contents and given includes
     // the order is: version related macros, includes, source
@@ -232,66 +238,88 @@ GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::v
     assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
     bool is_fragment_shader = type == GL_FRAGMENT_SHADER;
 
-    const size_t includes_size = includes.size();
-    if (includes_size > Shaders::IncludeDefine::max_includes)
+    //source array of up to 3 strings that will make up the complete source of the shader, consists of:
+    // - SHADER_VER_INCLUDE_LINES_XX string (XX depends on which type of shader is being constructed),
+    // - given includes concatenated into one string, 
+    // - and source string itself loaded from either .vs or .fs file.
+    const char *source_array[1 + 1 + 1] = { is_fragment_shader ? SHADER_VER_INCLUDE_LINES_FS :
+                                                                 SHADER_VER_INCLUDE_LINES_VS, NULL };
+    GLsizei source_array_len = 1; // start at 1 as we already included the `SHADER_VER_INCLUDE_LINES_XX`
+
+    char includes_buffer[Shaders::IncludeDefine::include_buffer_capacity + 1] = { 0 };
+    size_t includes_buffer_size = 0;
+
+    for (size_t i = 0; i < includes.size(); ++i)
     {
-        fprintf(stderr, "Too many includes specified(%zu) when creating shader(type 0x%x)! Max number of includes is: %zu\n",
-                includes_size, type, Shaders::IncludeDefine::max_includes);
-        return empty_id;
-    }
-
-    // source array of strings that will make up the complete source of the shader,
-    // consists of `SHADER_VER_INCLUDE_LINES`, given includes and source loaded from either .vs or .fs file. (1 + includes.size() + 1)
-    const char *source_array[1 + Shaders::IncludeDefine::max_includes + 1] = { is_fragment_shader ?
-                                                                               SHADER_VER_INCLUDE_LINES_FS :
-                                                                               SHADER_VER_INCLUDE_LINES_VS, NULL }; // insert version includes first
-    GLsizei source_array_len = 1; // start at 1 as we already included the `SHADER_VER_INCLUDE_LINES`
-
-    // copy #define lines from includes vector into text buffer and insert their const char pointers into source_array
-    char includes_buffer[Shaders::IncludeDefine::max_includes][Shaders::IncludeDefine::max_include_line_len + 1] = { 0 };
-
-    for (size_t i = 0; i < includes_size; ++i)
-    {
-        char *includes_buffer_line = includes_buffer[i];
-        const IncludeDefine include = includes[i];
-        assert(include.m_name != NULL);
-
-        int written = -1;
-        if (include.m_value != NULL)
+        const size_t free_capacity = Shaders::IncludeDefine::include_buffer_capacity - includes_buffer_size;
+        if (free_capacity == 0)
         {
-            written = snprintf(includes_buffer_line,
-                               Shaders::IncludeDefine::max_include_line_len + 1, // +1 as snprintf counts the term. char.
-                               "#define %s %s\n", include.m_name, include.m_value);
+            fprintf(stderr, "Error when copying shader includes into include buffer - buffer is out of memory(%zu)!\n",
+                            Shaders::IncludeDefine::include_buffer_capacity);
+            return empty_id;
+        }
+
+        size_t written = 0;
+        const ShaderInclude& include = includes[i];
+        if (include.is_define)
+        {
+            assert(include.define.m_name != NULL);
+
+            int write_ret = -1;
+            if (include.define.m_value != NULL)
+            {
+                write_ret = snprintf(includes_buffer + includes_buffer_size, free_capacity + 1, // +1 as snprintf counts the term. char.
+                                    "#define %s %s\n", include.define.m_name, include.define.m_value);
+            }
+            else
+            {
+                write_ret = snprintf(includes_buffer + includes_buffer_size, free_capacity + 1, // +1 as snprintf counts the term. char.
+                                    "#define %s\n", include.define.m_name);
+            }
+
+            if (write_ret < 0)
+            {
+                fprintf(stderr, "Error when formating shader define line with name: '%s' and value: '%s'\n",
+                        include.define.m_name, include.define.m_value);
+                return empty_id;
+            }
+            written = static_cast<size_t>(write_ret);
         }
         else
         {
-            written = snprintf(includes_buffer_line,
-                               Shaders::IncludeDefine::max_include_line_len + 1, // +1 as snprintf counts the term. char.
-                               "#define %s\n", include.m_name);
+            assert(include.str != NULL);
+            // not using strncpy here as that does not tell us if the copy was truncated or not
+            int write_ret = snprintf(includes_buffer + includes_buffer_size, free_capacity + 1, // +1 as snprintf counts the term. char.
+                                     "%s\n", include.str);
+            
+            if (write_ret < 0)
+            {
+                fprintf(stderr, "Error when copying string include line: '%s'\n", include.str);
+                return empty_id;
+            }
+            written = static_cast<size_t>(write_ret);
         }
 
-        if (written < 0)
+        if (written > free_capacity)
         {
-            fprintf(stderr, "Error when formating shader include line with name: '%s' and value: '%s'\n",
-                    include.m_name, include.m_value);
+            fprintf(stderr, "Error when copying shader include line, the buffer has not enough space."
+                            " Needed size was: %zu, buffer capacity left: %zu\n",
+                            written, free_capacity);
             return empty_id;
         }
 
-        if (written > Shaders::IncludeDefine::max_include_line_len)
-        {
-            fprintf(stderr, "Error when copying shader include line with name: '%s'."
-                            " The value string '%s' is too long, needed size was: %d, max allowed: %zu\n",
-                    include.m_name, include.m_value, written, Shaders::IncludeDefine::max_include_line_len);
-            return empty_id;
-        }
-
-        source_array[source_array_len++] = includes_buffer_line;
+        includes_buffer_size += written;
+        assert(includes_buffer_size <= Shaders::IncludeDefine::include_buffer_capacity);
     }
-    assert(source_array_len <= 1 + Shaders::IncludeDefine::max_includes);
+    includes_buffer[includes_buffer_size] = '\0'; // term. char. just in case
+    
+    //add the include_buffer pointer to source strings
+    if (includes_buffer_size > 0) source_array[source_array_len++] = includes_buffer;
 
-    //finally include the given file source string
+    //finally also add the given file source string
     source_array[source_array_len++] = str;
 
+    //create the shader OpenGL object
     unsigned int id = glCreateShader(type);
     if (id == empty_id)
     {
@@ -299,6 +327,7 @@ GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::v
         return empty_id;
     }
 
+    //compile it
     glShaderSource(id, source_array_len, source_array, NULL);
     glCompileShader(id);
 

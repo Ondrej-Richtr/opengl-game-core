@@ -275,16 +275,8 @@ bool GameMainLoop::initShaders()
     //ui shader
     const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
                *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
-    std::vector<Shaders::IncludeDefine> ui_vs_includes = {
-                                                        //DEBUG
-                                                        // Shaders::IncludeDefine("IN_ATTR", "in"),
-                                                        // Shaders::IncludeDefine("OUT_ATTR", "out"),
-                                                      },
-                                        ui_fs_includes = {
-                                                        //DEBUG
-                                                        // Shaders::IncludeDefine("IN_ATTR", "in"),
-                                                        // Shaders::IncludeDefine("OUT_ATTR", "out"),
-                                                      };
+    std::vector<Shaders::ShaderInclude> ui_vs_includes = {},
+                                        ui_fs_includes = {};
     
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path, ui_vs_includes, ui_fs_includes);
     if (ui_shader.m_id == empty_id)
@@ -297,13 +289,10 @@ bool GameMainLoop::initShaders()
 
     //textured rectangle shader
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
-    std::vector<Shaders::IncludeDefine> vs_includes{},
-                                        fs_includes = {
-                                                        //DEBUG
-                                                        // Shaders::IncludeDefine("POSTPROCESS(tpos)", "(vec4(0.f, 1.f, 1.f, 1.f))")
-                                                      };
+    std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
+                                        tex_rect_fs_includes = {}; // TODO add postprocessing into includes
 
-    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, vs_includes, fs_includes);
+    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);
     if (tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
@@ -328,10 +317,17 @@ bool GameMainLoop::initShaders()
     }
 
     // loading light shader program
-    const char *light_vs_path = SHADERS_DIR_PATH "texture.vs";
+    const char *light_vs_path = SHADERS_DIR_PATH "texture.vs"; // using the texture vertex shader (maybe change this?)
     const char *light_fs_path = SHADERS_DIR_PATH "light.fs";
+    std::vector<Shaders::ShaderInclude> light_vs_includes = {},
+                                        light_fs_includes =
+                                            {
+                                                // TODO synchronize this value with `lights_max_amount` constexpr
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("LIGHTS_MAX_AMOUNT", "10")),
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35f")),
+                                            };
 
-    new (&light_shader) ShaderP(light_vs_path, light_fs_path); // using the texture vertex shader (maybe change this?)
+    new (&light_shader) ShaderP(light_vs_path, light_fs_path, light_vs_includes, light_fs_includes);
     if (light_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create shader program for lighting!\n");

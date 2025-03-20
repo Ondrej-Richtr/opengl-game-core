@@ -273,7 +273,7 @@ namespace Lighting
     };
 
     // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
-    static const size_t lights_max_amount = 10; //TODO make this synchronized with LIGHTS_MAX_AMOUNT in light.fs fragent shader!
+    constexpr size_t lights_max_amount = 10; //TODO make this synchronized with light shader includes!
 
     class Light //abstract class representing singular light source (directional/point/spot light)
     {
@@ -420,12 +420,24 @@ namespace Shaders
 
     struct IncludeDefine
     {
-        static constexpr size_t max_includes = 32;
-        static constexpr size_t max_include_line_len = 256;
+        static constexpr size_t include_buffer_capacity = 2 * 1024;
 
         const char *m_name, *m_value;
 
         IncludeDefine(const char *name, const char *value = NULL);
+    };
+
+    struct ShaderInclude
+    {
+        bool is_define;
+        union 
+        {
+            const char *str;
+            IncludeDefine define;
+        };
+
+        ShaderInclude(const char *str);
+        ShaderInclude(IncludeDefine&& define);
     };
 
     struct Program
@@ -435,7 +447,7 @@ namespace Shaders
         Program() = default;
         Program(GLuint vs_id, GLuint fs_id);
         Program(const char *vs_path, const char *fs_path,
-                std::vector<IncludeDefine> vs_includes = {}, std::vector<IncludeDefine> fs_includes = {});
+                const std::vector<ShaderInclude>& vs_includes = {}, const std::vector<ShaderInclude>& fs_includes = {});
         ~Program();
 
         void use() const;
@@ -458,7 +470,7 @@ namespace Shaders
     };
 
     GLuint fromString(GLenum type, const char *src);
-    GLuint fromStringWithIncludeSystem(GLenum type, const char *src, std::vector<IncludeDefine> includes);
+    GLuint fromStringWithIncludeSystem(GLenum type, const char *src, const std::vector<ShaderInclude>& includes);
 
     GLuint programLink(GLuint vs, GLuint fs);
 
