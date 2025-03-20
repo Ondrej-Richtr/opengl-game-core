@@ -25,9 +25,10 @@ pub fn build(b: *std.Build) !void {
         {
             std.log.info("Compiling for the web using emscripten!", .{});
 
-            if (b.sysroot == null) {
-                @panic("Pass '--sysroot \"$EMSDK/upstream/emscripten\"'");
-            }
+            //TODO remove this if we truly end up not using it
+            // if (b.sysroot == null) {
+            //     @panic("Pass '--sysroot \"$EMSDK/upstream/emscripten\"'");
+            // }
 
             // const emscripten_include_dir = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "cache", "sysroot", "include" });
             // defer b.allocator.free(emscripten_include_dir);
@@ -47,7 +48,7 @@ pub fn build(b: *std.Build) !void {
             // raylib.addTo2(b, lib, target, optimize, raylib_location);
 
             // const lib_out_dir = "zig-out/lib/";
-            const web_out_dir = "zig-out/web/";
+            const web_out_dir = "zig-out/web/"; //TODO create this directory if it does not exist yet
             const local_em_dir = "emscripten-stuff/";
 
             const emcc_arguments = [_]String{
@@ -84,7 +85,6 @@ pub fn build(b: *std.Build) !void {
             };
 
             const emcc = b.addSystemCommand(&emcc_arguments);
-
 
             // b.installArtifact(lib);
             // emcc.step.dependOn(&lib.step);

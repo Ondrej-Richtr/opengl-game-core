@@ -469,7 +469,7 @@ bool GameMainLoop::initGameStuff()
     
     // rewrite the potential garbage values to 0 and id to empty_id
     // memset is here just in case, but the id might be needed for following move assign operator
-    memset(&wall_vbo, 0, sizeof(wall_vbo));
+    memset((void*)&wall_vbo, 0, sizeof(wall_vbo));
     wall_vbo.m_id = empty_id;
     wall_vbo = std::move(Meshes::generateCubicVBO(wall_size, brick_alt_texture_world_size,
                                                   Meshes::TexcoordStyle::repeat, true));
@@ -485,7 +485,7 @@ bool GameMainLoop::initGameStuff()
 
     // rewrite the potential garbage values to 0 and id to empty_id
     // memset is here just in case, but the id might be needed for following move assign operator
-    memset(&target_vbo, 0, sizeof(target_vbo)); // not needed for now
+    memset((void*)&target_vbo, 0, sizeof(target_vbo)); // not needed for now
     target_vbo.m_id = empty_id;
     target_vbo = std::move(Meshes::generateQuadVBO(glm::vec2(1.f), target_texture_world_size,
                                                    Meshes::TexcoordStyle::stretch, true));

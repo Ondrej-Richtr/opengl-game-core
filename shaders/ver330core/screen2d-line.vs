@@ -7,11 +7,11 @@ void main()
 {
     //gl_Position = projection * view * model * pos;
 
-    vec3 pos = vec3(aPos, 1.f);
+    vec3 pos = vec3(aPos, 1.0);
     vec3 transformed = transform * pos;
     vec2 result_screen = transformed.xy;
 
-    vec2 result = 2.f * (result_screen / screenRes) - vec2(1.f);
+    vec2 result = 2.0 * (result_screen / screenRes) - vec2(1.0);
 
-    gl_Position = vec4(result, 0.f, 1.f);
+    gl_Position = vec4(result, 0.0, 1.0);
 }

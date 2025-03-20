@@ -12,7 +12,7 @@ void main()
     TexCoord = aTexCoord;
     Color = aColor;
 
-    vec2 flipped = 2.f * (aPos / screenRes) - vec2(1.f); // in normalized coordinates with flipped y axis
+    vec2 flipped = 2.0 * (aPos / screenRes) - vec2(1.0); // in normalized coordinates with flipped y axis
     vec2 pos = vec2(flipped.x, -flipped.y);              // unflip the y axis
-    gl_Position = vec4(pos, 0.f, 1.f);
+    gl_Position = vec4(pos, 0.0, 1.0);
 }

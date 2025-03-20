@@ -26,7 +26,7 @@ void main()
 
     //specular
     float specularStrength = 0.5;
-    float specularShininess = 51.f;
+    float specularShininess = 51.0;
     vec3 cameraDir = normalize(cameraPos - FragPos);
     vec3 reflectDir = reflect(-lightSrcDir, norm);
     float spec = pow(max(dot(cameraDir, reflectDir), 0.0), specularShininess);

@@ -138,23 +138,24 @@ int desktop_main(void)
 }
 
 #ifdef PLATFORM_WEB
-extern "C" {
-void emsc_set_window_size(int width, int height)
+extern "C"
 {
-    //TODO
-    printf("emsc_set_window_size called with: %dx%d\n", width, height);
-
-    GLFWwindow *window = WindowManager::getWindow();
-    if (window != NULL)
+    void emsc_set_window_size(int width, int height)
     {
-        WindowManager::windowResizeCallback(window, width, height);
-    }
-}
+        //TODO
+        printf("emsc_set_window_size called with: %dx%d\n", width, height);
 
-void web_loop()
-{
-    puts("web_loop called");
-}
+        GLFWwindow *window = WindowManager::getWindow();
+        if (window != NULL)
+        {
+            WindowManager::windowResizeCallback(window, width, height);
+        }
+    }
+
+    void web_loop()
+    {
+        puts("web_loop called");
+    }
 }
 
 int web_main()

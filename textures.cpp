@@ -67,6 +67,7 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
 
     if (generate_mipmaps)
     {
+        //TODO fix this on the web
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 
@@ -96,6 +97,7 @@ Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigne
 
     if (generate_mipmaps)
     {
+        //TODO fix this on the web
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 

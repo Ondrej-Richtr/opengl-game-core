@@ -44,7 +44,7 @@ uniform int lightsCount;
 
 vec3 calc_dir_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 dir)
 {
-    vec3 result = vec3(0.f);
+    vec3 result = vec3(0.0);
     vec3 lightDir = normalize(-dir);
 
     //ambient
@@ -64,7 +64,7 @@ vec3 calc_dir_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 dir)
 
 vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos, vec3 atten_coefs)
 {
-    vec3 result = vec3(0.f);
+    vec3 result = vec3(0.0);
 
     //ambient
     result += material.ambient * props.ambient;
@@ -93,7 +93,7 @@ vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos
 vec3 calc_spot_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightDir, vec3 lightPos,
                      float cosCutoffIn, float cosCutoffOut, vec3 atten_coefs)
 {
-    vec3 result = vec3(0.f);
+    vec3 result = vec3(0.0);
     vec3 dirToLight = normalize(lightPos - FragPos); // direction of the light source from the fragment
 
     float cosTheta   = dot(dirToLight, normalize(-lightDir)); // -lightDir as we have directions from the fragment
@@ -134,7 +134,7 @@ void main()
     vec3 cameraDir = normalize(cameraPos - FragPos);
     
     //light
-    vec3 lightColor = vec3(0.f);
+    vec3 lightColor = vec3(0.0);
 
     for (int i = 0; i < lightsCount; ++i)
     {

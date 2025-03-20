@@ -14,7 +14,7 @@ Game::Target::Target(const Target& other)
 
 Game::Target& Game::Target::operator=(const Game::Target& other)
 {
-    memcpy(this, &other, sizeof(Game::Target));
+    memcpy((void*)this, &other, sizeof(Game::Target));
     return *this;
 }
 

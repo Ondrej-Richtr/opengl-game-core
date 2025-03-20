@@ -115,7 +115,7 @@ int TestMainLoop::init()
     //Shaders
     const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
             //    *default_fs_path = SHADERS_DIR_PATH "default.fs",
-               *texture_vs_path = SHADERS_DIR_PATH "texture.vs",
+            //    *texture_vs_path = SHADERS_DIR_PATH "texture.vs",
             //    *texture_fs_path = SHADERS_DIR_PATH "texture.fs",
                *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
                *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";

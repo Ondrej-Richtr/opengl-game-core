@@ -128,7 +128,7 @@ Meshes::VBO& Meshes::VBO::operator=(Meshes::VBO&& other)
 {
     assert(m_id == empty_id); // use this only on empty VBOs!
 
-    memcpy(this, &other, sizeof(Meshes::VBO));
+    memcpy((void*)this, &other, sizeof(Meshes::VBO));
 
     // set empty values
     other.m_id = empty_id;
