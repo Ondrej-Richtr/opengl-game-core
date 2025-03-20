@@ -311,7 +311,7 @@ GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, std::v
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetShaderInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
-        fprintf(stderr, "Failed to compile shader(type 0x%x), error msg: '%s'\n", type, (char*)&msg);
+        fprintf(stderr, "Failed to compile shader(type 0x%x), error msg:\n'%s'\n", type, (char*)&msg);
 
         glDeleteShader(id);
         return empty_id;
@@ -344,7 +344,7 @@ GLuint Shaders::programLink(GLuint vs, GLuint fs)
         GLchar msg[ERR_MSG_MAX_LEN + 1];
         glGetProgramInfoLog(id, ERR_MSG_MAX_LEN + 1, NULL, msg);
         msg[ERR_MSG_MAX_LEN] = '\0'; //just to be sure
-        fprintf(stderr, "Failed to link shader program, error msg: '%s'\n", (char*)&msg);
+        fprintf(stderr, "Failed to link shader program, error msg:\n'%s'\n", (char*)&msg);
 
         glDeleteProgram(id);
         return empty_id;

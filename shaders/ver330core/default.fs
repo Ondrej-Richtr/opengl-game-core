@@ -2,8 +2,6 @@ precision highp float;
 
 IN_ATTR vec4 gl_FragCoord;
 
-OUT_ATTR vec4 FragColor;
-
 uniform vec4 inputColor;
 
 void main()
@@ -12,5 +10,5 @@ void main()
     // vec4 color = vec4(0.5, x, y, 1.0);
     highp int x = int(gl_FragCoord.x), y = int(gl_FragCoord.y);;
     vec4 color = (x / 60) % 2 == (y / 60) % 2 ? vec4(1.0, 0.0, 0.0, 1.0) : inputColor;
-    FragColor = color;
+    OUTPUT_COLOR(color);
 }

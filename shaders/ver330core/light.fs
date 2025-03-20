@@ -36,8 +36,6 @@ IN_ATTR vec3 FragPos;            //position in world space
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec3 Normal;
 
-OUT_ATTR vec4 FragColor;
-
 uniform sampler2D inputTexture;
 uniform vec3 cameraPos;     //position in world space
 uniform Material material;
@@ -157,5 +155,5 @@ void main()
 
     //result
     vec3 color = lightColor * sampled.rgb;
-    FragColor = vec4(color, sampled.a);
+    OUTPUT_COLOR(vec4(color, sampled.a));
 }

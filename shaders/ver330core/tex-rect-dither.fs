@@ -2,8 +2,6 @@ precision highp float;
 
 layout (origin_upper_left) IN_ATTR vec4 gl_FragCoord;
 
-OUT_ATTR vec4 FragColor;
-
 uniform sampler2D inputTexture;
 uniform sampler2D inputTextureBG;
 uniform sampler2D inputTextureFG;
@@ -96,8 +94,5 @@ void main()
     
     vec2 texcoords_inverted = vec2(texcoords.x, 1.0 - texcoords.y);
 
-    FragColor = POSTPROCESS(texcoords_inverted);
-
-    // vec4 sampled = texture(inputTexture, texcoords_inverted);
-    // FragColor = POSTPROCESS(sampled);
+    OUTPUT_COLOR(POSTPROCESS(texcoords_inverted));
 }

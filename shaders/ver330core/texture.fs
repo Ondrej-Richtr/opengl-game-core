@@ -5,8 +5,6 @@ IN_ATTR vec3 FragPos;            //position in world space
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec3 Normal;
 
-OUT_ATTR vec4 FragColor;
-
 uniform sampler2D inputTexture1;
 uniform sampler2D inputTexture2;
 uniform vec3 lightSrcColor;
@@ -37,5 +35,5 @@ void main()
     //result
     vec4 sampled = mix(texture(inputTexture1, TexCoord), texture(inputTexture2, TexCoord), 0.6);
     vec3 color = (ambient + diffuse + specular) * sampled.rgb;
-    FragColor = vec4(color, sampled.a);
+    OUTPUT_COLOR(vec4(color, sampled.a));
 }
