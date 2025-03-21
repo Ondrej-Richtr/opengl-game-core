@@ -10,7 +10,7 @@ uniform vec2 rectSize;
     // #define POSTPROCESS(tpos) (vec4(0.0, 1.0, 1.0, 1.0))
     // #define POSTPROCESS(tpos) (_postproc((tpos)))
     // #define POSTPROCESS(tpos) (_postproc_greyscale((tpos)))
-    #define POSTPROCESS(tpos) (texture(inputTexture, (tpos)))
+    #define POSTPROCESS(tpos) (TEXTURE2D(inputTexture, (tpos)))
 #endif
 
 ivec2 uvToCoord(vec2 uv)
@@ -25,7 +25,7 @@ vec2 coordToUV(ivec2 rectPos)
 
 float _calculateAverage(ivec2 rectPos)
 {
-    vec4 c = texture(inputTexture, coordToUV(rectPos));
+    vec4 c = TEXTURE2D(inputTexture, coordToUV(rectPos));
     return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
     // return (c.r + c.g + c.b) / 3.0;
 }
@@ -37,7 +37,7 @@ int _levelFromAverage(float avg)
 
 vec4 _postproc_greyscale(vec2 tpos)
 {
-    vec4 sampled = texture(inputTexture, tpos);
+    vec4 sampled = TEXTURE2D(inputTexture, tpos);
     float average = 0.2126 * sampled.r + 0.7152 * sampled.g + 0.0722 * sampled.b;
     return vec4(average, average, average, 1.0);
 }
@@ -61,7 +61,7 @@ vec4 _postproc(vec2 tpos)
     // vec4 on_color = vec4(105.0/255.0, 18.0/255.0, 168.0/255.0, 1.0), off_color = vec4(17.0/255.0, 45.0/255.0, 94.0/255.0, 1.0);
     // float rel_level = float(level) / 4.0;
     // vec4 off_color_min = vec4(0.1f, 0.1f, 0.1f, 1.0), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.0);
-    // vec4 on_color = texture(inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
+    // vec4 on_color = TEXTURE2D(inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
 
     if (rectPosUL == rectPos) return level >= 1 ? on_color : off_color;
     if (rectPosUR == rectPos) return level >= 4 ? on_color : off_color;

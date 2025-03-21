@@ -390,7 +390,7 @@ namespace Utils
 namespace Shaders
 {
     #ifndef SHADERS_DIR_PATH
-        #define SHADERS_DIR_PATH "shaders/ver330core/"
+        #define SHADERS_DIR_PATH "shaders/"
     #endif
 
     #ifndef USE_VER100_SHADERS
@@ -402,11 +402,11 @@ namespace Shaders
     #ifdef USE_VER100_SHADERS
         #define SHADER_VER_LINE "#version 100\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR attribute\n#define OUT_ATTR varying\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n#define TEXTURE2D(s,c) (texture2D((s), (c)))\n#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"
     #else
         #define SHADER_VER_LINE "#version 330 core\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR in\n#define OUT_ATTR out\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\nout vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\n#define TEXTURE2D(s,c) (texture((s), (c)))\nout vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"
     #endif
 
     #define SHADER_VER_INCLUDE_LINES_VS SHADER_VER_LINE SHADER_ATTR_DEFINES_VS

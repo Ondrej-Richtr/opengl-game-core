@@ -125,7 +125,7 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightDir,
 
 void main()
 {
-    vec4 sampled = texture(inputTexture, TexCoord);
+    vec4 sampled = TEXTURE2D(inputTexture, TexCoord);
     // discard the fragments with too small alpha values
     //TODO aplha blending
     if (sampled.a < ALPHA_MIN_THRESHOLD) discard;

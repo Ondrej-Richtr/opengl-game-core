@@ -33,7 +33,7 @@ void main()
     vec3 specular = specularStrength * spec * lightSrcColor;
 
     //result
-    vec4 sampled = mix(texture(inputTexture1, TexCoord), texture(inputTexture2, TexCoord), 0.6);
+    vec4 sampled = mix(TEXTURE2D(inputTexture1, TexCoord), TEXTURE2D(inputTexture2, TexCoord), 0.6);
     vec3 color = (ambient + diffuse + specular) * sampled.rgb;
     OUTPUT_COLOR(vec4(color, sampled.a));
 }
