@@ -393,6 +393,10 @@ namespace Shaders
         #define SHADERS_DIR_PATH "shaders/"
     #endif
 
+    #ifndef SHADERS_PARTIALS_DIR_PATH
+        #define SHADERS_PARTIALS_DIR_PATH SHADERS_DIR_PATH "partials/"
+    #endif
+
     #ifndef USE_VER100_SHADERS
         #ifndef BUILD_OPENGL_330_CORE
             #define USE_VER100_SHADERS
@@ -420,7 +424,7 @@ namespace Shaders
 
     struct IncludeDefine
     {
-        static constexpr size_t include_buffer_capacity = 2 * 1024;
+        static constexpr size_t include_buffer_capacity = 512 * 1024; //TODO maybe dont store large buffers on the stack
 
         const char *m_name, *m_value;
 

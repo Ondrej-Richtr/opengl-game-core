@@ -252,6 +252,11 @@ void GameMainLoop::deinitRenderBuffers()
 
 bool GameMainLoop::initShaders()
 {
+    //shader partials
+    // used only during this init method, thus loaded as local unique_ptr, so we dont have to call delete/destructor
+    const char *postprocess_fs_partial_path = SHADERS_PARTIALS_DIR_PATH "postprocess.fspart";
+    std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path);
+
     using ShaderP = Shaders::Program;
 
     const char *default_vs_path = SHADERS_DIR_PATH "default.vs",
@@ -290,7 +295,9 @@ bool GameMainLoop::initShaders()
     //textured rectangle shader
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
     std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
-                                        tex_rect_fs_includes = {}; // TODO add postprocessing into includes
+                                        tex_rect_fs_includes = {
+                                                                // Shaders::ShaderInclude(postprocess_fs_partial.get())
+                                                                };
 
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);
     if (tex_rect_shader.m_id == empty_id)
