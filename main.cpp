@@ -53,7 +53,7 @@ static int init(void)
     WindowManager::init(window);
 
     //other GLFW settings
-    // glfwSwapInterval(1); //TODO check this, maybe 0?
+    glfwSwapInterval(1); //TODO check this, maybe 0?
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
@@ -149,12 +149,19 @@ extern "C"
         if (window != NULL)
         {
             WindowManager::windowResizeCallback(window, width, height);
+            WindowManager::framebufferResizeCallback(window, width, height);
         }
     }
 
-    void web_loop()
+    void web_loop(void *arg)
     {
-        puts("web_loop called");
+        GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(arg); //TODO better cast
+        GLFWwindow *window = WindowManager::getWindow();
+        assert(window != NULL); //TODO error?
+
+        glfwPollEvents();
+        loop.loop(); //TODO retval
+        glfwSwapBuffers(window);
     }
 }
 
@@ -183,7 +190,7 @@ int web_main()
         return result;
     }
 
-    emscripten_set_main_loop(web_loop, 0, true);
+    emscripten_set_main_loop_arg(web_loop, reinterpret_cast<void*>(&loop), 0, true);
 
     //destructors
     loop.~GameMainLoop();
@@ -197,6 +204,18 @@ int web_main()
 
 int main()
 {
+    #ifdef BUILD_OPENGL_330_CORE
+        puts("[MAIN] Build with OpenGL 3.3");
+    #else
+        puts("[MAIN] Build with OpenGL ES 2.0");
+    #endif
+
+    #ifdef USE_VER100_SHADERS
+        puts("[MAIN] Using GLSL shader version 100");
+    #else
+        puts("[MAIN] Using GLSL shader version 330 core");
+    #endif
+
     #ifdef PLATFORM_WEB
         return web_main();
     #else

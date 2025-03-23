@@ -709,7 +709,7 @@
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
 
                 //render the 3D scene as a background from it's framebuffer
-                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), window_res);
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, window_res, glm::vec2(0.f), window_res);
 
                 //line test
                 // Drawing::screenLine(screen_line_shader, line_vbo, window_res,

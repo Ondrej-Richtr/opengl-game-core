@@ -223,7 +223,7 @@ int TestMainLoop::init()
                                             {
                                                 // TODO synchronize this value with `lights_max_amount` constexpr
                                                 Shaders::ShaderInclude(Shaders::IncludeDefine("LIGHTS_MAX_AMOUNT", "10")),
-                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35f")),
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35")),
                                             };
 
     new (&light_shader) ShaderP(light_vs_path, light_fs_path, light_vs_includes, light_fs_includes);
@@ -592,7 +592,7 @@ LoopRetVal TestMainLoop::loop()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
 
             //render the 3D scene as a background from it's framebuffer
-            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
+            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, orb_texture, glm::vec2(0.f), win_fbo_size);
 
             //TODO UI
@@ -1391,7 +1391,7 @@ LoopRetVal TestMainLoop::loop()
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
 
                 //render the 3D scene as a background from it's framebuffer
-                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), window_res);
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, window_res, glm::vec2(0.f), window_res);
 
                 glDisable(GL_BLEND);
             }

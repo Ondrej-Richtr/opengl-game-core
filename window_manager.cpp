@@ -28,6 +28,7 @@ void WindowManager::init(GLFWwindow *window)
     assert(window != NULL);
     m_window = window;
 
+    //NOTE those seeem to work only on desktop
     glfwSetWindowSizeCallback(m_window, windowResizeCallback);
     glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
     

@@ -333,7 +333,7 @@ bool GameMainLoop::initShaders()
                                             {
                                                 // TODO synchronize this value with `lights_max_amount` constexpr
                                                 Shaders::ShaderInclude(Shaders::IncludeDefine("LIGHTS_MAX_AMOUNT", "10")),
-                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35f")),
+                                                Shaders::ShaderInclude(Shaders::IncludeDefine("ALPHA_MIN_THRESHOLD", "0.35")),
                                             };
 
     new (&light_shader) ShaderP(light_vs_path, light_fs_path, light_vs_includes, light_fs_includes);
@@ -939,7 +939,7 @@ LoopRetVal GameMainLoop::loop()
             
             //render the 3D scene as a background from it's framebuffer
             // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, glm::vec2(0.f), win_fbo_size);
+            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,

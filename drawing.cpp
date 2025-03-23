@@ -228,7 +228,7 @@ void Drawing::clear(Color color)
 }
 
 void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
-                                glm::vec2 dstPos, glm::vec2 dstSize)
+                                glm::vec2 screen_res, glm::vec2 dstPos, glm::vec2 dstSize)
 {
     const Meshes::VBO& vbo = Meshes::unit_quad_pos_only;
     assert(vbo.m_id != empty_id);
@@ -243,6 +243,7 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
         tex_rect_shader.set("transform", transform);
 
         //fs
+        tex_rect_shader.set("screenRes", screen_res);
         tex_rect_shader.set("rectPosIn", dstPos);
         tex_rect_shader.set("rectSize", dstSize);
     }

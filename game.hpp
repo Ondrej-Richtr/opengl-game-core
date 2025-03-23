@@ -230,7 +230,7 @@ namespace Drawing
     void clear(Color color);
 
     void texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
-                           glm::vec2 dstPos, glm::vec2 dstSize);
+                           glm::vec2 screen_res, glm::vec2 dstPos, glm::vec2 dstSize);
 
     void texturedRectangle2(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
                             const Textures::Texture2D& background, const Textures::Texture2D& foreground,

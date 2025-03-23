@@ -65,7 +65,7 @@ pub fn build(b: *std.Build) !void {
                 //flags and other parameters:
                 "-sUSE_GLFW=3",
                 "-sWASM=1",
-                "-sALLOW_MEMORY_GROWTH=1",
+                "-sALLOW_MEMORY_GROWTH=1", "-sSTACK_SIZE=20MB",
                 "-sWASM_MEM_MAX=3GB", "-sTOTAL_MEMORY=3GB",
                 "-sABORTING_MALLOC=0", 
                 "-sFORCE_FILESYSTEM=1", 

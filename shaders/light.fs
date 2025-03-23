@@ -1,7 +1,7 @@
 precision highp float;
 
 // #define LIGHTS_MAX_AMOUNT 10
-// #define ALPHA_MIN_THRESHOLD 0.35f // 0.35f looks good
+// #define ALPHA_MIN_THRESHOLD 0.35 // 0.35 looks good
 
 struct Material
 {
@@ -136,8 +136,11 @@ void main()
     //light
     vec3 lightColor = vec3(0.0);
 
-    for (int i = 0; i < lightsCount; ++i)
+    for (int i = 0; i < LIGHTS_MAX_AMOUNT; ++i) //DEBUG LIGHTS_MAX_AMOUNT
     {
+        //NOTE this might seem strange, but checking the bounds inside the for loop condition does not work with glsl version 100!
+        if (i >= lightsCount) break;
+
         if (lights[i].type == 0) // lights[i] is a directional light
         {
             lightColor += calc_dir_light(norm, cameraDir, lights[i].props, lights[i].dir);

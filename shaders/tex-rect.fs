@@ -1,8 +1,9 @@
 precision highp float;
 
-layout (origin_upper_left) IN_ATTR vec4 gl_FragCoord;
+// IN_ATTR vec4 gl_FragCoord;
 
 uniform sampler2D inputTexture;
+uniform vec2 screenRes;
 uniform vec2 rectPosIn;
 uniform vec2 rectSize;
 
@@ -18,7 +19,7 @@ void main()
 {
     SETUP();
 
-    vec2 fragScreenPos = gl_FragCoord.xy;
+    vec2 fragScreenPos = vec2(gl_FragCoord.x, screenRes.y - gl_FragCoord.y);
     vec2 texcoords = (fragScreenPos - rectPosIn) / rectSize;
 
     //TODO use scissor test and remove this
