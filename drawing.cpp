@@ -243,7 +243,7 @@ void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const T
         tex_rect_shader.set("transform", transform);
 
         //fs
-        tex_rect_shader.set("rectPos", dstPos);
+        tex_rect_shader.set("rectPosIn", dstPos);
         tex_rect_shader.set("rectSize", dstSize);
     }
 

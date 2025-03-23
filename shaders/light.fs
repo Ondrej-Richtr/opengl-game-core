@@ -138,18 +138,18 @@ void main()
 
     for (int i = 0; i < lightsCount; ++i)
     {
-        switch (lights[i].type)
+        if (lights[i].type == 0) // lights[i] is a directional light
         {
-        case 0: // lights[i] is a directional light
             lightColor += calc_dir_light(norm, cameraDir, lights[i].props, lights[i].dir);
-            break;
-        case 1: // lights[i] is a point light
+        }
+        else if (lights[i].type == 1) // lights[i] is a point light
+        {
             lightColor += calc_point_light(norm, cameraDir, lights[i].props, lights[i].pos, lights[i].atten_coefs);
-            break;
-        case 2: // lights[i] is a spot light
+        }
+        else if (lights[i].type == 2) // lights[i] is a spot light
+        {
             lightColor += calc_spot_light(norm, cameraDir, lights[i].props, lights[i].dir, lights[i].pos,
                                           lights[i].cosInnerCutoff, lights[i].cosOuterCutoff, lights[i].atten_coefs);
-            break;
         }
     }
 

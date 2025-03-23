@@ -296,8 +296,10 @@ bool GameMainLoop::initShaders()
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
     std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
                                         tex_rect_fs_includes = {
-                                                                // Shaders::ShaderInclude(postprocess_fs_partial.get())
-                                                                };
+                                                                #ifndef USE_VER100_SHADERS
+                                                                    Shaders::ShaderInclude(postprocess_fs_partial.get()),
+                                                                #endif
+                                                               };
 
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);
     if (tex_rect_shader.m_id == empty_id)
