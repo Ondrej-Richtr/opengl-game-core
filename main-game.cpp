@@ -297,7 +297,7 @@ bool GameMainLoop::initShaders()
     std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
                                         tex_rect_fs_includes = {
                                                                 #ifndef USE_VER100_SHADERS
-                                                                    Shaders::ShaderInclude(postprocess_fs_partial.get()),
+                                                                    // Shaders::ShaderInclude(postprocess_fs_partial.get()),
                                                                 #endif
                                                                };
 
@@ -802,7 +802,7 @@ LoopRetVal GameMainLoop::loop()
         ui.m_ctx.style.window.border = 3;
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
     }
-    if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 125, 300),
+    if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 125, 180),
         NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
     {
         //TODO change this probably
@@ -824,12 +824,21 @@ LoopRetVal GameMainLoop::loop()
         snprintf(textbuffer2, textbuffer2_capacity, "fps: %d", fps_calculated);
         nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
 
-        // nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
-
         //level texts
-        unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
-        snprintf(textbuffer2, textbuffer2_capacity, "Level: %d (%d/%d)", level, level_targets_hit, level_target_amount);
-        nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 1);
+        {
+            nk_layout_row_push(&ui.m_ctx, 1.f);
+            unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
+            snprintf(textbuffer2, textbuffer2_capacity, "Level: %d", level);
+            nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+
+            nk_layout_row_push(&ui.m_ctx, 1.f);
+            snprintf(textbuffer2, textbuffer2_capacity, "Progress: %d/%d", level_targets_hit, level_target_amount);
+            nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+            nk_size level_targets_hit_copy = level_targets_hit;
+            nk_progress(&ui.m_ctx, &level_targets_hit_copy, level_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
+        }
+        nk_layout_row_end(&ui.m_ctx);
     }
     nk_end(&ui.m_ctx);
 

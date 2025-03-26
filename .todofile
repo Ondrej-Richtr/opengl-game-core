@@ -4,12 +4,13 @@
  |0. 0. 0|13. 3. 2025|proper deinit for TestMainLoop too
  |0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
  |0. 0. 0|13. 3. 2025|main menu + maybe with settings
- |0. 0. 0|13. 3. 2025|web build
  |0. 0. 0|13. 3. 2025|stacking of main loops
  |0. 0. 0|13. 3. 2025|get and compile glfw from their gitrepo + add option to link system glfw instead
  |0. 0. 0|13. 3. 2025|maybe for glfw use https://github.com/lpstankus/zig-glfw (pass options to it with https://ziggit.dev/t/pass-build-option-to-a-dependency/4196/14)
- |0. 0. 0|13. 3. 2025|include system for shaders
- |0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
+X|0. 0. 0|13. 3. 2025|include system for shaders
+X|0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
  |0. 0. 0|16. 3. 2025|add cubemaps + prebaked lighting and stuff?
  |0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp precision is allowed
- |0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders
+X|0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders
+ |0. 0. 0|26. 3. 2025|make web build work
+ |0. 0. 0|26. 3. 2025|text rendering using UI but without window
