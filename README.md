@@ -37,8 +37,8 @@ const glfw_include_dir_path: ?String = "path/to/your/glfw/3.4/include";
 
 Similiarily you might get `error: 'GLFW/glfw3.h' file not found` error message, it means that the build system didn't find GLFW3 include directory. Fix this by the same procedure described above.
 
-## Building for Web
-This project is structured in a way that it is possible to compile it for the web.
+## Web build
+This project is structured in a way that it is possible to compile it for the web (wasm with WebGL).
 However the rendering in the web build is still broken, so I don't recommend it.
 
 You need to have [emscripten](https://emscripten.org/) toolchain installed and accessible through path.
