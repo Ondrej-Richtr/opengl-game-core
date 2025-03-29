@@ -6,6 +6,11 @@ const String = [:0]const u8;
 // Please keep list of cpp and c files updated with all file that need to get compiled.
 pub const project_name = "shooting_practice";
 
+//TODO glfw add override from command line
+// GLFW custom paths
+const glfw_lib_dir_path: ?String = null;
+const glfw_include_dir_path: ?String = null;
+
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "movement.cpp", "shaders.cpp",
                                  "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
@@ -97,8 +102,18 @@ pub fn build(b: *std.Build) !void {
 
             exe.defineCMacro("BUILD_OPENGL_330_CORE", null); //TODO maybe only on macOS?
 
+            exe.addLibraryPath(.{ .src_path = .{ .owner = b, .sub_path = "lib" } });
             exe.addIncludePath(.{ .src_path = .{ .owner = b, .sub_path = "include" } });
             exe.linkLibCpp();
+
+            if (glfw_lib_dir_path) |lib_path|
+            {
+                exe.addLibraryPath(.{ .cwd_relative = lib_path });
+            }
+            if (glfw_include_dir_path) |include_path|
+            {
+                exe.addIncludePath(.{ .cwd_relative = include_path });
+            }
 
             exe.addCSourceFiles(.{ .files = &cpp_files, .flags = &.{ "-std=" ++ cpp_std_ver } });
             exe.addCSourceFiles(.{ .files = &c_files, .flags = &.{ "-std=" ++ c_std_ver } });
@@ -106,11 +121,6 @@ pub fn build(b: *std.Build) !void {
             switch (target.result.os.tag)
             {
                 .macos => {
-                    const glfw_lib_dir_path = "/opt/homebrew/Cellar/glfw/3.4/lib";
-                    const glfw_include_dir_path = "/opt/homebrew/Cellar/glfw/3.4/include";
-
-                    exe.addLibraryPath(.{ .cwd_relative = glfw_lib_dir_path });
-                    exe.addIncludePath(.{ .cwd_relative = glfw_include_dir_path });
                     exe.linkSystemLibrary("glfw3");
 
                     exe.linkFramework("Foundation");
@@ -122,6 +132,8 @@ pub fn build(b: *std.Build) !void {
                 },
                 //TODO correct linux libraries
                 .linux => {
+                    exe.linkSystemLibrary("glfw3"); //TODO check this
+
                     exe.addLibraryPath(.{ .cwd_relative = "/usr/lib64/" });
                     exe.linkSystemLibrary("GL");
                     exe.linkSystemLibrary("rt");
@@ -130,10 +142,6 @@ pub fn build(b: *std.Build) !void {
                     exe.linkSystemLibrary("X11");
                 },
                 else => {
-                    //TODO this is not part of the repo - make glfw compile from scratch?
-                    const glfw_lib_dir_path = "lib";
-
-                    exe.addLibraryPath(.{ .cwd_relative = glfw_lib_dir_path });
                     exe.linkSystemLibrary("glfw3");
 
                     exe.linkSystemLibrary("opengl32");
