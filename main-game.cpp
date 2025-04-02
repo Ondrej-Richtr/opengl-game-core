@@ -838,11 +838,19 @@ LoopRetVal GameMainLoop::loop()
         //3D block
         {
             const Drawing::FrameBuffer& fbo3d = sharedGLContext.getFbo3D();
-            const glm::ivec2 fbo3d_size = sharedGLContext.getFbo3DSize();
 
             //set the viewport according to wanted framebuffer
-            glViewport(0, 0, fbo3d_size.x, fbo3d_size.y);
-
+            if (use_fbo)
+            {
+                const glm::ivec2 fbo3d_size = sharedGLContext.getFbo3DSize();
+                glViewport(0, 0, fbo3d_size.x, fbo3d_size.y);
+            }
+            else
+            {
+                const glm::ivec2 fbo3d_win_size = WindowManager::getFBOSize();
+                glViewport(0, 0, fbo3d_win_size.x, fbo3d_win_size.y);
+            }
+            
             //bind the correct framebuffer
             if (use_fbo) fbo3d.bind();
             else glBindFramebuffer(GL_FRAMEBUFFER, empty_id);

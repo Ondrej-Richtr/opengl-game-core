@@ -41,6 +41,7 @@ static int init(void)
 
     //initializing the window
     const char window_title[] = "OpenGL Game";
+    // GLFWwindow* window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, (char*)window_title, glfwGetPrimaryMonitor(), NULL);
     GLFWwindow* window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, (char*)window_title, NULL, NULL);
     if (window == NULL)
     {
