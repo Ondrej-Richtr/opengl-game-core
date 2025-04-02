@@ -2,7 +2,7 @@
 # This file stores todo entries for todo program, you typically shouldn't modify this file directly (but it's up to you).
 # Note that after each run of todo program this file gets wiped out and rewritten again, which means any other comments other then those three will get deleted.
  |0. 0. 0|13. 3. 2025|proper deinit for TestMainLoop too
- |0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
+X|0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
  |0. 0. 0|13. 3. 2025|main menu + maybe with settings
  |0. 0. 0|13. 3. 2025|stacking of main loops
  |0. 0. 0|13. 3. 2025|get and compile glfw from their gitrepo + add option to link system glfw instead

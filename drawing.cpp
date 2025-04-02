@@ -107,15 +107,27 @@ Collision::Ray Drawing::Camera3D::getRay() const
     return Collision::Ray(m_pos, getDirection());
 }
 
-Drawing::FrameBuffer::FrameBuffer()
+Drawing::FrameBuffer::FrameBuffer(bool dummy)
                         : m_id(empty_id)
 {
-    glGenFramebuffers(1, &m_id);
+    //TODO dummy parameter only to distinguish default constructor apart
+    init();
 }
 
 Drawing::FrameBuffer::~FrameBuffer()
 {
+    deinit();
+}
+
+void Drawing::FrameBuffer::init()
+{
+    glGenFramebuffers(1, &m_id);
+}
+
+void Drawing::FrameBuffer::deinit()
+{
     glDeleteFramebuffers(1, &m_id);
+    m_id = empty_id;
 }
 
 void Drawing::FrameBuffer::bind() const

@@ -133,24 +133,13 @@ bool GameMainLoop::initTextures()
 {
     using Texture = Textures::Texture2D;
 
-    //TODO those values - maybe update them or make them one of presets changeable in settings?
-    unsigned int fbo3d_init_width = DEFAULT_WINDOW_WIDTH, fbo3d_init_height = DEFAULT_WINDOW_HEIGHT;
-    new (&fbo3d_tex) Texture(fbo3d_init_width, fbo3d_init_height, GL_RGB);
-    if (fbo3d_tex.m_id == empty_id)
-    {
-        fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
-        fbo3d_tex.~Texture2D();
-        return false;
-    }
-
-    const char *bricks_path = "assets/bricks2.png";
+    const char *bricks_path = "assets/bricks2_512.png";
     brick_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
 
     new (&brick_texture) Texture(bricks_path);
     if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
-        fbo3d_tex.~Texture2D();
         brick_texture.~Texture2D();
         return false;
     }
@@ -162,7 +151,6 @@ bool GameMainLoop::initTextures()
     if (brick_alt_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick alternative texture!\n");
-        fbo3d_tex.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         return false;
@@ -175,7 +163,6 @@ bool GameMainLoop::initTextures()
     if (orb_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create orb texture!\n");
-        fbo3d_tex.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -190,7 +177,6 @@ bool GameMainLoop::initTextures()
     if (target_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create target texture!\n");
-        fbo3d_tex.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -203,14 +189,13 @@ bool GameMainLoop::initTextures()
 
 void GameMainLoop::deinitTextures()
 {
-    fbo3d_tex.~Texture2D();
     brick_texture.~Texture2D();
     brick_alt_texture.~Texture2D();
     orb_texture.~Texture2D();
     target_texture.~Texture2D();
 }
 
-bool GameMainLoop::initRenderBuffers()
+/*bool GameMainLoop::initRenderBuffers()
 {
     //TODO render buffer object abstraction
     fbo3d_rbo_depth = 0;
@@ -248,7 +233,7 @@ void GameMainLoop::deinitRenderBuffers()
 {
     glDeleteBuffers(1, &fbo3d_rbo_depth);
     glDeleteBuffers(1, &fbo3d_rbo_stencil);
-}
+}*/
 
 bool GameMainLoop::initShaders()
 {
@@ -436,11 +421,11 @@ void GameMainLoop::deinitUI()
     ui.~Context();
 }
 
-bool GameMainLoop::initFrameBuffers()
+/*bool GameMainLoop::initFrameBuffers()
 {
     using FrameBuffer = Drawing::FrameBuffer;
     
-    new (&fbo3d) FrameBuffer();
+    new (&fbo3d) FrameBuffer(true);
     if (fbo3d.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
@@ -468,7 +453,7 @@ bool GameMainLoop::initFrameBuffers()
 void GameMainLoop::deinitFrameBuffers()
 {
     fbo3d.~FrameBuffer();
-}
+}*/
 
 bool GameMainLoop::initGameStuff()
 {
@@ -561,14 +546,14 @@ int GameMainLoop::init()
     }
 
     //RenderBuffers
-    if (!initRenderBuffers())
-    {
-        //TODO goto cleanup routine?
-        deinitCamera();
-        deinitVBOs();
-        deinitTextures();
-        return 3;
-    }
+    // if (!initRenderBuffers())
+    // {
+    //     //TODO goto cleanup routine?
+    //     deinitCamera();
+    //     deinitVBOs();
+    //     deinitTextures();
+    //     return 3;
+    // }
 
     //Shaders
     if (!initShaders())
@@ -577,7 +562,7 @@ int GameMainLoop::init()
         deinitCamera();
         deinitVBOs();
         deinitTextures();
-        deinitRenderBuffers();
+        // deinitRenderBuffers();
         return 4;
     }
 
@@ -594,7 +579,7 @@ int GameMainLoop::init()
         deinitCamera();
         deinitVBOs();
         deinitTextures();
-        deinitRenderBuffers();
+        // deinitRenderBuffers();
         deinitShaders();
         deinitLighting();
         deinitMaterials();
@@ -602,19 +587,19 @@ int GameMainLoop::init()
     }
 
     //Framebuffers
-    if (!initFrameBuffers())
-    {
-        //TODO goto cleanup routine?
-        deinitCamera();
-        deinitVBOs();
-        deinitTextures();
-        deinitRenderBuffers();
-        deinitShaders();
-        deinitLighting();
-        deinitMaterials();
-        deinitUI();
-        return 6;
-    }
+    // if (!initFrameBuffers())
+    // {
+    //     //TODO goto cleanup routine?
+    //     deinitCamera();
+    //     deinitVBOs();
+    //     deinitTextures();
+    //     // deinitRenderBuffers();
+    //     deinitShaders();
+    //     deinitLighting();
+    //     deinitMaterials();
+    //     deinitUI();
+    //     return 6;
+    // }
 
     //Game stuff
     if (!initGameStuff())
@@ -623,12 +608,12 @@ int GameMainLoop::init()
         deinitCamera();
         deinitVBOs();
         deinitTextures();
-        deinitRenderBuffers();
+        // deinitRenderBuffers();
         deinitShaders();
         deinitLighting();
         deinitMaterials();
         deinitUI();
-        deinitFrameBuffers();
+        // deinitFrameBuffers();
         return 7;
     }
 
@@ -653,13 +638,15 @@ int GameMainLoop::init()
 
 GameMainLoop::~GameMainLoop()
 {
-    glDeleteRenderbuffers(1, &fbo3d_rbo_depth);
-    glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
+    // glDeleteRenderbuffers(1, &fbo3d_rbo_depth);
+    // glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
 }
 
 LoopRetVal GameMainLoop::loop()
 {
     GLFWwindow * const window = WindowManager::getWindow();
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.value();
+    assert(sharedGLContext.isInitialized());
 
     //calculating correct frame delta time
     //TODO this will be wrong when stacking of game loops gets implemented
@@ -835,6 +822,8 @@ LoopRetVal GameMainLoop::loop()
             nk_layout_row_push(&ui.m_ctx, 1.f);
             snprintf(textbuffer2, textbuffer2_capacity, "Progress: %d/%d", level_targets_hit, level_target_amount);
             nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+
+            nk_layout_row_push(&ui.m_ctx, 1.f);
             nk_size level_targets_hit_copy = level_targets_hit;
             nk_progress(&ui.m_ctx, &level_targets_hit_copy, level_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
         }
@@ -844,13 +833,19 @@ LoopRetVal GameMainLoop::loop()
 
     // ---Drawing---
     {
+        bool use_fbo = sharedGLContext.use_fbo3d;
+
         //3D block
         {
+            const Drawing::FrameBuffer& fbo3d = sharedGLContext.getFbo3D();
+            const glm::ivec2 fbo3d_size = sharedGLContext.getFbo3DSize();
+
             //set the viewport according to wanted framebuffer
-            glViewport(0, 0, fbo3d_tex.m_width, fbo3d_tex.m_height);
+            glViewport(0, 0, fbo3d_size.x, fbo3d_size.y);
 
             //bind the correct framebuffer
-            fbo3d.bind();
+            if (use_fbo) fbo3d.bind();
+            else glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 
             Drawing::clear(clear_color_3d);
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
@@ -928,7 +923,7 @@ LoopRetVal GameMainLoop::loop()
             glDisable(GL_CULL_FACE);
             glDisable(GL_DEPTH_TEST);
 
-            fbo3d.unbind();
+            if (use_fbo) fbo3d.unbind();
         }
 
         //2D block
@@ -944,9 +939,12 @@ LoopRetVal GameMainLoop::loop()
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
-            Drawing::clear(clear_color_2d);
-            //TODO maybe useless in 2D block?
-            glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+            if (use_fbo)
+            {
+                Drawing::clear(clear_color_2d);
+                //TODO maybe useless in 2D block?
+                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+            }
 
             glDisable(GL_CULL_FACE);
             glEnable(GL_BLEND); //TODO check this
@@ -954,8 +952,12 @@ LoopRetVal GameMainLoop::loop()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
             //render the 3D scene as a background from it's framebuffer
-            // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-            Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            if (use_fbo)
+            {
+                const Textures::Texture2D& fbo3d_tex = sharedGLContext.getFbo3DTexture();
+                // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            }
             
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,

@@ -13,7 +13,7 @@ const glfw_include_dir_path: ?String = null;
 
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "movement.cpp", "shaders.cpp",
-                                 "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
+                                 "shared_gl_context.cpp", "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
 pub const c_files = [_]String{ "glad.c", "nuklear.c", "stb_image.c" };
 
 pub const cpp_std_ver = "c++17";

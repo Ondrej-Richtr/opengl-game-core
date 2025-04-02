@@ -20,6 +20,11 @@ void WindowManager::framebufferResizeCallback(GLFWwindow* window, int width, int
     //TODO check for resizes to 0x0?
     m_framebuffer_size = glm::ivec2(width, height);
 
+    if (SharedGLContext::instance.has_value())
+    {
+        SharedGLContext::instance.value().changeFbo3DSize(width, height);
+    }
+
     printf("Framebuffer resized to: %dx%d\n", m_framebuffer_size.x, m_framebuffer_size.y);
 }
 

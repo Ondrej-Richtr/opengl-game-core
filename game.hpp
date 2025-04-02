@@ -112,6 +112,13 @@ struct Color
     }
 };
 
+namespace Drawing
+{
+    struct Camera3D;
+
+    struct FrameBuffer;
+};
+
 namespace Lighting
 {
     class Light;
@@ -210,10 +217,14 @@ namespace Drawing
             AttachmentType type;
         };
 
-        GLuint m_id;
+        GLuint m_id = empty_id;
 
-        FrameBuffer();
+        FrameBuffer() = default;
+        FrameBuffer(bool dummy);
         ~FrameBuffer();
+
+        void init();
+        void deinit();
 
         void bind() const;
         void unbind() const; //TODO refactor? unbinds are an OpenGL anti-pattern
@@ -517,6 +528,9 @@ namespace Textures
 
         void bind(unsigned int unit = 0) const;
 
+        void changeTexture(unsigned int new_width, unsigned int new_height,
+                           GLenum component_type = GL_RGBA, const void *new_data = NULL);
+
         Drawing::FrameBuffer::Attachment asFrameBufferAttachment() const;
     };
 }
@@ -763,6 +777,33 @@ namespace Game
     };
 }
 
+//shared_gl_context.cpp
+class SharedGLContext
+{
+    //3D framebuffer
+    Textures::Texture2D fbo3d_tex;
+    //TODO stencil buffer
+    GLuint fbo3d_rbo_depth; // renderbuffers
+    Drawing::FrameBuffer fbo3d;
+
+public:
+    bool use_fbo3d;
+
+    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height);
+    ~SharedGLContext();
+
+    bool isInitialized() const;
+
+    glm::ivec2 getFbo3DSize() const;
+
+    void changeFbo3DSize(unsigned int new_width, unsigned int new_height);
+
+    const Textures::Texture2D& getFbo3DTexture() const;
+    const Drawing::FrameBuffer& getFbo3D() const;
+
+    static std::optional<SharedGLContext> instance;
+};
+
 //Game loops
 enum class LoopRetVal { exit, success };
 
@@ -841,12 +882,12 @@ struct GameMainLoop
     Meshes::VBO cube_vbo, line_vbo;
 
     //Textures
-    Textures::Texture2D fbo3d_tex, brick_texture, brick_alt_texture, orb_texture, target_texture;
+    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     //RenderBuffers
-    GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
+    // GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
 
     //Shaders
     Shaders::Program screen_line_shader, ui_shader, tex_rect_shader, light_src_shader, light_shader;
@@ -867,7 +908,7 @@ struct GameMainLoop
     UI::Context ui;
 
     //FrameBuffers
-    Drawing::FrameBuffer fbo3d;
+    // Drawing::FrameBuffer fbo3d;
 
     //Game
     glm::vec3 wall_size, wall_pos, target_pos_offset;
@@ -911,8 +952,8 @@ private:
     void deinitVBOs();
     bool initTextures();
     void deinitTextures();
-    bool initRenderBuffers();
-    void deinitRenderBuffers();
+    // bool initRenderBuffers();
+    // void deinitRenderBuffers();
     bool initShaders();
     void deinitShaders();
     void initLighting();
@@ -921,8 +962,8 @@ private:
     void deinitMaterials();
     bool initUI();
     void deinitUI();
-    bool initFrameBuffers();
-    void deinitFrameBuffers();
+    // bool initFrameBuffers();
+    // void deinitFrameBuffers();
     bool initGameStuff();
     void deinitGameStuff();
 };

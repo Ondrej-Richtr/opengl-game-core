@@ -183,7 +183,7 @@ int TestMainLoop::init()
     //Framebuffers
     using FrameBuffer = Drawing::FrameBuffer;
 
-    new (&fbo3d) FrameBuffer();
+    new (&fbo3d) FrameBuffer(true);
     if (fbo3d.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");

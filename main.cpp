@@ -87,6 +87,23 @@ static int init(void)
         return 4;
     }
 
+    const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
+    //TODO fix framebuffer on web
+    #ifdef PLATFORM_WEB
+        bool use_fbo = false;
+    #else
+        bool use_fbo = true;
+    #endif
+
+    assert(!SharedGLContext::instance.has_value());
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y);
+    if (!sharedGLContext.isInitialized())
+    {
+        fprintf(stderr, "Failed to initialize shared GL context!\n");
+        glfwTerminate();
+        return 5;
+    }
+
     puts("Setup end.");
     return 0;
 }

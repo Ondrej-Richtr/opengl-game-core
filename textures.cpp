@@ -116,6 +116,18 @@ void Textures::Texture2D::bind(unsigned int unit) const
     glBindTexture(GL_TEXTURE_2D, m_id);
 }
 
+void Textures::Texture2D::changeTexture(unsigned int new_width, unsigned int new_height,
+                                        GLenum component_type, const void *new_data)
+{
+    m_width = new_width;
+    m_height = new_height;
+
+    glBindTexture(GL_TEXTURE_2D, m_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, new_data);
+    //TODO unbinding is an OpenGL anti-pattern
+    glBindTexture(GL_TEXTURE_2D, empty_id); // unbind the texture just in case
+}
+
 Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const
 {
     return Drawing::FrameBuffer::Attachment{ m_id, Drawing::FrameBuffer::AttachmentType::texture };
