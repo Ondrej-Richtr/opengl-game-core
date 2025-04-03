@@ -36,7 +36,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
 
     //depth renderbuffer allocation
     glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, fbo3d_tex.m_width, fbo3d_tex.m_height);
+    glRenderbufferStorage(GL_RENDERBUFFER, depth_buffer_format, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
     //stencil renderbuffer allocation
     //TODO allow OpenGL 3.3 on dekstops to make stencil buffers work even on nvidia cards
@@ -99,7 +99,7 @@ void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_h
 
     // resize the fbo renderbuffers
     glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, new_width, new_height);
+    glRenderbufferStorage(GL_RENDERBUFFER, depth_buffer_format, new_width, new_height);
     glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
     assert(!Utils::checkForGLErrorsAndPrintThem());
 

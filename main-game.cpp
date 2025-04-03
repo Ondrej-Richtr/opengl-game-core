@@ -169,7 +169,7 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
-    const char *target_path = "assets/target_small.png";
+    const char *target_path = "assets/target_256.png";
     target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
     target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
@@ -789,7 +789,7 @@ LoopRetVal GameMainLoop::loop()
         ui.m_ctx.style.window.border = 3;
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
     }
-    if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 125, 180),
+    if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 150, 180),
         NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
     {
         //TODO change this probably
@@ -856,19 +856,14 @@ LoopRetVal GameMainLoop::loop()
             else glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 
             Drawing::clear(clear_color_3d);
+            glDepthMask(GL_TRUE); // must enable depth buffer, so the clear will work properly
             glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
             const glm::mat4& view_mat = camera.getViewMatrix();
             const glm::mat4& proj_mat = camera.getProjectionMatrix();
 
             glEnable(GL_DEPTH_TEST);
-
-            //targets (no face culling for them)
-            for (size_t i = 0; i < targets.size(); ++i)
-            {
-                glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE * (i + 1)); // adding offset so we reduce z-fighting
-                targets[i].draw(light_shader, camera, lights, current_frame_time, pos_offset);
-            }
+            glDepthFunc(GL_LESS);
 
             //Enable backface culling
             glCullFace(GL_BACK);
@@ -928,8 +923,18 @@ LoopRetVal GameMainLoop::loop()
                 glDrawArrays(GL_TRIANGLES, 0, wall_vbo.vertexCount());
             wall_vbo.unbind();
 
+            //targets - must be rendered after the wall they are attachedd to!
+            // we also disable culling and depth buffer writing (so the z-fighting does not happen)
             glDisable(GL_CULL_FACE);
-            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
+            glDepthFunc(GL_LEQUAL);
+
+            const size_t tagets_amount = targets.size();
+            for (size_t i = 0; i < tagets_amount; ++i)
+            {
+                glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
+                targets[i].draw(light_shader, camera, lights, current_frame_time, pos_offset);
+            }
 
             if (use_fbo) fbo3d.unbind();
         }
@@ -954,6 +959,8 @@ LoopRetVal GameMainLoop::loop()
                 glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
             }
 
+            glDepthMask(GL_FALSE);
+            glDisable(GL_DEPTH_TEST);
             glDisable(GL_CULL_FACE);
             glEnable(GL_BLEND); //TODO check this
             glBlendEquation(GL_FUNC_ADD); //TODO check this

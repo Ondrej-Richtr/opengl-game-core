@@ -801,6 +801,12 @@ public:
     const Textures::Texture2D& getFbo3DTexture() const;
     const Drawing::FrameBuffer& getFbo3D() const;
 
+    #ifdef BUILD_OPENGL_330_CORE
+        static constexpr GLenum depth_buffer_format = GL_DEPTH_COMPONENT24;
+    #else
+        static constexpr GLenum depth_buffer_format = GL_DEPTH_COMPONENT16;
+    #endif
+
     static std::optional<SharedGLContext> instance;
 };
 

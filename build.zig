@@ -100,7 +100,7 @@ pub fn build(b: *std.Build) !void {
             //game executable
             const exe = b.addExecutable(.{ .name = project_name, .target = target, .optimize = optimize });
 
-            exe.defineCMacro("BUILD_OPENGL_330_CORE", null); //TODO maybe only on macOS?
+            exe.defineCMacro("BUILD_OPENGL_330_CORE", null);
 
             exe.addLibraryPath(.{ .src_path = .{ .owner = b, .sub_path = "lib" } });
             exe.addIncludePath(.{ .src_path = .{ .owner = b, .sub_path = "include" } });
