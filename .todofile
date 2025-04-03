@@ -10,7 +10,9 @@ X|0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
 X|0. 0. 0|13. 3. 2025|include system for shaders
 X|0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
  |0. 0. 0|16. 3. 2025|add cubemaps + prebaked lighting and stuff?
- |0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp precision is allowed
+X|0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp precision is allowed
 X|0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders
- |0. 0. 0|26. 3. 2025|make web build work
+X|0. 0. 0|26. 3. 2025|make web build work
  |0. 0. 0|26. 3. 2025|text rendering using UI but without window
+ |0. 0. 0|3. 4. 2025|make stencil buffer work everywhere
+ |0. 0. 0|3. 4. 2025|publish web version

@@ -1,4 +1,6 @@
-precision mediump float;
+#ifdef GL_ES
+    precision mediump float;
+#endif
 
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec4 Color;

@@ -1,7 +1,10 @@
-precision highp float;
-
-// #define LIGHTS_MAX_AMOUNT 10
-// #define ALPHA_MIN_THRESHOLD 0.35 // 0.35 looks good
+#ifdef GL_ES
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+    #else
+        precision mediump float;
+    #endif
+#endif
 
 struct Material
 {
