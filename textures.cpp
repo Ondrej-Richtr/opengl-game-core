@@ -14,14 +14,13 @@ Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum c
 
     glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, NULL);
 
-    //TODO check if filtering does not cause the completeness bug
     // set the min and max filtering
     //TODO maybe pointless here?
     constexpr GLint min_filtering = Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filtering);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -67,8 +66,8 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
 
     if (generate_mipmaps)
     {
-        //TODO fix this on the web
         glGenerateMipmap(GL_TEXTURE_2D);
+        assert(!Utils::checkForGLErrorsAndPrintThem()); //TODO make this an actual check + error
     }
 
     stbi_image_free(data);                  // we can free the image data - their copy should be on gpu
@@ -97,8 +96,8 @@ Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigne
 
     if (generate_mipmaps)
     {
-        //TODO fix this on the web
         glGenerateMipmap(GL_TEXTURE_2D);
+        assert(!Utils::checkForGLErrorsAndPrintThem()); //TODO make this an actual check + error
     }
 
     // unbind the texture just in case

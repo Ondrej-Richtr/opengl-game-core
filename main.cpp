@@ -89,12 +89,8 @@ static int init(void)
     }
 
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
-    //TODO fix framebuffer on web, also consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
-    #ifdef PLATFORM_WEB
-        bool use_fbo = false;
-    #else
-        bool use_fbo = true;
-    #endif
+    //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
+    bool use_fbo = true;
 
     assert(!SharedGLContext::instance.has_value());
     SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y);

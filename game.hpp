@@ -34,6 +34,8 @@
 #define ATTRIBUTE_DEFAULT_NAME_NORMALS "aNormal"
 #define ATTRIBUTE_DEFAULT_NAME_COLOR "aColor"
 
+// maximal length of a uniform name/location
+//TODO WebGL imposes limit of 256, maybe change to that?
 #define UNIFORM_NAME_BUFFER_LEN 512
 // texbuffer length is set to exactly NK_INPUT_MAX as at worst each unicode character is 1 ascii character,
 // if this memory is not enough then nuklear wouldnt store it anyways,
@@ -71,6 +73,8 @@
 #define STR_LEN(S) ((sizeof((S)) / sizeof((S)[0])) - 1)
 // returns whether given float number is close to zero according to FLOAT_TOLERANCE macro
 #define CLOSE_TO_0(n) ((n) <= FLOAT_TOLERANCE && (n) >= -FLOAT_TOLERANCE)
+// returns whether two given float numbers are close to eachother according to CLOSE_TO_0 macro
+#define FLOAT_EQUALS(a, b) (CLOSE_TO_0((a) - (b)))
 
 //constants
 constexpr GLuint empty_id = 0;
@@ -173,18 +177,19 @@ public:
 //drawing.cpp
 namespace Drawing
 {
+    static constexpr glm::vec3 up_dir = glm::vec3(0.f, 1.f, 0.f); // up is in the positive direction of Y axis
 
-    static const glm::vec3 up_dir = glm::vec3(0.f, 1.f, 0.f); // up is in the positive direction of Y axis
+    static constexpr float default_near_plane = 0.01f, default_far_plane = 100.f;
 
     struct Camera3D
     {
         glm::vec3 m_pos, m_target;
         glm::mat4 m_view_mat, m_proj_mat;
 
-        Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
-                 float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
-        Camera3D(float fov, float aspect_ration, glm::vec3 pos, float pitch, float yaw,
-                 float near_plane = 0.01f, float far_plane = 100.f); //TODO near/far plane defaults
+        Camera3D(float fov, float aspect_ratio, glm::vec3 pos, glm::vec3 target,
+                 float near_plane = default_near_plane, float far_plane = default_far_plane);
+        Camera3D(float fov, float aspect_ratio, glm::vec3 pos, float pitch, float yaw,
+                 float near_plane = default_near_plane, float far_plane = default_far_plane);
 
         void setPosition(glm::vec3 pos);        // setter for camera position, in the future we might want to cache view matrix
         void movePosition(glm::vec3 move_vec);  // move camera position by given vector
@@ -196,6 +201,9 @@ namespace Drawing
         void move(glm::vec3 move_vec);          // combines movePosition and moveTarget
         
         void updateViewMatrix();
+
+        void setProjectionMatrix(float fov, float aspect_ratio,
+                                 float near_plane = default_near_plane, float far_plane = default_far_plane);
 
         const glm::mat4& getViewMatrix() const;
 
@@ -508,11 +516,7 @@ namespace Textures
     static constexpr GLint default_min_filtering = GL_LINEAR_MIPMAP_LINEAR;
     static constexpr GLint default_max_filtering = GL_LINEAR;
 
-    #ifdef PLATFORM_WEB
-        constexpr bool default_generate_mipmaps = false;
-    #else
-        constexpr bool default_generate_mipmaps = true;
-    #endif
+    constexpr bool default_generate_mipmaps = true;
 
     struct Texture2D // struct representing an ingame texture with 4 channels (RGBA)
     {
@@ -784,6 +788,7 @@ class SharedGLContext
     Textures::Texture2D fbo3d_tex;
     //TODO stencil buffer
     GLuint fbo3d_rbo_depth; // renderbuffers
+    GLuint fbo3d_rbo_stencil;
     Drawing::FrameBuffer fbo3d;
 
 public:
@@ -881,7 +886,7 @@ struct TestMainLoop //TODO proper deinit of objects
 struct GameMainLoop
 {
     //Camera
-    float mouse_sens, fov, camera_pitch, camera_yaw;
+    float mouse_sens, fov, camera_aspect_ratio, camera_pitch, camera_yaw;
     Drawing::Camera3D camera;
 
     //VBOs

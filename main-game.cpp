@@ -27,12 +27,13 @@ void GameMainLoop::initCamera()
 
     mouse_sens = 0.08f;
     fov = 80.f;
+    camera_aspect_ratio = win_size.x / win_size.y;
     const glm::vec3 camera_init_pos(0.f, 0.7f, 2.5f);
     //const glm::vec3 camera_init_target = camera_init_pos + glm::vec3(0.f, 0.f, -1.f);
     //camera(fov, (float)window_width / (float)window_height, camera_init_pos, camera_init_target);
     camera_pitch = 0.f;
     camera_yaw = -90.f;
-    new (&camera) Drawing::Camera3D(fov, win_size.x / win_size.y, camera_init_pos, camera_pitch, camera_yaw);
+    new (&camera) Drawing::Camera3D(fov, camera_aspect_ratio, camera_init_pos, camera_pitch, camera_yaw);
 }
 
 void GameMainLoop::deinitCamera()
@@ -156,7 +157,7 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
-    const char *orb_path = "assets/orb.jpg";
+    const char *orb_path = "assets/orb_512.png";
     orb_texture_world_size = glm::vec2(1.f, 1.f); // almost 1:1 aspect ratio
 
     new (&orb_texture) Texture(orb_path);
@@ -645,6 +646,7 @@ GameMainLoop::~GameMainLoop()
 LoopRetVal GameMainLoop::loop()
 {
     GLFWwindow * const window = WindowManager::getWindow();
+    const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& sharedGLContext = SharedGLContext::instance.value();
     assert(sharedGLContext.isInitialized());
 
@@ -674,6 +676,14 @@ LoopRetVal GameMainLoop::loop()
         camera_yaw += mouse_sens * mouse_delta_x;
         camera_pitch = std::min(89.f, std::max(-89.f, camera_pitch - mouse_sens * mouse_delta_y)); // set camera_pitch with limits -89°/89°
         camera.setTargetFromPitchYaw(camera_pitch, camera_yaw); //TODO make this better
+    }
+
+    //updating camera's aspect ratio if the window aspect ration changed
+    const float win_aspect_ratio = win_size.x / win_size.y;
+    if (!FLOAT_EQUALS(camera_aspect_ratio, win_aspect_ratio))
+    {
+        camera_aspect_ratio = win_aspect_ratio;
+        camera.setProjectionMatrix(fov, camera_aspect_ratio);
     }
 
     const glm::vec2 mouse_pos(static_cast<float>(mouse_x), static_cast<float>(mouse_y));

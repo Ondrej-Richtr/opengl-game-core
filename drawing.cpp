@@ -7,21 +7,21 @@
 #include "glm/gtx/matrix_transform_2d.hpp" //glm::translate and glm::scale
 
 
-Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, glm::vec3 target,
+Drawing::Camera3D::Camera3D(float fov, float aspect_ratio, glm::vec3 pos, glm::vec3 target,
                             float near_plane, float far_plane)
                     : m_pos(pos), m_target(target), m_view_mat(), m_proj_mat()
 {
     updateViewMatrix(); // properly sets m_view_mat
-    m_proj_mat = glm::perspective(glm::radians(fov), aspect_ration, near_plane, far_plane);
+    setProjectionMatrix(fov, aspect_ratio, near_plane, far_plane);
 }
 
-Drawing::Camera3D::Camera3D(float fov, float aspect_ration, glm::vec3 pos, float pitch, float yaw,
+Drawing::Camera3D::Camera3D(float fov, float aspect_ratio, glm::vec3 pos, float pitch, float yaw,
                             float near_plane, float far_plane)
                     : m_pos(pos), m_target(), m_view_mat(), m_proj_mat()
 {
     setTargetFromPitchYaw(pitch, yaw);  // properly sets m_target and m_view_mat
     //updateViewMatrix();               // properly sets m_view_mat
-    m_proj_mat = glm::perspective(glm::radians(fov), aspect_ration, near_plane, far_plane);
+    setProjectionMatrix(fov, aspect_ratio, near_plane, far_plane);
 }
 
 void Drawing::Camera3D::setPosition(glm::vec3 pos)
@@ -77,6 +77,11 @@ void Drawing::Camera3D::move(glm::vec3 move_vec)
 void Drawing::Camera3D::updateViewMatrix()
 {
     m_view_mat = glm::lookAt(m_pos, m_target, Drawing::up_dir);
+}
+
+void Drawing::Camera3D::setProjectionMatrix(float fov, float aspect_ratio, float near_plane, float far_plane)
+{
+    m_proj_mat = glm::perspective(glm::radians(fov), aspect_ratio, near_plane, far_plane);
 }
 
 const glm::mat4& Drawing::Camera3D::getViewMatrix() const

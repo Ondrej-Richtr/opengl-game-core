@@ -7,7 +7,8 @@ std::optional<SharedGLContext> SharedGLContext::instance{};
 
 SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height)
                     : fbo3d_tex(init_width, init_height, GL_RGB),
-                      fbo3d_rbo_depth(empty_id), //fbo3d_rbo_stencil(empty_id),
+                      fbo3d_rbo_depth(empty_id),
+                      fbo3d_rbo_stencil(empty_id),
                       fbo3d(), use_fbo3d(use_fbo3d)
 {
     assert(!Utils::checkForGLError());
@@ -22,8 +23,8 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
     {
         assert(!Utils::checkForGLError());
 
-        GLuint rbos[1];
-        glGenRenderbuffers(1, rbos);
+        GLuint rbos[2];
+        glGenRenderbuffers(2, rbos);
         if (Utils::checkForGLError())
         {
             fprintf(stderr, "Failed to create RenderBuffers for 3D FrameBuffer!\n");
@@ -31,7 +32,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
         }
 
         fbo3d_rbo_depth = rbos[0];
-        // fbo3d_rbo_stencil = rbos[1];
+        fbo3d_rbo_stencil = rbos[1];
     }
 
     //depth renderbuffer allocation
@@ -40,8 +41,8 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
 
     //stencil renderbuffer allocation
     //TODO allow OpenGL 3.3 on dekstops to make stencil buffers work even on nvidia cards
-    // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
-    // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
 
     glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
@@ -74,7 +75,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
 SharedGLContext::~SharedGLContext()
 {
     glDeleteBuffers(1, &fbo3d_rbo_depth);
-    // glDeleteBuffers(1, &fbo3d_rbo_stencil);
+    glDeleteBuffers(1, &fbo3d_rbo_stencil);
 }
 bool SharedGLContext::isInitialized() const
 {
@@ -100,8 +101,13 @@ void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_h
     // resize the fbo renderbuffers
     glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
     glRenderbufferStorage(GL_RENDERBUFFER, depth_buffer_format, new_width, new_height);
-    glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
     assert(!Utils::checkForGLErrorsAndPrintThem());
+
+    // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
+    // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, new_width, new_height);
+    // assert(!Utils::checkForGLErrorsAndPrintThem());
+
+    glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
     assert(fbo3d.isComplete());
 }
