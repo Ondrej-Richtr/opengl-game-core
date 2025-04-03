@@ -190,11 +190,11 @@ int TestMainLoop::init()
         return 9;
     }
 
-    fbo3d.attachAll(fbo3d_tex.asFrameBufferAttachment(),
-                    FrameBuffer::Attachment{ fbo3d_rbo_depth, FrameBuffer::AttachmentType::render },
-                    // FrameBuffer::Attachment{ fbo3d_rbo_stencil, FrameBuffer::AttachmentType::render }
-                    FrameBuffer::Attachment{ 0, FrameBuffer::AttachmentType::none } //TODO check why stencil buffer is not working
-                    );
+    fbo3d.attachAllSeparated(fbo3d_tex.asFrameBufferAttachment(),
+                             FrameBuffer::Attachment{ fbo3d_rbo_depth, FrameBuffer::AttachmentType::render },
+                             // FrameBuffer::Attachment{ fbo3d_rbo_stencil, FrameBuffer::AttachmentType::render }
+                             FrameBuffer::Attachment{ 0, FrameBuffer::AttachmentType::none } //TODO check why stencil buffer is not working
+                             );
     
     if (!fbo3d.isComplete())
     {

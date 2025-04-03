@@ -216,6 +216,16 @@ namespace Drawing
         Collision::Ray getRay() const;
     };
 
+    #ifndef USE_COMBINED_FBO_BUFFERS
+        // This might (and should) seem weird as we typically either use OpenGL 3.3 for desktop or OpenGLES 2.0 for the web,
+        // meaning that the following condition would be always true.
+        // But in the future there might be some specific scenario when we want to use OpenGLES 2.0 even on desktops. (Old machines? Phones?)
+        #if defined(BUILD_OPENGL_330_CORE) || defined(PLATFORM_WEB)
+            // Combine depth and stencil buffer together - only possible on newer desktop OpenGL or in WebGL (not on ES).
+            #define USE_COMBINED_FBO_BUFFERS
+        #endif
+    #endif
+
     struct FrameBuffer
     {
         enum class AttachmentType { none, render, texture };
@@ -239,9 +249,14 @@ namespace Drawing
 
         void attachColorBuffer(Attachment attachment) const;
         void attachDepthBuffer(Attachment attachment) const;
-        void attachStencilBuffer(Attachment attachment) const;
+        #ifdef USE_COMBINED_FBO_BUFFERS
+            void attachDepthStencilBuffer(Attachment attachment) const;
 
-        void attachAll(Attachment color, Attachment depth, Attachment stencil) const;
+            void attachAllCombined(Attachment color, Attachment depthStencil) const;
+        #else
+            void attachStencilBuffer(Attachment attachment) const;
+        #endif        
+        void attachAllSeparated(Attachment color, Attachment depth, Attachment stencil) const;
 
         bool isComplete() const;
     };
@@ -786,9 +801,12 @@ class SharedGLContext
 {
     //3D framebuffer
     Textures::Texture2D fbo3d_tex;
-    //TODO stencil buffer
-    GLuint fbo3d_rbo_depth; // renderbuffers
-    GLuint fbo3d_rbo_stencil;
+    #ifdef USE_COMBINED_FBO_BUFFERS
+        GLuint fbo3d_rbo_depth_stencil;
+    #else
+        GLuint fbo3d_rbo_depth; 
+        GLuint fbo3d_rbo_stencil;
+    #endif
     Drawing::FrameBuffer fbo3d;
 
 public:
@@ -805,12 +823,6 @@ public:
 
     const Textures::Texture2D& getFbo3DTexture() const;
     const Drawing::FrameBuffer& getFbo3D() const;
-
-    #ifdef BUILD_OPENGL_330_CORE
-        static constexpr GLenum depth_buffer_format = GL_DEPTH_COMPONENT24;
-    #else
-        static constexpr GLenum depth_buffer_format = GL_DEPTH_COMPONENT16;
-    #endif
 
     static std::optional<SharedGLContext> instance;
 };

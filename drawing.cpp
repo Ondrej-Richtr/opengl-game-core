@@ -193,6 +193,38 @@ void Drawing::FrameBuffer::attachDepthBuffer(Drawing::FrameBuffer::Attachment at
     }
 }
 
+#ifdef USE_COMBINED_FBO_BUFFERS
+void Drawing::FrameBuffer::attachDepthStencilBuffer(Drawing::FrameBuffer::Attachment attachment) const
+{
+    bind();
+
+    switch (attachment.type)
+    {
+    case Drawing::FrameBuffer::AttachmentType::none:
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, empty_id, 0); //TODO maybe rather GL_RENDERBUFFER?
+        break;
+    case Drawing::FrameBuffer::AttachmentType::texture:
+        assert(attachment.id != empty_id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
+        break;
+    case Drawing::FrameBuffer::AttachmentType::render:
+        assert(attachment.id != empty_id);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment.id);
+        break;
+    default:
+        fprintf(stderr, "Encountered unhandled case of AttachmentType in FrameBuffer::attachDepthBuffer!\n");
+        break;
+    }
+}
+
+void Drawing::FrameBuffer::attachAllCombined(Drawing::FrameBuffer::Attachment color,
+                                             Drawing::FrameBuffer::Attachment depthStencil) const
+{
+    attachColorBuffer(color);
+    attachDepthStencilBuffer(depthStencil);
+}
+
+#else
 void Drawing::FrameBuffer::attachStencilBuffer(Drawing::FrameBuffer::Attachment attachment) const
 {
     bind();
@@ -215,14 +247,20 @@ void Drawing::FrameBuffer::attachStencilBuffer(Drawing::FrameBuffer::Attachment 
         break;
     }
 }
+#endif
 
-void Drawing::FrameBuffer::attachAll(Drawing::FrameBuffer::Attachment color,
-                                     Drawing::FrameBuffer::Attachment depth,
-                                     Drawing::FrameBuffer::Attachment stencil) const
+void Drawing::FrameBuffer::attachAllSeparated(Drawing::FrameBuffer::Attachment color,
+                                              Drawing::FrameBuffer::Attachment depth,
+                                              Drawing::FrameBuffer::Attachment stencil) const
 {
     attachColorBuffer(color);
     attachDepthBuffer(depth);
-    attachStencilBuffer(stencil);
+
+    #ifdef USE_COMBINED_FBO_BUFFERS
+        assert(stencil.id == empty_id);
+    #else
+        attachStencilBuffer(stencil);
+    #endif
 }
 
 bool Drawing::FrameBuffer::isComplete() const

@@ -14,5 +14,7 @@ X|0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp preci
 X|0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders
 X|0. 0. 0|26. 3. 2025|make web build work
  |0. 0. 0|26. 3. 2025|text rendering using UI but without window
- |0. 0. 0|3. 4. 2025|make stencil buffer work everywhere
+ |0. 0. 0|3. 4. 2025|make stencil buffer work even on desktop with OpenGLES 2.0
  |0. 0. 0|3. 4. 2025|publish web version
+ |0. 0. 0|3. 4. 2025|refactor unbinds as they are an anti-pattern in OpenGL
+ |0. 0. 0|3. 4. 2025|make lighting test main loop work again
