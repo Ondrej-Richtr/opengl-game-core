@@ -671,7 +671,7 @@ LoopRetVal GameMainLoop::loop()
     float mouse_delta_x = (float)(mouse_x - last_mouse_x), mouse_delta_y = (float)(mouse_y - last_mouse_y);
     //printf("mouse_delta_x: %f, mouse_delta_y: %f\n", mouse_delta_x, mouse_delta_y);
 
-    if (mouse_delta_x != 0.f || mouse_delta_y != 0.f)
+    if (!CLOSE_TO_0(mouse_delta_x) || !CLOSE_TO_0(mouse_delta_y))
     {
         camera_yaw += mouse_sens * mouse_delta_x;
         camera_pitch = std::min(89.f, std::max(-89.f, camera_pitch - mouse_sens * mouse_delta_y)); // set camera_pitch with limits -89°/89°
@@ -789,22 +789,23 @@ LoopRetVal GameMainLoop::loop()
         fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
     }
 
-    //TODO GUI
+    //GUI styling    
     {
-        //styling of the GUI
         nk_color ui_background_color = nk_rgba(200, 200, 80, 200);
         ui.m_ctx.style.window.background = ui_background_color;
         ui.m_ctx.style.window.fixed_background = nk_style_item_color(ui_background_color);
-        ui.m_ctx.style.window.border_color = nk_rgb(255, 67, 67);
+        ui.m_ctx.style.window.border_color = nk_rgb(100, 100, 80);
         ui.m_ctx.style.window.border = 3;
+        ui.m_ctx.style.window.padding = nk_vec2(8, 4);
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
     }
-    if (nk_begin(&ui.m_ctx, "UI", nk_rect(30, 30, 150, 180),
-        NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
+    //GUI definition+logic
+    if (nk_begin(&ui.m_ctx, "Target Practice", nk_rect(30, 30, 150, 190),
+        NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
     {
         //TODO change this probably
-        char textbuffer2[256]{};
-        size_t textbuffer2_capacity = sizeof(textbuffer2) / sizeof(textbuffer2[0]); // including term. char. 
+        char ui_textbuff[256]{};
+        size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char. 
 
         nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
 
@@ -818,26 +819,42 @@ LoopRetVal GameMainLoop::loop()
             fps_calculation_counter = 0;
             last_fps_calculation_time = current_frame_time;
         }
-        snprintf(textbuffer2, textbuffer2_capacity, "fps: %d", fps_calculated);
-        nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+        snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
+        nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
 
-        //level texts
-        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 1);
+        //level counter
+        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
         {
-            nk_layout_row_push(&ui.m_ctx, 1.f);
-            unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
-            snprintf(textbuffer2, textbuffer2_capacity, "Level: %d", level);
-            nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+            nk_layout_row_push(&ui.m_ctx, 0.5f);
+            nk_label(&ui.m_ctx, "Level:", NK_TEXT_LEFT);
 
-            nk_layout_row_push(&ui.m_ctx, 1.f);
-            snprintf(textbuffer2, textbuffer2_capacity, "Progress: %d/%d", level_targets_hit, level_target_amount);
-            nk_label(&ui.m_ctx, textbuffer2, NK_TEXT_LEFT);
+            nk_layout_row_push(&ui.m_ctx, 0.5f);
+            snprintf(ui_textbuff, ui_textbuff_capacity, "%d", level);
+            nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+        }
+        nk_layout_row_end(&ui.m_ctx);
 
-            nk_layout_row_push(&ui.m_ctx, 1.f);
+        //target counter
+        unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
+        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
+        {
+            nk_layout_row_push(&ui.m_ctx, 0.5f);
+            nk_label(&ui.m_ctx, "Progress:", NK_TEXT_LEFT);
+
+            nk_layout_row_push(&ui.m_ctx, 0.5f);
+            snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d", level_targets_hit, level_target_amount);
+            nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+        }
+        nk_layout_row_end(&ui.m_ctx);
+
+        ui.horizontalGap(8);
+
+        //target progress bar
+        nk_layout_row_dynamic(&ui.m_ctx, 30, 1);
+        {
             nk_size level_targets_hit_copy = level_targets_hit;
             nk_progress(&ui.m_ctx, &level_targets_hit_copy, level_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
         }
-        nk_layout_row_end(&ui.m_ctx);
     }
     nk_end(&ui.m_ctx);
 

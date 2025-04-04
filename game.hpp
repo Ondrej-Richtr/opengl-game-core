@@ -755,6 +755,9 @@ namespace UI
         bool draw(glm::vec2 screen_res, unsigned int texture_unit = 0);
 
         void clear();
+
+        //GUI helper methods
+        void horizontalGap(float gap_height);
     
     private:
         void setupVBOAttributes() const;
