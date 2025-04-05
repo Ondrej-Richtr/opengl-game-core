@@ -37,6 +37,7 @@ pub fn build(b: *std.Build) !void {
 
             const emcc_arguments = [_]String{
                 "em++", //TODO em++ or emcc?
+                // "--use-port=contrib.glfw3",
                 "-o", web_out_dir ++ project_name ++ ".html",   //output
                 //TODO c + cpp files
             } ++ cpp_files ++ c_files ++ [_]String{
