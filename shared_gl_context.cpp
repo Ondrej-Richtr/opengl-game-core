@@ -118,6 +118,12 @@ glm::ivec2 SharedGLContext::getFbo3DSize() const
 
 void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_height)
 {
+    if (new_width == fbo3d_tex.m_width && new_height == fbo3d_tex.m_height)
+    {
+        printf("Requested change of size, but FBO 3D size alredy is: %dx%d\n", new_width, new_height);
+        return;
+    }
+    
     printf("Changing FBO 3D size to: %dx%d\n", new_width, new_height);
 
     //TODO implement check for out of memory and other OpenGL errors
