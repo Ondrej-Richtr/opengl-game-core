@@ -858,6 +858,28 @@ LoopRetVal GameMainLoop::loop()
     }
     nk_end(&ui.m_ctx);
 
+    // Credits 
+    {
+        ui.m_ctx.style.window.background = nk_rgba(0, 0, 0, 0);
+        ui.m_ctx.style.window.fixed_background = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+        ui.m_ctx.style.text.color = nk_rgba(0, 0, 0, 100);
+        ui.m_ctx.style.window.padding = nk_vec2(3, 3);
+    }
+    const glm::vec2 credits_size(156, 56);
+    if (nk_begin(&ui.m_ctx, "Credits", nk_rect(win_size.x - credits_size.x, win_size.y - credits_size.y,
+                                               credits_size.x, credits_size.y),
+        NK_WINDOW_NO_SCROLLBAR))
+    {
+        nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+        #ifdef VERSION_STRING
+            nk_label(&ui.m_ctx, VERSION_STRING, NK_TEXT_RIGHT);
+        #else
+            ui.horizontalGap(25.f);
+        #endif
+        nk_label(&ui.m_ctx, "Ondrej Richtr, 2025", NK_TEXT_RIGHT);
+    }
+    nk_end(&ui.m_ctx);
+
     // ---Drawing---
     {
         bool use_fbo = sharedGLContext.use_fbo3d;

@@ -5,11 +5,7 @@ const String = [:0]const u8;
 // Public constants related to build configuration.
 // Please keep list of cpp and c files updated with all file that need to get compiled.
 pub const project_name = "shooting_practice";
-
-//TODO glfw add override from command line
-// GLFW custom paths
-const glfw_lib_dir_path: ?String = null;
-const glfw_include_dir_path: ?String = null;
+pub const version_string = "v0.1";
 
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "movement.cpp", "shaders.cpp",
@@ -19,6 +15,11 @@ pub const c_files = [_]String{ "glad.c", "nuklear.c", "stb_image.c" };
 pub const cpp_std_ver = "c++17";
 pub const c_std_ver = "c99"; // good idea to use c99 or newer, GLFW 3.4 seems to require at least c99
 
+//TODO glfw add override from command line
+// GLFW custom paths
+const glfw_lib_dir_path: ?String = null;
+const glfw_include_dir_path: ?String = null;
+
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -26,35 +27,13 @@ pub fn build(b: *std.Build) !void {
 
     switch (target.result.os.tag)
     {
-        .emscripten => //TODO web build
+        .emscripten =>
         {
             std.log.info("Compiling for the web using emscripten!", .{});
 
-            //TODO remove this if we truly end up not using it
-            // if (b.sysroot == null) {
-            //     @panic("Pass '--sysroot \"$EMSDK/upstream/emscripten\"'");
-            // }
-
-            // const emscripten_include_dir = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "cache", "sysroot", "include" });
-            // defer b.allocator.free(emscripten_include_dir);
-
-            // var lib = b.addStaticLibrary(.{ .name = project_name, .root_source_file = main_location,
-            //                                   .target = target, .optimize = optimize, });
-            // lib.entry = std.Build.Step.Compile.Entry.disabled;
-            // lib.linkLibC();
-            // lib.pie = true;
-            // switch (optimize)
-            // {
-            //     .Debug, .ReleaseSafe => lib.bundle_compiler_rt = true,
-            //     .ReleaseFast, .ReleaseSmall => {},
-            // }
-            // lib.addIncludePath(.{ .cwd_relative = emscripten_include_dir });
-
-            // raylib.addTo2(b, lib, target, optimize, raylib_location);
-
-            // const lib_out_dir = "zig-out/lib/";
             const web_out_dir = "zig-out/web/"; //TODO create this directory if it does not exist yet
             const local_em_dir = "emscripten-stuff/";
+            const shell_file = "shell.html"; //TODO shell file
 
             const emcc_arguments = [_]String{
                 "em++", //TODO em++ or emcc?
@@ -63,10 +42,6 @@ pub fn build(b: *std.Build) !void {
             } ++ cpp_files ++ c_files ++ [_]String{
                 "-Os", "-O3", "-Wall",
                 "-I.", "-I./include",                           //includes (header files)
-                //TODO remove this?
-                // "-L.", "-L" ++ lib_out_dir,                  //used libraries (.a files)
-                //TODO glfw?
-                // "-lraylib", "-l" ++ project_name,            //using raylib and lib file from previous step
                 //flags and other parameters:
                 "-sUSE_GLFW=3",
                 "-sWASM=1",
@@ -83,9 +58,10 @@ pub fn build(b: *std.Build) !void {
                 "--preload-file", "assets",
                 "--preload-file", "shaders",
                 //shell:
-                "--shell-file", local_em_dir ++ "minshell.html", //TODO shell file 
+                "--shell-file", local_em_dir ++ shell_file, 
                 //C compiler parameters (???):
                 "-DPLATFORM_WEB", 
+                "-DVERSION_STRING=\"" ++ version_string ++ "\"", // adding quatation marks so that the macro value is a string literal
                 "-Os", "-O3",
             };
 
@@ -101,6 +77,7 @@ pub fn build(b: *std.Build) !void {
             const exe = b.addExecutable(.{ .name = project_name, .target = target, .optimize = optimize });
 
             exe.defineCMacro("BUILD_OPENGL_330_CORE", null);
+            exe.defineCMacro("VERSION_STRING", "\"" ++ version_string ++ "\""); // adding quatation marks so that the macro value is a string literal
 
             exe.addLibraryPath(.{ .src_path = .{ .owner = b, .sub_path = "lib" } });
             exe.addIncludePath(.{ .src_path = .{ .owner = b, .sub_path = "include" } });
