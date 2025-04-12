@@ -10,7 +10,7 @@ pub const version_string = "v0.1";
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "main-game.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "movement.cpp", "shaders.cpp",
                                  "shared_gl_context.cpp", "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
-pub const c_files = [_]String{ "glad.c", "nuklear.c", "stb_image.c" };
+pub const c_files = [_]String{ "cgltf.c", "glad.c", "nuklear.c", "stb_image.c", "tinyobj_loader_c.c" };
 
 pub const cpp_std_ver = "c++17";
 pub const c_std_ver = "c99"; // good idea to use c99 or newer, GLFW 3.4 seems to require at least c99

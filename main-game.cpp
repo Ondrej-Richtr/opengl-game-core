@@ -41,7 +41,7 @@ void GameMainLoop::deinitCamera()
     camera.~Camera3D();
 }
 
-bool GameMainLoop::initVBOs()
+bool GameMainLoop::initVBOsAndMeshes()
 {
     //Cube and it's vbo
     float cube_vertices[] = // counter-clockwise vertex winding order
@@ -121,13 +121,28 @@ bool GameMainLoop::initVBOs()
         return false;
     }
 
+    //Turret mesh
+    const char *turret_mesh_path = "assets/turret.obj";
+
+    new (&turret_mesh) Meshes::Mesh();
+    int turret_mesh_ret = turret_mesh.loadFromObj(turret_mesh_path);
+    if (turret_mesh_ret != 0 || !turret_mesh.isUploaded())
+    {
+        fprintf(stderr, "Failed to create Turret mesh! Returned error value: %d\n", turret_mesh_ret);
+        cube_vbo.~VBO();
+        line_vbo.~VBO();
+        turret_mesh.~Mesh();
+        return false;
+    }
+
     return true;
 }
 
-void GameMainLoop::deinitVBOs()
+void GameMainLoop::deinitVBOsAndMeshes()
 {
     cube_vbo.~VBO();
     line_vbo.~VBO();
+    turret_mesh.~Mesh();
 }
 
 bool GameMainLoop::initTextures()
@@ -241,7 +256,12 @@ bool GameMainLoop::initShaders()
     //shader partials
     // used only during this init method, thus loaded as local unique_ptr, so we dont have to call delete/destructor
     const char *postprocess_fs_partial_path = SHADERS_PARTIALS_DIR_PATH "postprocess.fspart";
-    std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path);
+    std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path, NULL); //TODO check for NULL
+    if (!postprocess_fs_partial)
+    {
+        fprintf(stderr, "Failed to load postprocessing fragment shader partial file: '%s'!\n", postprocess_fs_partial_path);
+        return false;
+    }
 
     using ShaderP = Shaders::Program;
 
@@ -530,7 +550,7 @@ int GameMainLoop::init()
     initCamera();
 
     //VBOs
-    if (!initVBOs())
+    if (!initVBOsAndMeshes())
     {
         //TODO goto cleanup routine?
         deinitCamera();
@@ -542,7 +562,7 @@ int GameMainLoop::init()
     {
         //TODO goto cleanup routine?
         deinitCamera();
-        deinitVBOs();
+        deinitVBOsAndMeshes();
         return 2;
     }
 
@@ -551,7 +571,7 @@ int GameMainLoop::init()
     // {
     //     //TODO goto cleanup routine?
     //     deinitCamera();
-    //     deinitVBOs();
+    //     deinitVBOsAndMeshes();
     //     deinitTextures();
     //     return 3;
     // }
@@ -561,7 +581,7 @@ int GameMainLoop::init()
     {
         //TODO goto cleanup routine?
         deinitCamera();
-        deinitVBOs();
+        deinitVBOsAndMeshes();
         deinitTextures();
         // deinitRenderBuffers();
         return 4;
@@ -578,7 +598,7 @@ int GameMainLoop::init()
     {
         //TODO goto cleanup routine?
         deinitCamera();
-        deinitVBOs();
+        deinitVBOsAndMeshes();
         deinitTextures();
         // deinitRenderBuffers();
         deinitShaders();
@@ -592,7 +612,7 @@ int GameMainLoop::init()
     // {
     //     //TODO goto cleanup routine?
     //     deinitCamera();
-    //     deinitVBOs();
+    //     deinitVBOsAndMeshes();
     //     deinitTextures();
     //     // deinitRenderBuffers();
     //     deinitShaders();
@@ -607,7 +627,7 @@ int GameMainLoop::init()
     {
         //TODO goto cleanup routine?
         deinitCamera();
-        deinitVBOs();
+        deinitVBOsAndMeshes();
         deinitTextures();
         // deinitRenderBuffers();
         deinitShaders();
@@ -945,6 +965,33 @@ LoopRetVal GameMainLoop::loop()
             cube_vbo.bind();
                 glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
             cube_vbo.unbind();
+
+            //turret
+            light_shader.use();
+            //TODO turret texture
+            {
+                glm::vec3 pos = glm::vec3(4.3f, 0.f, -1.5f);
+                glm::vec3 scale = glm::vec3(0.3f);
+
+                //vs
+                glm::mat4 model_mat(1.f);
+                model_mat = glm::translate(model_mat, pos);
+                model_mat = glm::scale(model_mat, scale);
+
+                glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                light_shader.set("model", model_mat);
+                light_shader.set("normalMat", normal_mat);
+                light_shader.set("view", view_mat);
+                light_shader.set("projection", proj_mat);
+
+                //fs
+                light_shader.set("cameraPos", camera.m_pos);
+                light_shader.setMaterialProps(default_material);
+                light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+            }
+            
+            turret_mesh.draw();
 
             //wall
             light_shader.use();

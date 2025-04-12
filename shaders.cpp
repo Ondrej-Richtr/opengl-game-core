@@ -32,8 +32,8 @@ Shaders::Program::Program(const char *vs_path, const char *fs_path,
     // constructs shader program based on source code of vertex and fragment shader located at given paths,
     // caller should always check whether constructor failed -> m_id == empty_id
     
-    std::unique_ptr<char[]> vs_source = Utils::getTextFileAsString(vs_path),
-                            fs_source = Utils::getTextFileAsString(fs_path);
+    std::unique_ptr<char[]> vs_source = Utils::getTextFileAsString(vs_path, NULL),
+                            fs_source = Utils::getTextFileAsString(fs_path, NULL);
     if (!vs_source || !fs_source)
     {
         fprintf(stderr, "Failed to load vertex or fragment shader source code when constructing shader program!\n");

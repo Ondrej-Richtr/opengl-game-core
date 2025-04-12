@@ -54,7 +54,7 @@ size_t Utils::getTextFileLength(const char *path)
     return len;
 }
 
-char* Utils::getTextFileAsString_C_str(const char *path)
+char* Utils::getTextFileAsString_C_str(const char *path, size_t *result_len)
 {
     // loads whole file as a C string, returns NULL when error
     assert(path != NULL);
@@ -77,14 +77,15 @@ char* Utils::getTextFileAsString_C_str(const char *path)
 
     result[len] = '\0'; //we need to add the terminating character
 
+    if (result_len) *result_len = len;
     return result;
 }
 
-std::unique_ptr<char[]> Utils::getTextFileAsString(const char *path)
+std::unique_ptr<char[]> Utils::getTextFileAsString(const char *path, size_t *result_len)
 {
     // loads whole file as C string, caller takes ownership of allocated memory with returned unique_ptr,
     // returns NULL ptr when error
-    return std::unique_ptr<char[]>(Utils::getTextFileAsString_C_str(path));
+    return std::unique_ptr<char[]>(Utils::getTextFileAsString_C_str(path, result_len));
 }
 
 //std::string version does not seem like a good idea

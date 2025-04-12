@@ -397,8 +397,8 @@ namespace Utils
     bool isZero(glm::vec3 vector);
 
     size_t getTextFileLength(const char *path);
-    char* getTextFileAsString_C_str(const char *path);
-    std::unique_ptr<char[]> getTextFileAsString(const char *path);
+    char* getTextFileAsString_C_str(const char *path, size_t *result_len);
+    std::unique_ptr<char[]> getTextFileAsString(const char *path, size_t *result_len);
 
     constexpr GLint filteringEnumWithoutMipmap(GLint filtering)
     {
@@ -662,6 +662,27 @@ namespace Meshes
     Meshes::VBO generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_world_size,
                                 Meshes::TexcoordStyle style, bool normals);
     
+    struct Mesh
+    {
+        unsigned int m_vert_count = 0, m_triangle_count = 0;
+
+        std::vector<GLfloat> m_positions;
+        std::vector<GLfloat> m_texcoords;
+        std::vector<GLfloat> m_normals;
+
+        VBO m_vbo;
+
+        Mesh() = default;
+
+        int loadFromObj(const char *obj_file_path);
+
+        bool upload();
+
+        bool isUploaded() const;
+
+        void draw() const;
+    };
+    
     //basic global meshes
     // IMPORTANT: needs to get initialized first by calling initBasicMeshes!
     extern VBO unit_quad_pos_only;
@@ -904,8 +925,9 @@ struct GameMainLoop
     float mouse_sens, fov, camera_aspect_ratio, camera_pitch, camera_yaw;
     Drawing::Camera3D camera;
 
-    //VBOs
+    //VBOs and Meshes
     Meshes::VBO cube_vbo, line_vbo;
+    Meshes::Mesh turret_mesh;
 
     //Textures
     Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture;
@@ -974,8 +996,8 @@ private:
     //destructor does the job of deinits automatically, but we can't call destructor before the whole init is completed
     void initCamera();
     void deinitCamera();
-    bool initVBOs();
-    void deinitVBOs();
+    bool initVBOsAndMeshes();
+    void deinitVBOsAndMeshes();
     bool initTextures();
     void deinitTextures();
     // bool initRenderBuffers();
