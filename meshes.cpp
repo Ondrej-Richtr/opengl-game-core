@@ -454,7 +454,6 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
     {
         if (attr_config.pos_amount > 0)
         {
-            // if (i == test_idx) printf("vert-offset pos: %d, copying: %f|%f|%f\n", vert - result, pos[i + 0], pos[i + 1], pos[i + 2]);
             memcpy(vert, pos, attr_config.pos_amount * sizeof(GLfloat));
             vert += attr_config.pos_amount;
             pos += attr_config.pos_amount;
@@ -462,7 +461,6 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
 
         if (attr_config.texcoord_amount > 0)
         {
-            // if (i == test_idx) printf("vert-offset texcoord: %d, copying: %f|%f\n", vert - result, texcoords[i + 0], texcoords[i + 1]);
             memcpy(vert, texcoords, attr_config.texcoord_amount * sizeof(GLfloat));
             vert += attr_config.texcoord_amount;
             texcoords += attr_config.texcoord_amount;
@@ -470,7 +468,6 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
 
         if (attr_config.normal_amount > 0)
         {
-            // if (i == test_idx) printf("vert-offset normal: %d, copying: %f|%f|%f\n", vert - result, normals[i + 0], normals[i + 1], normals[i + 2]);
             memcpy(vert, normals, attr_config.normal_amount * sizeof(GLfloat));
             vert += attr_config.normal_amount;
             normals += attr_config.normal_amount;
@@ -495,8 +492,9 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
     file_reader_callback file_reader = [](void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len){
         if (is_mtl)
         {
-            //TODO implement this + err
-            puts("is_mtl case is unimplemented");
+            //TODO implement this
+            fprintf(stderr, "[WARNING] when loading .obj file '%s' it was requested to load mtl file: '%s', this is currently unimplemented!\n",
+                    obj_filename, filename);
             return;
         }
 
@@ -512,19 +510,19 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
                                         obj_file_path, file_reader, (void*)&file_content, flags);
     if (tinyobj_ret != TINYOBJ_SUCCESS)
     {
-        //TODO err
         fprintf(stderr, "Failed to parse .obj file at path: '%s'! Error: %d\n", obj_file_path, tinyobj_ret);
         return 1;
     }
 
-    printf("Shapes: %zu\n", num_shapes);
+    //DEBUG
+    /*printf("Shapes: %zu\n", num_shapes);
     for (size_t i = 0; i < num_shapes; ++i) printf("Shape name: %s, offset: %d, length: %d\n", shapes[i].name, shapes[i].face_offset, shapes[i].length);
     printf("Materials: %zu\n", num_materials);
-    printf("Faces: %d\n", attrib.num_faces);
+    printf("Faces: %d\n", attrib.num_faces);*/
 
     if (num_shapes == 0)
     {
-        //TODO err
+        fprintf(stderr, "Attempted to load empty .obj file at path: '%s'!", obj_file_path);
         return 2;
     }
 
@@ -536,28 +534,7 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
     m_texcoords.reserve(m_vert_count * 2); // texcoords have 2 floats
     m_normals.reserve(m_vert_count * 3);   // normals have 3 floats
 
-    // unsigned int loaded_vertex_count = 0;
-
-    // for (unsigned int ti = 0; ti < m_triangle_count; ++ti)
-    // {
-    //     // Get indices for the face (triangle)
-    //     tinyobj_vertex_index_t idx0 = attrib.faces[3 * ti + 0];
-    //     tinyobj_vertex_index_t idx1 = attrib.faces[3 * ti + 1];
-    //     tinyobj_vertex_index_t idx2 = attrib.faces[3 * ti + 2];
-
-    //     // Fill vertices buffer (float) using vertex index of the face
-    //     for (int v = 0; v < 3; v++)
-    //     {
-    //         m_positions[loaded_vertex_count + v] = attrib.vertices[idx0.v_idx*3 + v];
-    //     }
-    //     vCount[mm] +=3;
-
-    //     for (int v = 0; v < 3; v++) { model.meshes[mm].vertices[vCount[mm] + v] = attrib.vertices[idx1.v_idx*3 + v]; } vCount[mm] +=3;
-
-    //     for (int v = 0; v < 3; v++) { model.meshes[mm].vertices[vCount[mm] + v] = attrib.vertices[idx2.v_idx*3 + v]; } vCount[mm] +=3;
-    // }
-
-    const bool normals_included = attrib.num_normals > 0;
+    const bool normals_included = attrib.num_normals > 0, texcoords_included = attrib.num_texcoords > 0;
     size_t face_offset = 0;
 
     for (unsigned int fi = 0; fi < attrib.num_face_num_verts; ++fi)
@@ -581,9 +558,20 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
                 m_positions.push_back(attrib.vertices[3 * pos_idx + 1]);
                 m_positions.push_back(attrib.vertices[3 * pos_idx + 2]);
 
-                //TODO texcoords
-                m_texcoords.push_back(0.f);
-                m_texcoords.push_back(0.f);
+                //texcoords
+                int tex_idx = idx.vt_idx;
+                assert(tex_idx < (int)attrib.num_texcoords);
+
+                if (texcoords_included && tex_idx >= 0)
+                {
+                    m_texcoords.push_back(attrib.texcoords[2 * tex_idx + 0]);
+                    m_texcoords.push_back(attrib.texcoords[2 * tex_idx + 1]);
+                }
+                else // insert 0x0 coordinates as we want texcoords always included anyways
+                {
+                    m_texcoords.push_back(0.f);
+                    m_texcoords.push_back(0.f);
+                }
 
                 //normal
                 int norm_idx = idx.vn_idx;
@@ -599,8 +587,10 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
                 }
                 else if (ti == 0)
                 {
-                    //TODO calculate vert_normal from face itself and set triangle_normal variable
+                    //TODO go through all normals afterwards and change each zero normal into valid normal from face position
                     assert(false);
+                    vert_normal = glm::vec3(0.f);
+                    triangle_normal = vert_normal;
                 }
                 else
                 {
@@ -624,16 +614,9 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
     tinyobj_shapes_free(shapes, num_shapes);
     tinyobj_materials_free(materials, num_materials);
 
-    // size_t test_idx = 1;
-    // printf("separated - pos: %f|%f|%f, texcoords: %f|%f, normals: %f|%f|%f\n",
-    //         m_positions[test_idx * 3 + 0], m_positions[test_idx * 3 + 1], m_positions[test_idx * 3 + 2],
-    //         m_texcoords[test_idx * 2 + 0], m_texcoords[test_idx * 2 + 1],
-    //         m_normals[test_idx * 3 + 0], m_normals[test_idx * 3 + 1], m_normals[test_idx * 3 + 2]);
-
     if (!upload())
     {
-        //TODO err
-        fprintf(stderr, "Failed to upload loaded mesh into GPU!\n");
+        fprintf(stderr, "Failed to upload loaded mesh from .obj file '%s' into GPU!\n", obj_file_path);
         return 3;
     }
 
@@ -671,13 +654,6 @@ bool Meshes::Mesh::upload()
         fprintf(stderr, "Failed to combine position, texcoord, normal buffers! Most likely wrong data or out of memory.\n");
         return false;
     }
-
-    // printf("attr_config - pos: %d, texcoords: %d, normals: %d\n", attr_config.pos_amount, attr_config.texcoord_amount, attr_config.normal_amount);
-    // size_t test_idx = 1;
-    // printf("combined - pos: %f|%f|%f, texcoords: %f|%f, normals: %f|%f|%f\n",
-    //         combined_data[test_idx * 8 + 0], combined_data[test_idx * 8 + 1], combined_data[test_idx * 8 + 2],
-    //         combined_data[test_idx * 8 + 3], combined_data[test_idx * 8 + 4],
-    //         combined_data[test_idx * 8 + 5], combined_data[test_idx * 8 + 6], combined_data[test_idx * 8 + 7]);
 
     assert(m_vbo.m_id == empty_id);
     m_vbo.~VBO(); // just to be sure

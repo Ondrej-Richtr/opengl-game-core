@@ -230,6 +230,7 @@ GLuint Shaders::fromString(GLenum type, const char *src)
     return id;
 }
 
+//IDEA this could get replaced by stb_include.h (https://github.com/nothings/stb/blob/master/stb_include.h)
 GLuint Shaders::fromStringWithIncludeSystem(GLenum type, const char *str, const std::vector<ShaderInclude>& includes)
 {
     //consturcts the OpenGL shader of given type with `str` source contents and given includes

@@ -4,6 +4,7 @@
 #include "stb_image.h"
 
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/ext/scalar_constants.hpp"
 #include <cstring>
 
 
@@ -200,6 +201,20 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    const char *turret_path = "assets/turret/turret_diffuse.png";
+
+    new (&turret_texture) Texture(turret_path);
+    if (turret_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create turret texture!\n");
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        return false;
+    }
+
     return true;
 }
 
@@ -209,6 +224,7 @@ void GameMainLoop::deinitTextures()
     brick_alt_texture.~Texture2D();
     orb_texture.~Texture2D();
     target_texture.~Texture2D();
+    turret_texture.~Texture2D();
 }
 
 /*bool GameMainLoop::initRenderBuffers()
@@ -966,7 +982,7 @@ LoopRetVal GameMainLoop::loop()
 
             //turret
             light_shader.use();
-            //TODO turret texture
+            turret_texture.bind();
             {
                 glm::vec3 pos = glm::vec3(4.3f, 0.f, -1.5f);
                 glm::vec3 scale = glm::vec3(0.3f);
@@ -975,6 +991,7 @@ LoopRetVal GameMainLoop::loop()
                 glm::mat4 model_mat(1.f);
                 model_mat = glm::translate(model_mat, pos);
                 model_mat = glm::scale(model_mat, scale);
+                model_mat = glm::rotate(model_mat, glm::pi<float>(), Drawing::up_dir); // rotate towards the player spawn point
 
                 glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
 

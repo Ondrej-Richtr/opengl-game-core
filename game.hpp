@@ -930,7 +930,7 @@ struct GameMainLoop
     Meshes::Mesh turret_mesh;
 
     //Textures
-    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture;
+    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture, turret_texture;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
