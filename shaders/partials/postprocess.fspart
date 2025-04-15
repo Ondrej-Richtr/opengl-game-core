@@ -1,3 +1,11 @@
+#ifdef GL_ES
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+    #else
+        precision mediump float;
+    #endif
+#endif
+
 vec2 _rectSize;
 
 
@@ -20,7 +28,7 @@ float _calculateAverage(sampler2D _inputTexture, ivec2 rectPos)
 
 int _levelFromAverage(float avg)
 {
-    return int(avg / 0.2f);
+    return int(avg / 0.2);
 }
 
 vec4 _postproc_greyscale(sampler2D _inputTexture, vec2 tpos)
@@ -30,11 +38,15 @@ vec4 _postproc_greyscale(sampler2D _inputTexture, vec2 tpos)
     return vec4(average, average, average, 1.0);
 }
 
-vec4 _postproc(sampler2D _inputTexture, vec2 tpos)
+vec4 _postproc_dither(sampler2D _inputTexture, vec2 tpos)
 {
     ivec2 rectPos = _uvToCoord(tpos);
-    int mask = ~int(1);
-    ivec2 rectPosUL = rectPos & mask;
+    #ifdef GL_ES
+        ivec2 rectPosUL = (rectPos / 2) * 2; // get rid of the last bit
+    #else
+        int mask = ~int(1);
+        ivec2 rectPosUL = rectPos & mask;
+    #endif
     ivec2 rectPosUR = ivec2(rectPosUL.x + 1, rectPosUL.y);
     ivec2 rectPosDL = ivec2(rectPosUL.x, rectPosUL.y + 1);
     ivec2 rectPosDR = ivec2(rectPosUL.x, rectPosUL.y + 1);
@@ -59,11 +71,26 @@ vec4 _postproc(sampler2D _inputTexture, vec2 tpos)
     // return vec4(vec3(1.0) - (c).rgb, (c).a);
 }
 
+vec4 _postproc(sampler2D _inputTexture, vec2 tpos)
+{
+    vec4 sampled = TEXTURE2D(_inputTexture, tpos);
+    vec4 grayscale = _postproc_dither(_inputTexture, tpos);
+
+    vec2 rectPos = vec2(_uvToCoord(tpos));
+    float distToMiddle = length(rectPos - (_rectSize / 2.0));
+    float relDist = (2.0 * distToMiddle) / _rectSize.x;
+    float cutoffMin = 0.72, cutoffMax = 0.95;
+    float mixCoef = clamp((relDist - cutoffMin) / (cutoffMax - cutoffMin), 0.0, 1.0);
+
+    return mix(sampled, grayscale, mixCoef);
+}
+
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tex, tpos) (vec4(0.0, 1.0, 1.0, 1.0))
-    #define POSTPROCESS(tex, tpos) (_postproc((tex), (tpos)))
-    // #define POSTPROCESS(tex, tpos) (_postproc_greyscale((tex), (tpos)))
     // #define POSTPROCESS(tex, tpos) (TEXTURE2D((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc_greyscale((tex), (tpos)))
+    #define POSTPROCESS(tex, tpos) (_postproc((tex), (tpos)))
 #endif
 
 #ifndef SETUP

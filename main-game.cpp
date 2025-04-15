@@ -122,7 +122,7 @@ bool GameMainLoop::initVBOsAndMeshes()
     }
 
     //Turret mesh
-    const char *turret_mesh_path = "assets/turret.obj";
+    const char *turret_mesh_path = "assets/turret/turret.obj";
 
     new (&turret_mesh) Meshes::Mesh();
     int turret_mesh_ret = turret_mesh.loadFromObj(turret_mesh_path);
@@ -302,9 +302,7 @@ bool GameMainLoop::initShaders()
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
     std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
                                         tex_rect_fs_includes = {
-                                                                #ifndef USE_VER100_SHADERS
-                                                                    // Shaders::ShaderInclude(postprocess_fs_partial.get()),
-                                                                #endif
+                                                                // Shaders::ShaderInclude(postprocess_fs_partial.get()),
                                                                };
 
     new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);

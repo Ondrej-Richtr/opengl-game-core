@@ -449,8 +449,6 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
     GLfloat *result = new GLfloat[stride * vertex_count];
     if (!result) return std::unique_ptr<GLfloat[]>();
 
-    size_t test_idx = 1;
-
     GLfloat *vert = result;
     for (size_t i = 0; i < vertex_count; ++i)
     {

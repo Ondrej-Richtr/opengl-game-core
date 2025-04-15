@@ -54,7 +54,7 @@ static int init(void)
     WindowManager::init(window);
 
     //other GLFW settings
-    glfwSwapInterval(1); //TODO check this, maybe 0?
+    glfwSwapInterval(1); //TODO settings for v-sync
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
