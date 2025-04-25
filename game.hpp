@@ -23,6 +23,7 @@
 #include <memory>
 #include <functional>
 #include <random>
+#include <optional>
 
 #define FLOAT_TOLERANCE 0.001f
 
