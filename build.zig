@@ -55,6 +55,7 @@ pub fn build(b: *std.Build) !void {
                 "-sEXPORTED_FUNCTIONS=['_malloc','_free','_main', '_emsc_set_window_size']",
                 "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap",
                 "-sUSE_OFFSET_CONVERTER",
+                // "--use-preload-cache", //TODO check this
                 //preloaded files:
                 "--preload-file", "assets",
                 "--preload-file", "shaders",

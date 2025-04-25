@@ -136,6 +136,21 @@ bool GameMainLoop::initVBOsAndMeshes()
         return false;
     }
 
+    //Ball mesh
+    const char *ball_mesh_path = "assets/ball/dirty_football.obj";
+
+    new (&ball_mesh) Meshes::Mesh();
+    int ball_mesh_ret = ball_mesh.loadFromObj(ball_mesh_path);
+    if (ball_mesh_ret != 0 || !ball_mesh.isUploaded())
+    {
+        fprintf(stderr, "Failed to create Bord Alternative mesh! Returned error value: %d\n", ball_mesh_ret);
+        cube_vbo.~VBO();
+        line_vbo.~VBO();
+        turret_mesh.~Mesh();
+        ball_mesh.~Mesh();
+        return false;
+    }
+
     return true;
 }
 
@@ -144,12 +159,14 @@ void GameMainLoop::deinitVBOsAndMeshes()
     cube_vbo.~VBO();
     line_vbo.~VBO();
     turret_mesh.~Mesh();
+    ball_mesh.~Mesh();
 }
 
 bool GameMainLoop::initTextures()
 {
     using Texture = Textures::Texture2D;
 
+    //Bricks
     const char *bricks_path = "assets/bricks2_512.png";
     brick_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
 
@@ -173,6 +190,7 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Orb
     const char *orb_path = "assets/orb_512.png";
     orb_texture_world_size = glm::vec2(1.f, 1.f); // almost 1:1 aspect ratio
 
@@ -186,6 +204,7 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Target
     const char *target_path = "assets/target_256.png";
     target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
     target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
@@ -201,6 +220,7 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Turret
     const char *turret_path = "assets/turret/turret_diffuse.png";
 
     new (&turret_texture) Texture(turret_path);
@@ -215,6 +235,22 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Ball
+    const char *ball_tex_path = "assets/ball/textures/dirty_football_diff_4k.jpg";
+
+    new (&ball_texture) Texture(ball_tex_path);
+    if (ball_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create turret texture!\n");
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        ball_texture.~Texture2D();
+        return false;
+    }
+
     return true;
 }
 
@@ -225,6 +261,7 @@ void GameMainLoop::deinitTextures()
     orb_texture.~Texture2D();
     target_texture.~Texture2D();
     turret_texture.~Texture2D();
+    ball_texture.~Texture2D();
 }
 
 /*bool GameMainLoop::initRenderBuffers()
@@ -413,12 +450,38 @@ void GameMainLoop::initMaterials()
 {
     using MaterialProps = Lighting::MaterialProps;
 
+    //Default
     new (&default_material) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
+
+    //Ball
+    const char *ball_mtl_path = "assets/ball/dirty_football.mtl";
+
+    //TODO proper materials - https://www.fileformat.info/format/material/
+    // std::vector<MaterialProps> ball_materials{};
+    // if (Meshes::loadMtl(ball_mtl_path, ball_materials) || ball_materials.size() == 0)
+    // {
+    //     fprintf(stderr, "[WARNING] Failed to load material for ball mesh, default material will be used.\n");
+    //     ball_material = default_material;
+    // }
+    // else
+    // {
+    //     if (ball_materials.size() > 1) fprintf(stderr, "[WARNING] Multiple materials loaded for ball mesh, using the first one.\n");
+    //     ball_material = ball_materials[0];
+    // }
+    // printf("ball material - ambient: %f|%f|%f, diffuse: %f|%f|%f, specular: %f|%f|%f, shinines: %f\n",
+    //        ball_material.m_ambient.r, ball_material.m_ambient.g, ball_material.m_ambient.b,
+    //        ball_material.m_diffuse.r, ball_material.m_diffuse.g, ball_material.m_diffuse.b,
+    //        ball_material.m_specular.r, ball_material.m_specular.g, ball_material.m_specular.b, ball_material.m_shininess);
+
+    // ball_material = default_material;
+    ball_material = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.2f}, 1.f};
 }
 
 void GameMainLoop::deinitMaterials()
 {
-    default_material.~MaterialProps(); //TODO useless as there is no destructor yet
+    //TODO useless now as there is no destructor yet
+    default_material.~MaterialProps();
+    ball_material.~MaterialProps();
 }
 
 bool GameMainLoop::initUI()
@@ -940,13 +1003,18 @@ LoopRetVal GameMainLoop::loop()
 
             Drawing::clear(clear_color_3d);
             glDepthMask(GL_TRUE); // must enable depth buffer, so the clear will work properly
-            glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+            glStencilMask(0xFF);  // must enable stencil buffer, so the clear will work properly
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
 
             const glm::mat4& view_mat = camera.getViewMatrix();
             const glm::mat4& proj_mat = camera.getProjectionMatrix();
 
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
+
+            glDisable(GL_STENCIL_TEST);
+            glStencilMask(0x00);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
             //Enable backface culling
             glCullFace(GL_BACK);
@@ -1008,6 +1076,129 @@ LoopRetVal GameMainLoop::loop()
             
             turret_mesh.draw();
 
+            //ball
+            light_shader.use();
+            ball_texture.bind();
+            {
+                glm::vec3 pos = glm::vec3(2.2f, 0.f, 2.2f);
+                glm::vec3 scale = glm::vec3(3.f);
+
+                //vs
+                glm::mat4 model_mat(1.f);
+                model_mat = glm::translate(model_mat, pos);
+                model_mat = glm::scale(model_mat, scale);
+
+                glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                light_shader.set("model", model_mat);
+                light_shader.set("normalMat", normal_mat);
+                light_shader.set("view", view_mat);
+                light_shader.set("projection", proj_mat);
+
+                //fs
+                light_shader.set("cameraPos", camera.m_pos);
+                light_shader.setMaterialProps(ball_material);
+                light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+            }
+            
+            ball_mesh.draw();
+
+            //ball with an outline
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+            glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
+            glStencilMask(0xFF); // enable writing to the stencil buffer if it wasn't already
+            {
+                glm::vec3 pos = glm::vec3(3.6f, 0.33f, 2.2f);
+                glm::vec3 scale = glm::vec3(2.5f);
+                const float outline_scale_factor = 1.1f;
+                glm::vec3 origin_offset = glm::vec3(0.f, -0.11f, 0.f);
+                const Color3F outline_color(0.f, 1.f, 1.f);
+
+                //drawing the object itself
+                light_shader.use();
+                ball_texture.bind();
+                {
+                    //vs
+                    glm::mat4 model_mat(1.f);
+                    model_mat = glm::translate(model_mat, pos);
+                    model_mat = glm::scale(model_mat, scale);
+                    model_mat = glm::translate(model_mat, origin_offset);
+
+                    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                    light_shader.set("model", model_mat);
+                    light_shader.set("normalMat", normal_mat);
+                    light_shader.set("view", view_mat);
+                    light_shader.set("projection", proj_mat);
+
+                    //fs
+                    light_shader.set("cameraPos", camera.m_pos);
+                    light_shader.setMaterialProps(ball_material);
+                    light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                }
+                ball_mesh.draw();
+
+                //drawing the outline - attempt it only with OpenGL 3.3 or WebGL
+                //TODO delete this condition after implementing stencil buffer everywhere
+                #if defined(BUILD_OPENGL_330_CORE) || defined(PLATFORM_WEB)
+                    light_src_shader.use();
+                    ball_texture.bind();
+                    {
+                        //vs
+                        glm::mat4 model_mat(1.f);
+                        model_mat = glm::translate(model_mat, pos);
+                        model_mat = glm::scale(model_mat, scale * outline_scale_factor);
+                        model_mat = glm::translate(model_mat, origin_offset);
+
+                        light_src_shader.set("model", model_mat);
+                        light_src_shader.set("view", view_mat);
+                        light_src_shader.set("projection", proj_mat);
+
+                        //fs
+                        light_src_shader.set("lightSrcColor", outline_color);
+                    }
+
+                    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                    // glDisable(GL_DEPTH_TEST); //TODO this also?
+                    glStencilMask(0x00); // disable writing to the stencil buffer
+                    ball_mesh.draw();
+                #endif
+            }
+            glEnable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
+            glDisable(GL_STENCIL_TEST);
+            glStencilMask(0x00);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+            //ball with default material
+            light_shader.use();
+            ball_texture.bind();
+            {
+                glm::vec3 pos = glm::vec3(-2.2f, -0.5f, 2.2f);
+                glm::vec3 scale = glm::vec3(3.f);
+
+                //vs
+                glm::mat4 model_mat(1.f);
+                model_mat = glm::translate(model_mat, pos);
+                model_mat = glm::scale(model_mat, scale);
+
+                glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                light_shader.set("model", model_mat);
+                light_shader.set("normalMat", normal_mat);
+                light_shader.set("view", view_mat);
+                light_shader.set("projection", proj_mat);
+
+                //fs
+                light_shader.set("cameraPos", camera.m_pos);
+                light_shader.setMaterialProps(default_material);
+                light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+            }
+
+            ball_mesh.draw();
+
             //wall
             light_shader.use();
             // brick_texture.bind();
@@ -1048,6 +1239,8 @@ LoopRetVal GameMainLoop::loop()
             }
 
             if (use_fbo) fbo3d.unbind();
+
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
 
         //2D block

@@ -480,144 +480,28 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
 
 int Meshes::Mesh::loadFromObj(const char *obj_file_path)
 {
-    //TODO assert that nothing was loaded before
-    std::unique_ptr<char[]> file_content;
-
-    tinyobj_attrib_t attrib = { 0 };
-    tinyobj_shape_t *shapes = NULL;
-    size_t num_shapes = 0;
-    tinyobj_material_t *materials = NULL;
-    size_t num_materials = 0;
-    //TODO check the file loading
-    file_reader_callback file_reader = [](void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len){
-        if (is_mtl)
-        {
-            //TODO implement this
-            fprintf(stderr, "[WARNING] when loading .obj file '%s' it was requested to load mtl file: '%s', this is currently unimplemented!\n",
-                    obj_filename, filename);
-            return;
-        }
-
-        std::unique_ptr<char[]>* file_content = (std::unique_ptr<char[]>*)ctx;
-
-        *file_content = Utils::getTextFileAsString(filename, len); //TODO check for NULL
-
-        *buf = file_content->get();
-    };
-    unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
-
-    int tinyobj_ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials,
-                                        obj_file_path, file_reader, (void*)&file_content, flags);
-    if (tinyobj_ret != TINYOBJ_SUCCESS)
+    assert(obj_file_path);
+    assert(m_vert_count == 0);
+    assert(m_triangle_count == 0);
+    assert(m_positions.size() == 0);
+    assert(m_texcoords.size() == 0);
+    assert(m_normals.size() == 0);
+    
+    if (Meshes::loadObj(obj_file_path, &m_vert_count, &m_triangle_count,
+                        m_positions, m_texcoords, m_normals, NULL)) // NULL for not loading materials
     {
-        fprintf(stderr, "Failed to parse .obj file at path: '%s'! Error: %d\n", obj_file_path, tinyobj_ret);
-        return 1;
+        return 1; // error is printed inside of loadObj
     }
-
-    //DEBUG
-    /*printf("Shapes: %zu\n", num_shapes);
-    for (size_t i = 0; i < num_shapes; ++i) printf("Shape name: %s, offset: %d, length: %d\n", shapes[i].name, shapes[i].face_offset, shapes[i].length);
-    printf("Materials: %zu\n", num_materials);
-    printf("Faces: %d\n", attrib.num_faces);*/
-
-    if (num_shapes == 0)
-    {
-        fprintf(stderr, "Attempted to load empty .obj file at path: '%s'!", obj_file_path);
-        return 2;
-    }
-
-    //TODO check if those are correct
-    m_triangle_count = attrib.num_face_num_verts; //this is weird
-    m_vert_count = m_triangle_count * 3; //probably calculate this from the iteration
-
-    m_positions.reserve(m_vert_count * 3); // positions have 3 floats
-    m_texcoords.reserve(m_vert_count * 2); // texcoords have 2 floats
-    m_normals.reserve(m_vert_count * 3);   // normals have 3 floats
-
-    const bool normals_included = attrib.num_normals > 0, texcoords_included = attrib.num_texcoords > 0;
-    size_t face_offset = 0;
-
-    for (unsigned int fi = 0; fi < attrib.num_face_num_verts; ++fi)
-    {
-        const unsigned int face_num_verts = attrib.face_num_verts[fi];
-        assert(face_num_verts % 3 == 0); // assume all triangle faces
-
-        for (int t = 0; t < face_num_verts / 3; ++t)
-        {
-            glm::vec3 triangle_normal(0.f);
-
-            for (int ti = 0; ti < 3; ++ti)
-            {
-                const tinyobj_vertex_index_t& idx = attrib.faces[face_offset + 3 * t + ti];
-
-                //position
-                int pos_idx = idx.v_idx;
-                assert(pos_idx >= 0);
-                assert(pos_idx < (int)attrib.num_vertices);
-                m_positions.push_back(attrib.vertices[3 * pos_idx + 0]);
-                m_positions.push_back(attrib.vertices[3 * pos_idx + 1]);
-                m_positions.push_back(attrib.vertices[3 * pos_idx + 2]);
-
-                //texcoords
-                int tex_idx = idx.vt_idx;
-                assert(tex_idx < (int)attrib.num_texcoords);
-
-                if (texcoords_included && tex_idx >= 0)
-                {
-                    m_texcoords.push_back(attrib.texcoords[2 * tex_idx + 0]);
-                    m_texcoords.push_back(attrib.texcoords[2 * tex_idx + 1]);
-                }
-                else // insert 0x0 coordinates as we want texcoords always included anyways
-                {
-                    m_texcoords.push_back(0.f);
-                    m_texcoords.push_back(0.f);
-                }
-
-                //normal
-                int norm_idx = idx.vn_idx;
-                assert(norm_idx < (int)attrib.num_normals);
-
-                glm::vec3 vert_normal;
-                if (normals_included && norm_idx >= 0)
-                {
-                    vert_normal = glm::vec3(attrib.normals[3 * norm_idx + 0],
-                                            attrib.normals[3 * norm_idx + 1],
-                                            attrib.normals[3 * norm_idx + 2]);
-                    if (ti == 0) triangle_normal = vert_normal;
-                }
-                else if (ti == 0)
-                {
-                    //TODO go through all normals afterwards and change each zero normal into valid normal from face position
-                    assert(false);
-                    vert_normal = glm::vec3(0.f);
-                    triangle_normal = vert_normal;
-                }
-                else
-                {
-                    vert_normal = triangle_normal;
-                }
-
-                m_normals.push_back(vert_normal.x);
-                m_normals.push_back(vert_normal.y);
-                m_normals.push_back(vert_normal.z);
-            }
-        }
-
-        face_offset += static_cast<size_t>(face_num_verts);
-    }
-
-    assert(m_vert_count * 3 == m_positions.size());
-    assert(m_vert_count * 2 == m_texcoords.size());
-    assert(m_vert_count * 3 == m_normals.size());
-
-    tinyobj_attrib_free(&attrib);
-    tinyobj_shapes_free(shapes, num_shapes);
-    tinyobj_materials_free(materials, num_materials);
+    assert(m_vert_count > 0);
+    assert(m_triangle_count > 0);
+    assert(m_positions.size() > 0);
+    assert(m_texcoords.size() > 0);
+    assert(m_normals.size() > 0);
 
     if (!upload())
     {
         fprintf(stderr, "Failed to upload loaded mesh from .obj file '%s' into GPU!\n", obj_file_path);
-        return 3;
+        return 2;
     }
 
     return 0;
@@ -681,6 +565,241 @@ void Meshes::Mesh::draw() const
         glDrawArrays(GL_TRIANGLES, 0, m_vbo.vertexCount());
         // glDrawArrays(GL_TRIANGLES, 0, 3);
     m_vbo.unbind(); //TODO unbinding is an OpenGL anti-patter
+}
+
+//Loads geometry and material data out of .obj files with usage of `tinyobj_loader_c`, returns 0 when success, non-zero when error.
+//Optionally can load materials as well.
+int Meshes::loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
+                    std::vector<GLfloat>& out_positions, std::vector<GLfloat>& out_texcoords, std::vector<GLfloat>& out_normals,
+                    std::vector<Lighting::MaterialProps> *out_material_props)
+{
+    std::array<std::unique_ptr<char[]>, 2> file_reader_ctx{}; // index 0 is for .obj file contents and index 1 for .mtl file contents
+    file_reader_callback file_reader = [](void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len)
+    {
+        std::array<std::unique_ptr<char[]>, 2>& file_reader_ctx = *(std::array<std::unique_ptr<char[]>, 2>*)ctx;
+        
+        int idx = static_cast<int>(is_mtl != 0); // 0 when not is_mtl, 1 when is_mtl
+
+        if (file_reader_ctx[idx])
+        {
+            fprintf(stderr, "[WARNING] Failed to load file: '%s' during loading of mesh '%s' as this type of file(%d) was already loaded!\n",
+                    filename, obj_filename, idx);
+            return;
+        }
+
+        file_reader_ctx[idx] = Utils::getTextFileAsString(filename, len); //TODO check for NULL
+        *buf = file_reader_ctx[idx].get();
+    };
+
+    tinyobj_attrib_t attrib = { 0 };
+    tinyobj_shape_t *shapes = NULL;
+    size_t num_shapes = 0;
+    tinyobj_material_t *materials = NULL;
+    size_t num_materials = 0;
+    unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
+
+    int tinyobj_ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials,
+                                        obj_file_path, file_reader, (void*)&file_reader_ctx, flags);
+    if (tinyobj_ret != TINYOBJ_SUCCESS)
+    {
+        fprintf(stderr, "Failed to parse .obj file at path: '%s'! Error: %d\n", obj_file_path, tinyobj_ret);
+        return 1;
+    }
+
+    //DEBUG
+    /*printf("Shapes: %zu\n", num_shapes);
+    for (size_t i = 0; i < num_shapes; ++i) printf("Shape name: %s, offset: %d, length: %d\n", shapes[i].name, shapes[i].face_offset, shapes[i].length);
+    printf("Materials: %zu\n", num_materials);
+    for (size_t i = 0; i < num_materials; ++i) printf("Material name: %s, illum: %d, textures - ambient: %s, diffuse: %s, specular: %s, specular_highlight: %s\n",
+                                                      materials[i].name, materials[i].illum, materials[i].ambient_texname, materials[i].diffuse_texname,
+                                                      materials[i].specular_texname, materials[i].specular_highlight_texname);
+    printf("Faces: %d\n", attrib.num_faces);*/
+
+    if (num_shapes == 0)
+    {
+        fprintf(stderr, "Attempted to load empty .obj file at path: '%s'!", obj_file_path);
+        tinyobj_attrib_free(&attrib);
+        tinyobj_shapes_free(shapes, num_shapes);
+        tinyobj_materials_free(materials, num_materials);
+
+        return 2;
+    }
+
+    //Geometry data
+    //TODO check if those are correct
+    unsigned int triangle_count = attrib.num_face_num_verts; //this is weird
+    unsigned int vert_count = triangle_count * 3; //probably calculate this from the iteration
+
+    out_positions.reserve(vert_count * 3); // positions have 3 floats
+    out_texcoords.reserve(vert_count * 2); // texcoords have 2 floats
+    out_normals.reserve(vert_count * 3);   // normals have 3 floats
+
+    const bool normals_included = attrib.num_normals > 0, texcoords_included = attrib.num_texcoords > 0;
+    size_t face_offset = 0;
+
+    for (unsigned int fi = 0; fi < attrib.num_face_num_verts; ++fi)
+    {
+        const unsigned int face_num_verts = attrib.face_num_verts[fi];
+        assert(face_num_verts % 3 == 0); // assume all triangle faces
+
+        for (int t = 0; t < face_num_verts / 3; ++t)
+        {
+            glm::vec3 triangle_normal(0.f);
+
+            for (int ti = 0; ti < 3; ++ti)
+            {
+                const tinyobj_vertex_index_t& idx = attrib.faces[face_offset + 3 * t + ti];
+
+                //position
+                int pos_idx = idx.v_idx;
+                assert(pos_idx >= 0);
+                assert(pos_idx < (int)attrib.num_vertices);
+                out_positions.push_back(attrib.vertices[3 * pos_idx + 0]);
+                out_positions.push_back(attrib.vertices[3 * pos_idx + 1]);
+                out_positions.push_back(attrib.vertices[3 * pos_idx + 2]);
+
+                //texcoords
+                int tex_idx = idx.vt_idx;
+                assert(tex_idx < (int)attrib.num_texcoords);
+
+                if (texcoords_included && tex_idx >= 0)
+                {
+                    out_texcoords.push_back(attrib.texcoords[2 * tex_idx + 0]);
+                    out_texcoords.push_back(attrib.texcoords[2 * tex_idx + 1]);
+                }
+                else // insert 0x0 coordinates as we want texcoords always included anyways
+                {
+                    out_texcoords.push_back(0.f);
+                    out_texcoords.push_back(0.f);
+                }
+
+                //normal
+                int norm_idx = idx.vn_idx;
+                assert(norm_idx < (int)attrib.num_normals);
+
+                glm::vec3 vert_normal;
+                if (normals_included && norm_idx >= 0)
+                {
+                    vert_normal = glm::vec3(attrib.normals[3 * norm_idx + 0],
+                                            attrib.normals[3 * norm_idx + 1],
+                                            attrib.normals[3 * norm_idx + 2]);
+                    if (ti == 0) triangle_normal = vert_normal;
+                }
+                else if (ti == 0)
+                {
+                    //TODO go through all normals afterwards and change each zero normal into valid normal from face position
+                    assert(false);
+                    vert_normal = glm::vec3(0.f);
+                    triangle_normal = vert_normal;
+                }
+                else
+                {
+                    vert_normal = triangle_normal;
+                }
+
+                out_normals.push_back(vert_normal.x);
+                out_normals.push_back(vert_normal.y);
+                out_normals.push_back(vert_normal.z);
+            }
+        }
+
+        face_offset += static_cast<size_t>(face_num_verts);
+    }
+
+    assert(vert_count * 3 == out_positions.size());
+    assert(vert_count * 2 == out_texcoords.size());
+    assert(vert_count * 3 == out_normals.size());
+
+    if (out_vert_count) *out_vert_count = vert_count;
+    if (out_triangle_count) *out_triangle_count = triangle_count;
+
+    //Material data
+    if (out_material_props && materials)
+    {
+        for (size_t i = 0; i < num_materials; ++i)
+        {
+            const tinyobj_material_t& mat = materials[i];
+            Color3F ambient{static_cast<const GLfloat*>(mat.ambient)},
+                    diffuse{static_cast<const GLfloat*>(mat.diffuse)},
+                    specular{static_cast<const GLfloat*>(mat.specular)};
+            out_material_props->emplace_back(ambient, diffuse, specular, mat.shininess);
+        }
+        assert(out_material_props->size() == num_materials);
+    }
+
+    tinyobj_attrib_free(&attrib);
+    tinyobj_shapes_free(shapes, num_shapes);
+    tinyobj_materials_free(materials, num_materials);
+
+    return 0;
+}
+
+//Loads materials from given .obj files using `tinyobj_loader_c`, returns 0 when success, non-zero when error.
+int Meshes::loadMtl(const char *mtl_file_path, std::vector<Lighting::MaterialProps>& out_material_props)
+{
+    //TODO file contents for .obj file not needed
+    std::array<std::unique_ptr<char[]>, 2> file_reader_ctx{}; // index 0 is for .obj file contents and index 1 for .mtl file contents
+    file_reader_callback file_reader = [](void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len)
+    {
+        std::array<std::unique_ptr<char[]>, 2>& file_reader_ctx = *(std::array<std::unique_ptr<char[]>, 2>*)ctx;
+        
+        int idx = static_cast<int>(is_mtl != 0); // 0 when not is_mtl, 1 when is_mtl
+
+        if (file_reader_ctx[idx])
+        {
+            fprintf(stderr, "[WARNING] Failed to load file: '%s' during loading of material data as this type of file(%d) was already loaded!\n",
+                    filename, idx);
+            return;
+        }
+
+        file_reader_ctx[idx] = Utils::getTextFileAsString(filename, len); //TODO check for NULL
+        *buf = file_reader_ctx[idx].get();
+    };
+
+    tinyobj_material_t *materials = NULL;
+    size_t num_materials = 0;
+
+    // NULL for no .obj file path as we only care about the .mtl file
+    int tinyobj_ret = tinyobj_parse_mtl_file(&materials, &num_materials, mtl_file_path, NULL, file_reader, (void*)&file_reader_ctx);
+    if (tinyobj_ret != TINYOBJ_SUCCESS)
+    {
+        fprintf(stderr, "Failed to parse .mtl file at path: '%s'! Error: %d\n", mtl_file_path, tinyobj_ret);
+        return 1;
+    }
+
+    if (!materials || num_materials == 0)
+    {
+        fprintf(stderr, "No materials found at path: '%s', but parsing did not return an error!\n", mtl_file_path);
+        tinyobj_materials_free(materials, num_materials);
+        return 2;
+    }
+
+    //DEBUG
+    /*printf("Materials: %zu\n", num_materials);
+    for (size_t i = 0; i < num_materials; ++i) printf("Material name: %s, illum: %d, textures - ambient: %s, diffuse: %s, specular: %s, specular_highlight: %s\n",
+                                                      materials[i].name, materials[i].illum, materials[i].ambient_texname, materials[i].diffuse_texname,
+                                                      materials[i].specular_texname, materials[i].specular_highlight_texname);*/
+
+    for (size_t i = 0; i < num_materials; ++i)
+    {
+        const tinyobj_material_t& mat = materials[i];
+        //DEBUG
+        /*printf("loaded material - ambient: %f|%f|%f, diffuse: %f|%f|%f, specular: %f|%f|%f, shinines: %f\n",
+           mat.ambient[0], mat.ambient[1], mat.ambient[2],
+           mat.diffuse[0], mat.diffuse[1], mat.diffuse[2],
+           mat.specular[0], mat.specular[1], mat.specular[2], mat.shininess);*/
+        
+        Color3F ambient{static_cast<const GLfloat*>(mat.ambient)},
+                diffuse{static_cast<const GLfloat*>(mat.diffuse)},
+                specular{static_cast<const GLfloat*>(mat.specular)};
+        //TODO https://www.fileformat.info/format/material/
+        out_material_props.emplace_back(ambient, diffuse, specular, mat.shininess);
+    }
+    assert(out_material_props.size() == num_materials);
+
+    tinyobj_materials_free(materials, num_materials);
+
+    return 0;
 }
 
 

@@ -97,8 +97,12 @@ struct Color3F
     Color3F() = default;
     Color3F(GLfloat r, GLfloat g, GLfloat b)
             : r(r), g(g), b(b) {}
+    Color3F(GLfloat val)
+            : r(val), g(val), b(val) {}
     Color3F(glm::vec3 color)
             : r(color.r), g(color.g), b(color.b) {}
+    Color3F(const GLfloat rgb[])
+            : r(rgb[0]), g(rgb[1]), b(rgb[2]) {}
 };
 
 struct Color
@@ -289,6 +293,8 @@ namespace Lighting
         Color3F m_ambient, m_diffuse, m_specular;
         float m_shininess;
 
+        MaterialProps(Color3F ambient, Color3F diffuse, Color3F specular, float shininess)
+                        : m_ambient(ambient), m_diffuse(diffuse), m_specular(specular), m_shininess(shininess) {}
         MaterialProps(Color3F color, float shininess)
                         : m_ambient(color), m_diffuse(color),
                         m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
@@ -683,6 +689,12 @@ namespace Meshes
         void draw() const;
     };
     
+    int loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
+                std::vector<GLfloat>& out_positions, std::vector<GLfloat>& out_texcoords, std::vector<GLfloat>& out_normals,
+                std::vector<Lighting::MaterialProps> *out_material_props);
+    
+    int loadMtl(const char *mtl_file_path, std::vector<Lighting::MaterialProps>& out_material_props);
+
     //basic global meshes
     // IMPORTANT: needs to get initialized first by calling initBasicMeshes!
     extern VBO unit_quad_pos_only;
@@ -927,10 +939,10 @@ struct GameMainLoop
 
     //VBOs and Meshes
     Meshes::VBO cube_vbo, line_vbo;
-    Meshes::Mesh turret_mesh;
+    Meshes::Mesh turret_mesh, ball_mesh;
 
     //Textures
-    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture, turret_texture;
+    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture, turret_texture, ball_texture;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
@@ -947,7 +959,7 @@ struct GameMainLoop
     bool show_flashlight;
 
     //Materials
-    Lighting::MaterialProps default_material;
+    Lighting::MaterialProps default_material, ball_material;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];

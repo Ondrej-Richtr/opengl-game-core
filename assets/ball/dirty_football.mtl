@@ -1,0 +1,10 @@
+newmtl dirty_football
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd textures/dirty_football_diff_4k.jpg
+map_Ns textures/dirty_football_rough_4k.exr
+map_Bump -bm 1.000000 textures/dirty_football_nor_gl_4k.exr

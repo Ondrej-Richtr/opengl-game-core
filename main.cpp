@@ -90,7 +90,7 @@ static int init(void)
 
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
     //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
-    bool use_fbo = true;
+    bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
 
     assert(!SharedGLContext::instance.has_value());
     SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y);
