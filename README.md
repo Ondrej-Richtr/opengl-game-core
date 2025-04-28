@@ -4,7 +4,7 @@ It uses GLFW3 and OpenGL 3.3 on desktops and OpenGLES 2.0 for the web build.
 
 ## Build
 The only official way to build this project is using [Zig](https://ziglang.org/).
-There is also an experimental CMake support, but I don't recommend it. Currently tested only on Windows with [ninja](https://ninja-build.org/) build system.
+_There is also an experimental CMake support, but I don't recommend it, currently only tested on Windows with [ninja](https://ninja-build.org/) build system._
 
 Other method might be compiling everything yourself with `gcc` or `clang`, but that requires linking all needed libraries by yourself.
 
@@ -44,16 +44,16 @@ Similiarily you might get `error: 'GLFW/glfw3.h' file not found` error message, 
 Requires CMake version 3.12 or higher. If you get into dependency issues you will have to modify the `CMakeLists.txt` yourself.
 
 Create the build folder:
-```sh
+```console
 mkdir cmake-build
 cd cmake-build
 ```
 Generate build files and run the build system:
-```sh
+```console
 cmake ..
 cmake --build .
 ```
-Resulting binary gets written into `build/bin` folder.
+Resulting binary gets written into `cmake-build/bin` folder.
 
 ## Web build
 This project is structured in a way that it is possible to compile it for the web (wasm with WebGL).
