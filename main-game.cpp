@@ -166,6 +166,15 @@ bool GameMainLoop::initTextures()
 {
     using Texture = Textures::Texture2D;
 
+    //White pixel
+    new (&white_pixel) Texture(Color3{255, 255, 255});
+    if (white_pixel.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create white 1x1 texture!\n");
+        white_pixel.~Texture2D();
+        return false;
+    }
+
     //Bricks
     const char *bricks_path = "assets/bricks2_512.png";
     brick_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
@@ -174,6 +183,7 @@ bool GameMainLoop::initTextures()
     if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         return false;
     }
@@ -185,6 +195,7 @@ bool GameMainLoop::initTextures()
     if (brick_alt_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick alternative texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         return false;
@@ -198,6 +209,7 @@ bool GameMainLoop::initTextures()
     if (orb_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create orb texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -213,6 +225,7 @@ bool GameMainLoop::initTextures()
     if (target_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create target texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -227,6 +240,7 @@ bool GameMainLoop::initTextures()
     if (turret_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create turret texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -241,7 +255,8 @@ bool GameMainLoop::initTextures()
     new (&ball_texture) Texture(ball_tex_path);
     if (ball_texture.m_id == empty_id)
     {
-        fprintf(stderr, "Failed to create turret texture!\n");
+        fprintf(stderr, "Failed to create ball texture!\n");
+        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -251,17 +266,37 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Water specular map
+    const char *water_specular_map_path = "assets/water_specular_map.jpg";
+
+    new (&water_specular_map) Texture(water_specular_map_path);
+    if (water_specular_map.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create water specular map!\n");
+        white_pixel.~Texture2D();
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        ball_texture.~Texture2D();
+        water_specular_map.~Texture2D();
+        return false;
+    }
+
     return true;
 }
 
 void GameMainLoop::deinitTextures()
 {
+    white_pixel.~Texture2D();
     brick_texture.~Texture2D();
     brick_alt_texture.~Texture2D();
     orb_texture.~Texture2D();
     target_texture.~Texture2D();
     turret_texture.~Texture2D();
     ball_texture.~Texture2D();
+    water_specular_map.~Texture2D();
 }
 
 /*bool GameMainLoop::initRenderBuffers()
@@ -449,39 +484,52 @@ void GameMainLoop::deinitLighting()
 void GameMainLoop::initMaterials()
 {
     using MaterialProps = Lighting::MaterialProps;
+    using Material = Lighting::Material;
 
-    //Default
-    new (&default_material) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
+    //Default props
+    new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
-    //Ball
-    const char *ball_mtl_path = "assets/ball/dirty_football.mtl";
+    //Ball props
+    // const char *ball_mtl_path = "assets/ball/dirty_football.mtl";
 
     //TODO proper materials - https://www.fileformat.info/format/material/
     // std::vector<MaterialProps> ball_materials{};
     // if (Meshes::loadMtl(ball_mtl_path, ball_materials) || ball_materials.size() == 0)
     // {
     //     fprintf(stderr, "[WARNING] Failed to load material for ball mesh, default material will be used.\n");
-    //     ball_material = default_material;
+    //     ball_material_props = default_material;
     // }
     // else
     // {
-    //     if (ball_materials.size() > 1) fprintf(stderr, "[WARNING] Multiple materials loaded for ball mesh, using the first one.\n");
-    //     ball_material = ball_materials[0];
+    //     if (ball_materials_props.size() > 1) fprintf(stderr, "[WARNING] Multiple materials loaded for ball mesh, using the first one.\n");
+    //     ball_material_props = ball_materials[0];
     // }
     // printf("ball material - ambient: %f|%f|%f, diffuse: %f|%f|%f, specular: %f|%f|%f, shinines: %f\n",
     //        ball_material.m_ambient.r, ball_material.m_ambient.g, ball_material.m_ambient.b,
     //        ball_material.m_diffuse.r, ball_material.m_diffuse.g, ball_material.m_diffuse.b,
     //        ball_material.m_specular.r, ball_material.m_specular.g, ball_material.m_specular.b, ball_material.m_shininess);
 
-    // ball_material = default_material;
-    ball_material = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.2f}, 1.f};
+    // ball_material_props = default_material_props;
+    const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.2f}, 1.f};
+
+    //Default material
+    new (&default_material) Material(default_material_props, white_pixel, white_pixel);
+
+    //Ball material
+    new (&ball_material) Material(ball_material_props, ball_texture, white_pixel); //TODO specular map
+
+    //Target material
+    const MaterialProps target_material_props{Color3F{1.f}, Color3F{1.f}, Color3F{0.f}, 1.f};
+    new (&target_material) Material(target_material_props, target_texture, white_pixel);
 }
 
 void GameMainLoop::deinitMaterials()
 {
-    //TODO useless now as there is no destructor yet
-    default_material.~MaterialProps();
-    ball_material.~MaterialProps();
+    default_material_props.~MaterialProps(); //TODO useless now as there is no destructor yet
+
+    default_material.~Material();
+    ball_material.~Material();
+    target_material.~Material();
 }
 
 bool GameMainLoop::initUI()
@@ -843,7 +891,7 @@ LoopRetVal GameMainLoop::loop()
             glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
                                         - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
             glm::vec3 pos = target_pos_offset + Game::Target::generateXZPosition(target_rng_width, target_rng_height, wall_spawnable_area);
-            targets.emplace_back(target_vbo, target_texture, default_material, pos, current_frame_time);
+            targets.emplace_back(target_vbo, target_material, pos, current_frame_time);
 
             //NOTE simple solution, might produce slower spawn rates on inconsistent/low fps
             target_last_spawn_time = current_frame_time;
@@ -1022,7 +1070,6 @@ LoopRetVal GameMainLoop::loop()
 
             //cube
             light_shader.use();
-            brick_texture.bind();
             {
                 glm::vec3 pos = glm::vec3(-4.f, 0.35f, -0.5f);
 
@@ -1040,7 +1087,9 @@ LoopRetVal GameMainLoop::loop()
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(default_material);
+                light_shader.setMaterialProps(default_material_props);
+                light_shader.bindDiffuseMap(brick_texture);
+                light_shader.bindSpecularMap(white_pixel);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1050,7 +1099,6 @@ LoopRetVal GameMainLoop::loop()
 
             //turret
             light_shader.use();
-            turret_texture.bind();
             {
                 glm::vec3 pos = glm::vec3(4.3f, 0.f, -1.5f);
                 glm::vec3 scale = glm::vec3(0.3f);
@@ -1070,7 +1118,9 @@ LoopRetVal GameMainLoop::loop()
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(default_material);
+                light_shader.setMaterialProps(default_material_props);
+                light_shader.bindDiffuseMap(turret_texture);
+                light_shader.bindSpecularMap(white_pixel);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
             
@@ -1078,7 +1128,6 @@ LoopRetVal GameMainLoop::loop()
 
             //ball
             light_shader.use();
-            ball_texture.bind();
             {
                 glm::vec3 pos = glm::vec3(2.2f, 0.f, 2.2f);
                 glm::vec3 scale = glm::vec3(3.f);
@@ -1097,7 +1146,7 @@ LoopRetVal GameMainLoop::loop()
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(ball_material);
+                light_shader.setMaterial(ball_material);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
             
@@ -1117,7 +1166,6 @@ LoopRetVal GameMainLoop::loop()
 
                 //drawing the object itself
                 light_shader.use();
-                ball_texture.bind();
                 {
                     //vs
                     glm::mat4 model_mat(1.f);
@@ -1134,7 +1182,7 @@ LoopRetVal GameMainLoop::loop()
 
                     //fs
                     light_shader.set("cameraPos", camera.m_pos);
-                    light_shader.setMaterialProps(ball_material);
+                    light_shader.setMaterial(ball_material);
                     light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
                 }
                 ball_mesh.draw();
@@ -1174,7 +1222,6 @@ LoopRetVal GameMainLoop::loop()
 
             //ball with default material
             light_shader.use();
-            ball_texture.bind();
             {
                 glm::vec3 pos = glm::vec3(-2.2f, -0.5f, 2.2f);
                 glm::vec3 scale = glm::vec3(3.f);
@@ -1193,7 +1240,9 @@ LoopRetVal GameMainLoop::loop()
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(default_material);
+                light_shader.setMaterialProps(default_material_props);
+                light_shader.bindDiffuseMap(ball_texture);
+                light_shader.bindSpecularMap(white_pixel);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1201,8 +1250,6 @@ LoopRetVal GameMainLoop::loop()
 
             //wall
             light_shader.use();
-            // brick_texture.bind();
-            brick_alt_texture.bind();
             {
                 //vs
                 glm::mat4 model_mat(1.f);
@@ -1217,7 +1264,9 @@ LoopRetVal GameMainLoop::loop()
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(default_material);
+                light_shader.setMaterialProps(default_material_props);
+                light_shader.bindDiffuseMap(brick_alt_texture);
+                light_shader.bindSpecularMap(white_pixel);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1283,13 +1332,11 @@ LoopRetVal GameMainLoop::loop()
             //                     screen_middle, glm::vec2(50.f),
             //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
-            //TODO fix crosshair drawing
             //crosshair
             const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
             Drawing::crosshair(screen_line_shader, line_vbo, win_fbo_size,
                                 glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
 
-            //TODO fix UI drawing
             //UI drawing
             glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
             if (!ui.draw(win_fbo_size))

@@ -47,7 +47,11 @@
 #define UNIFORM_MATERIAL_NAME "material"
 #define UNIFORM_MATERIAL_AMBIENT "ambient"
 #define UNIFORM_MATERIAL_DIFFUSE "diffuse"
+#define UNIFORM_MATERIAL_DIFFUSE_MAP "diffuseMap"
+#define UNIFORM_MATERIAL_DIFFUSE_MAP_UNIT 0
 #define UNIFORM_MATERIAL_SPECULAR "specular"
+#define UNIFORM_MATERIAL_SPECULAR_MAP "specularMap"
+#define UNIFORM_MATERIAL_SPECULAR_MAP_UNIT 1
 #define UNIFORM_MATERIAL_SHININESS "shininess"
 
 #define UNIFORM_LIGHTPROPS_ATTRNAME "props"
@@ -119,6 +123,15 @@ struct Color
         return ColorF{ (GLfloat)r / 255.f, (GLfloat)g / 255.f,
                        (GLfloat)b / 255.f, (GLfloat)a / 255.f };
     }
+};
+
+struct Color3
+{
+    unsigned char r = 0, g = 0, b = 0;
+
+    Color3() = default;
+    Color3(unsigned char r, unsigned char g, unsigned char b)
+            : r(r), g(g), b(b) {}
 };
 
 namespace Drawing
@@ -299,6 +312,15 @@ namespace Lighting
         MaterialProps(Color3F color, float shininess)
                         : m_ambient(color), m_diffuse(color),
                         m_specular(0.5f, 0.5f, 0.5f), m_shininess(shininess) {}
+    };
+
+    struct Material
+    {
+        MaterialProps m_props;
+        const Textures::Texture2D &m_diffuse_map, &m_specular_map;
+
+        Material(MaterialProps props, const Textures::Texture2D& diffuse_map, const Textures::Texture2D& specular_map)
+                    : m_props(props), m_diffuse_map(diffuse_map), m_specular_map(specular_map) {}
     };
 
     struct LightProps //should correspond to LightProps struct in shaders
@@ -508,7 +530,12 @@ namespace Shaders
         void set(const char *uniform_name, const glm::mat3& matrix) const;
         void set(const char *uniform_name, const glm::mat4& matrix) const;
 
-        void setMaterialProps(const Lighting::MaterialProps& material) const;
+        void bindTexture(const char *sampler2d_name, const Textures::Texture2D& texture, unsigned int unit = 0) const;
+        void bindDiffuseMap(const Textures::Texture2D& diffuse_map, int map_bind_offset = 0) const;
+        void bindSpecularMap(const Textures::Texture2D& specular_map, int map_bind_offset = 0) const;
+
+        void setMaterialProps(const Lighting::MaterialProps& material_props) const;
+        void setMaterial(const Lighting::Material& material, int map_bind_offset = 0) const;
         bool setLight(const char *uniform_name, const Lighting::Light& light, int idx = -1) const;
         int setLights(const char *uniform_array_name, const char *uniform_arrray_size_name,
                       const std::vector<std::reference_wrapper<const Lighting::Light>>& lights) const;
@@ -550,6 +577,7 @@ namespace Textures
         Texture2D(const char *image_path, bool generate_mipmaps = default_generate_mipmaps);
         Texture2D(const void *img_data, unsigned int width, unsigned int height,
                   bool generate_mipmaps = default_generate_mipmaps);
+        Texture2D(Color3 color);
         ~Texture2D();
 
         void bind(unsigned int unit = 0) const;
@@ -810,14 +838,12 @@ namespace Game
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
 
         const Meshes::VBO& m_vbo;
-        const Textures::Texture2D& m_texture;
-        const Lighting::MaterialProps& m_material;
+        const Lighting::Material& m_material;
 
         glm::vec3 m_pos;
         double m_spawn_time;
 
-        Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const Lighting::MaterialProps& material,
-               glm::vec3 pos, double spawn_time);
+        Target(const Meshes::VBO& vbo, const Lighting::Material& material, glm::vec3 pos, double spawn_time);
         Target(const Target& other);
         ~Target() = default;
 
@@ -943,7 +969,8 @@ struct GameMainLoop
     Meshes::Mesh turret_mesh, ball_mesh;
 
     //Textures
-    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture, turret_texture, ball_texture;
+    Textures::Texture2D white_pixel, brick_texture, brick_alt_texture, orb_texture, target_texture,
+                        turret_texture, ball_texture, water_specular_map;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
@@ -959,8 +986,9 @@ struct GameMainLoop
     Lighting::SpotLight flashlight;
     bool show_flashlight;
 
-    //Materials
-    Lighting::MaterialProps default_material, ball_material;
+    //Materials and MaterialProps
+    Lighting::MaterialProps default_material_props;
+    Lighting::Material default_material, ball_material, target_material;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];

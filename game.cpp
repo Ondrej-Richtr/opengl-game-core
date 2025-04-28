@@ -3,13 +3,11 @@
 #include "game.hpp"
 
 
-Game::Target::Target(const Meshes::VBO& vbo, const Textures::Texture2D& texture, const Lighting::MaterialProps& material,
-                     glm::vec3 pos, double spawn_time)
-                        : m_vbo(vbo), m_texture(texture), m_material(material),
-                          m_pos(pos), m_spawn_time(spawn_time) {}
+Game::Target::Target(const Meshes::VBO& vbo, const Lighting::Material& material, glm::vec3 pos, double spawn_time)
+                        : m_vbo(vbo), m_material(material), m_pos(pos), m_spawn_time(spawn_time) {}
 
 Game::Target::Target(const Target& other)
-                        : m_vbo(other.m_vbo), m_texture(other.m_texture), m_material(other.m_material),
+                        : m_vbo(other.m_vbo), m_material(other.m_material),
                           m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
 
 Game::Target& Game::Target::operator=(const Game::Target& other)

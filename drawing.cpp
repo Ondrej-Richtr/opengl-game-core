@@ -394,7 +394,6 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
     glm::vec2 target_size = target.getSize(current_frame_time);
 
     shader.use();
-    target.m_texture.bind();
     {
         //vs
         glm::mat4 model_mat(1.f);
@@ -411,7 +410,7 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
 
         //fs
         shader.set("cameraPos", camera.m_pos);
-        shader.setMaterialProps(target.m_material);
+        shader.setMaterial(target.m_material);
         
         int lights_set = shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights);
         assert(lights_set >= 0);

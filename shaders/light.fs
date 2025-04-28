@@ -8,9 +8,11 @@
 
 struct Material
 {
-    vec3 ambient; //TODO same as texture in texture.fs
-    vec3 diffuse; //TODO same as texture in texture.fs
+    vec3 ambient;
+    vec3 diffuse;
+    sampler2D diffuseMap; // basically the inputTexture
     vec3 specular;
+    sampler2D specularMap;
     float shininess;
 };
 
@@ -39,48 +41,41 @@ IN_ATTR vec3 FragPos;            //position in world space
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec3 Normal;
 
-uniform sampler2D inputTexture;
+// uniform sampler2D inputTexture;
 uniform vec3 cameraPos;     //position in world space
 uniform Material material;
 uniform Light lights[LIGHTS_MAX_AMOUNT]; //TODO this might not work everywhere!
 uniform int lightsCount;
 
-vec3 calc_dir_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 dir)
+vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
 {
-    vec3 result = vec3(0.0);
     vec3 lightDir = normalize(-dir);
 
     //ambient
-    result += material.ambient * props.ambient;
+    float amb = 1.0;
 
     //diffuse
     float diff = max(dot(norm, lightDir), 0.0);
-    result += diff * (material.diffuse * props.diffuse);
 
     //specular
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
-    result += spec * (material.specular * props.specular);
 
-    return result;
+    return vec3(amb, diff, spec);
 }
 
-vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos, vec3 atten_coefs)
+vec3 calc_point_light(vec3 norm, vec3 cameraDir, vec3 lightPos, vec3 atten_coefs)
 {
-    vec3 result = vec3(0.0);
-
     //ambient
-    result += material.ambient * props.ambient;
+    float amb = 1.0;
 
     //diffuse
     vec3 dirToLight = normalize(lightPos - FragPos);
     float diff = max(dot(norm, dirToLight), 0.0);
-    result += diff * (material.diffuse * props.diffuse);
 
     //specular
     vec3 reflectDir = reflect(-dirToLight, norm);
     float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
-    result += spec * (material.specular * props.specular);
 
     //attenuation
     float distance = length(lightPos - FragPos);
@@ -88,15 +83,13 @@ vec3 calc_point_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightPos
                         (atten_coefs.x +                           // constant component
                          atten_coefs.y *  distance +               // linear component
                          atten_coefs.z * (distance * distance));   // quadratic component
-    result *= attenuation;
 
-    return result;
+    return vec3(amb, diff, spec) * attenuation;
 }
 
-vec3 calc_spot_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightDir, vec3 lightPos,
+vec3 calc_spot_light(vec3 norm, vec3 cameraDir, vec3 lightDir, vec3 lightPos,
                      float cosCutoffIn, float cosCutoffOut, vec3 atten_coefs)
 {
-    vec3 result = vec3(0.0);
     vec3 dirToLight = normalize(lightPos - FragPos); // direction of the light source from the fragment
 
     float cosTheta = dot(dirToLight, normalize(-lightDir)); // -lightDir as we have directions from the fragment
@@ -104,16 +97,14 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightDir,
     float intensity = clamp((cosTheta - cosCutoffOut) / (cosCutoffIn - cosCutoffOut), 0.0, 1.0);
 
     //ambient
-    result += material.ambient * props.ambient; // intensiity is NOT applied for ambient light
+    float amb = 1.0; // intensity is NOT applied for ambient light
 
     //diffuse
-    float diff = max(dot(norm, dirToLight), 0.0);
-    result += (intensity * diff) * (material.diffuse * props.diffuse); // apply intensity
+    float diff = max(dot(norm, dirToLight), 0.0) * intensity; // intensity applied
 
     //specular
     vec3 reflectDir = reflect(-dirToLight, norm);
-    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
-    result += (intensity * spec) * (material.specular * props.specular); // also apply intensity
+    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess) * intensity; // intensity applied
 
     //attenuation
     float distance = length(lightPos - FragPos);
@@ -121,45 +112,49 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, LightProps props, vec3 lightDir,
                         (atten_coefs.x +                           // constant component
                          atten_coefs.y *  distance +               // linear component
                          atten_coefs.z * (distance * distance));   // quadratic component
-    result *= attenuation;
 
-    return result;
+    return vec3(amb, diff, spec) * attenuation;
 }
 
 void main()
 {
-    vec4 sampled = TEXTURE2D(inputTexture, TexCoord);
+    vec4 diffuse_sample = TEXTURE2D(material.diffuseMap, TexCoord);
     // discard the fragments with too small alpha values
     //TODO aplha blending
-    if (sampled.a < ALPHA_MIN_THRESHOLD) discard;
+    if (diffuse_sample.a < ALPHA_MIN_THRESHOLD) discard;
 
+    vec3 specular_sample = TEXTURE2D(material.specularMap, TexCoord).rgb;
     vec3 norm = normalize(Normal);
     vec3 cameraDir = normalize(cameraPos - FragPos);
     
     //light
-    vec3 lightColor = vec3(0.0);
+    vec3 color = vec3(0.0);
 
-    for (int i = 0; i < LIGHTS_MAX_AMOUNT; ++i) //DEBUG LIGHTS_MAX_AMOUNT
+    for (int i = 0; i < LIGHTS_MAX_AMOUNT; ++i)
     {
         //NOTE this might seem strange, but checking the bounds inside the for loop condition does not work with glsl version 100!
         if (i >= lightsCount) break;
 
+        vec3 phong_light_coefs = vec3(0.0);
         if (lights[i].type == 0) // lights[i] is a directional light
         {
-            lightColor += calc_dir_light(norm, cameraDir, lights[i].props, lights[i].dir);
+            phong_light_coefs = calc_dir_light(norm, cameraDir, lights[i].dir);
         }
         else if (lights[i].type == 1) // lights[i] is a point light
         {
-            lightColor += calc_point_light(norm, cameraDir, lights[i].props, lights[i].pos, lights[i].atten_coefs);
+            phong_light_coefs = calc_point_light(norm, cameraDir, lights[i].pos, lights[i].atten_coefs);
         }
         else if (lights[i].type == 2) // lights[i] is a spot light
         {
-            lightColor += calc_spot_light(norm, cameraDir, lights[i].props, lights[i].dir, lights[i].pos,
-                                          lights[i].cosInnerCutoff, lights[i].cosOuterCutoff, lights[i].atten_coefs);
+            phong_light_coefs = calc_spot_light(norm, cameraDir, lights[i].dir, lights[i].pos,
+                                                lights[i].cosInnerCutoff, lights[i].cosOuterCutoff, lights[i].atten_coefs);
         }
+
+        color += phong_light_coefs.x * lights[i].props.ambient * material.ambient * diffuse_sample.rgb; // ambient
+        color += phong_light_coefs.y * lights[i].props.diffuse * material.diffuse * diffuse_sample.rgb; // diffuse
+        color += phong_light_coefs.z * lights[i].props.specular * material.specular * specular_sample;  // specular
     }
 
     //result
-    vec3 color = lightColor * sampled.rgb;
-    OUTPUT_COLOR(vec4(color, sampled.a));
+    OUTPUT_COLOR(vec4(color, diffuse_sample.a));
 }

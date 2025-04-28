@@ -153,14 +153,42 @@ void Shaders::Program::set(const char *uniform_name, const glm::mat4& matrix) co
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-void Shaders::Program::setMaterialProps(const Lighting::MaterialProps& material) const
+void Shaders::Program::bindTexture(const char *sampler2d_name, const Textures::Texture2D& texture, unsigned int unit) const
+{
+    texture.bind(unit);
+    set(sampler2d_name, static_cast<GLint>(unit));
+}
+
+void Shaders::Program::bindDiffuseMap(const Textures::Texture2D& diffuse_map, int map_bind_offset) const
+{
+    bindTexture(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_DIFFUSE_MAP, diffuse_map,
+                UNIFORM_MATERIAL_DIFFUSE_MAP_UNIT + map_bind_offset);
+}
+
+void Shaders::Program::bindSpecularMap(const Textures::Texture2D& specular_map, int map_bind_offset) const
+{
+    bindTexture(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SPECULAR_MAP, specular_map,
+                UNIFORM_MATERIAL_SPECULAR_MAP_UNIT + map_bind_offset);
+}
+
+void Shaders::Program::setMaterialProps(const Lighting::MaterialProps& material_props) const
 {
     //IDEA could use constexpr and templates
     //(see https://stackoverflow.com/questions/38955940/how-to-concatenate-static-strings-at-compile-time)
-    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_AMBIENT, material.m_ambient);
-    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_DIFFUSE, material.m_diffuse);
-    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SPECULAR, material.m_specular);
-    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material.m_shininess);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_AMBIENT, material_props.m_ambient);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_DIFFUSE, material_props.m_diffuse);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SPECULAR, material_props.m_specular);
+    set(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_SHININESS, material_props.m_shininess);
+}
+
+void Shaders::Program::setMaterial(const Lighting::Material& material, int map_bind_offset) const
+{
+    //props
+    setMaterialProps(material.m_props);
+
+    //maps
+    bindDiffuseMap(material.m_diffuse_map);
+    bindSpecularMap(material.m_specular_map);
 }
 
 bool Shaders::Program::setLight(const char *uniform_name, const Lighting::Light& light, int idx) const

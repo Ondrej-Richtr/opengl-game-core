@@ -7,9 +7,17 @@
 Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum component_type)
             : m_id(empty_id), m_width(width), m_height(height)
 {
-    // generate and bind the OpenGL texture object
+    // generate the OpenGL texture object
     glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL texture!\n");
+        m_width = 0;
+        m_height = 0;
+        return;
+    }
 
+    // bind the OpenGL texture object
     glBindTexture(GL_TEXTURE_2D, m_id);
 
     glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, NULL);
@@ -31,6 +39,14 @@ Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum c
 Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
             : m_id(empty_id), m_width(0), m_height(0)
 {
+    // generate the OpenGL texture object
+    glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL texture!\n");
+        return;
+    }
+    
     // load the image data using stbi
     int wanted_channels = 4, // we force 4 channels as we always want RGBA textures
         loaded_width, loaded_height, actual_channels;
@@ -47,9 +63,7 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
     m_width = loaded_width;
     m_height = loaded_height;
 
-    // generate and bind the OpenGL texture object
-    glGenTextures(1, &m_id);
-
+    // bind the OpenGL texture object
     glBindTexture(GL_TEXTURE_2D, m_id);
 
     // set the texture wrapping to default values
@@ -77,9 +91,17 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
 Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigned int height, bool generate_mipmaps)
             : m_id(empty_id), m_width(width), m_height(height)
 {
-    // generate and bind the OpenGL texture object
+    // generate the OpenGL texture object
     glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL texture!\n");
+        m_width = 0;
+        m_height = 0;
+        return;
+    }
 
+    // bind the OpenGL texture object
     glBindTexture(GL_TEXTURE_2D, m_id);
 
     // set the texture wrapping to default values
@@ -99,6 +121,38 @@ Textures::Texture2D::Texture2D(const void *img_data, unsigned int width, unsigne
         glGenerateMipmap(GL_TEXTURE_2D);
         assert(!Utils::checkForGLErrorsAndPrintThem()); //TODO make this an actual check + error
     }
+
+    // unbind the texture just in case
+    glBindTexture(GL_TEXTURE_2D, empty_id);
+}
+
+Textures::Texture2D::Texture2D(Color3 color) // creates 1x1 texture from singular color
+                : m_id(empty_id), m_width(1), m_height(1)
+{
+    // generate the OpenGL texture object
+    glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL texture!\n");
+        m_width = 0;
+        m_height = 0;
+        return;
+    }
+
+    // bind the OpenGL texture object
+    glBindTexture(GL_TEXTURE_2D, m_id);
+
+    // set the simplest texture wrapping and filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // upload the singular pixel onto gpu
+    unsigned char pixel[] = { color.r, color.g, color.b };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)pixel);
+    
+    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
 
     // unbind the texture just in case
     glBindTexture(GL_TEXTURE_2D, empty_id);
