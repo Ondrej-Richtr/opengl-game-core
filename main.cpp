@@ -80,14 +80,7 @@ static int init(void)
         }
     #endif
 
-    //Inits
-    if (!Meshes::initBasicMeshes())
-    {
-        fprintf(stderr, "Failed to initialize basic meshes!\n");
-        glfwTerminate();
-        return 4;
-    }
-
+    //initializing shared gl context
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
     //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
     bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
@@ -98,7 +91,7 @@ static int init(void)
     {
         fprintf(stderr, "Failed to initialize shared GL context!\n");
         glfwTerminate();
-        return 5;
+        return 4;
     }
 
     puts("Setup end.");

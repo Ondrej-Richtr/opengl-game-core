@@ -6,7 +6,8 @@
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
 SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height)
-                    : fbo3d_tex(init_width, init_height, GL_RGB),
+                    : unit_quad_pos_only(), white_pixel_tex(Color3{ 255, 255, 255 }),
+                      fbo3d_tex(init_width, init_height, GL_RGB),
                       #ifdef USE_COMBINED_FBO_BUFFERS
                         fbo3d_rbo_depth_stencil(empty_id),
                       #else
@@ -15,7 +16,14 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
                       #endif
                       fbo3d(), use_fbo3d(use_fbo3d)
 {
+    //checking the constructors
     assert(!Utils::checkForGLError());
+
+    if (white_pixel_tex.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
+        return;
+    }
 
     if (fbo3d_tex.m_id == empty_id)
     {
@@ -23,6 +31,15 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
         return;
     }
 
+    //VBOs and Meshes
+    unit_quad_pos_only = std::move(Meshes::generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::none, false));
+    if (unit_quad_pos_only.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to initialize unit quad VBO!\n");
+        return;
+    }
+
+    //renderbuffers
     //TODO render buffer object abstraction
     {
         assert(!Utils::checkForGLError());
@@ -67,7 +84,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
 
     glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
-    //initializing framebuffer itself
+    //framebuffer 3D
     using FrameBuffer = Drawing::FrameBuffer;
 
     fbo3d.init();
@@ -106,9 +123,12 @@ SharedGLContext::~SharedGLContext()
         glDeleteBuffers(1, &fbo3d_rbo_stencil);
     #endif
 }
+
 bool SharedGLContext::isInitialized() const
 {
-    return fbo3d.m_id != empty_id;
+    return unit_quad_pos_only.m_id != empty_id &&
+           white_pixel_tex.m_id != empty_id &&
+           fbo3d.m_id != empty_id;
 }
 
 glm::ivec2 SharedGLContext::getFbo3DSize() const

@@ -801,19 +801,3 @@ int Meshes::loadMtl(const char *mtl_file_path, std::vector<Lighting::MaterialPro
 
     return 0;
 }
-
-
-Meshes::VBO Meshes::unit_quad_pos_only;
-// Meshes::VBO Meshes::unit_quad_pos_uv_only;
-
-bool Meshes::initBasicMeshes()
-{
-    assert(unit_quad_pos_only.m_id == empty_id);
-
-    unit_quad_pos_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::none, false));
-
-    // unit_quad_pos_uv_only = std::move(generateQuadVBO(glm::vec2(1.f), glm::vec2(0.f), Meshes::TexcoordStyle::stretch, false));
-
-    return unit_quad_pos_only.m_id != empty_id;
-        //    unit_quad_pos_uv_only.m_id != empty_id;
-}

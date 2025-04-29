@@ -285,7 +285,9 @@ void Drawing::clear(Color color)
 void Drawing::texturedRectangle(const Shaders::Program& tex_rect_shader, const Textures::Texture2D& textureRect,
                                 glm::vec2 screen_res, glm::vec2 dstPos, glm::vec2 dstSize)
 {
-    const Meshes::VBO& vbo = Meshes::unit_quad_pos_only;
+    const SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
+    const Meshes::VBO& vbo = shared_gl_context.unit_quad_pos_only;
     assert(vbo.m_id != empty_id);
 
     glm::mat4 transform(1.f);
@@ -312,7 +314,9 @@ void Drawing::texturedRectangle2(const Shaders::Program& tex_rect_shader, const 
                                  const Textures::Texture2D& background, const Textures::Texture2D& foreground,
                                  glm::vec2 dstPos, glm::vec2 dstSize)
 {
-    const Meshes::VBO& vbo = Meshes::unit_quad_pos_only;
+    const SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
+    const Meshes::VBO& vbo = shared_gl_context.unit_quad_pos_only;
     assert(vbo.m_id != empty_id);
 
     glm::mat4 transform(1.f);

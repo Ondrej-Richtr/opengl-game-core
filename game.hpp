@@ -550,10 +550,6 @@ namespace Shaders
     void setupVertexAttribute_ubyte(GLuint location, size_t count, size_t offset, size_t stride, bool offset_in_bytes = false);
 
     void disableVertexAttribute(GLuint location);
-
-    //basic static shader programs
-    // IMPORTANT: needs to get initialized first by calling initBasicShaderPrograms!
-    // bool initBasicShaderPrograms();
 }
 
 //textures.cpp
@@ -584,6 +580,7 @@ namespace Textures
 
         void changeTexture(unsigned int new_width, unsigned int new_height,
                            GLenum component_type = GL_RGBA, const void *new_data = NULL);
+        void changeTextureToPixel(Color3 color);
 
         Drawing::FrameBuffer::Attachment asFrameBufferAttachment() const;
     };
@@ -597,8 +594,6 @@ namespace Meshes
             #define USE_VAO
         #endif
     #endif
-
-    //TODO meshes - verts, normals, texcoords, indices for faces, (material?)
 
     constexpr unsigned int attribute3d_pos_amount = 3;       // vec3
     constexpr unsigned int attribute3d_texcoord_amount = 2;  // vec2
@@ -699,6 +694,7 @@ namespace Meshes
     
     struct Mesh
     {
+        //TODO add shapes - offset + size into vectors, add draw specific shape
         unsigned int m_vert_count = 0, m_triangle_count = 0;
 
         std::vector<GLfloat> m_positions;
@@ -723,13 +719,6 @@ namespace Meshes
                 std::vector<Lighting::MaterialProps> *out_material_props);
     
     int loadMtl(const char *mtl_file_path, std::vector<Lighting::MaterialProps>& out_material_props);
-
-    //basic global meshes
-    // IMPORTANT: needs to get initialized first by calling initBasicMeshes!
-    extern VBO unit_quad_pos_only;
-    // extern VBO unit_quad_pos_uv_only;
-
-    bool initBasicMeshes();
 }
 
 //movement.cpp
@@ -860,9 +849,16 @@ namespace Game
 }
 
 //shared_gl_context.cpp
-class SharedGLContext
+struct SharedGLContext
 {
-    //3D framebuffer
+    //VBOs and Meshes
+    Meshes::VBO unit_quad_pos_only;
+
+    //Basic Textures
+    Textures::Texture2D white_pixel_tex;
+
+    //3D Framebuffer
+private:
     Textures::Texture2D fbo3d_tex;
     #ifdef USE_COMBINED_FBO_BUFFERS
         GLuint fbo3d_rbo_depth_stencil;
@@ -871,7 +867,6 @@ class SharedGLContext
         GLuint fbo3d_rbo_stencil;
     #endif
     Drawing::FrameBuffer fbo3d;
-
 public:
     bool use_fbo3d;
 
@@ -969,7 +964,7 @@ struct GameMainLoop
     Meshes::Mesh turret_mesh, ball_mesh;
 
     //Textures
-    Textures::Texture2D white_pixel, brick_texture, brick_alt_texture, orb_texture, target_texture,
+    Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture,
                         turret_texture, ball_texture, water_specular_map;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
     float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)

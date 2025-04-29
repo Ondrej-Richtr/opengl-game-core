@@ -660,7 +660,7 @@ LoopRetVal TestMainLoop::loop()
     windowResizeCallback_test(window, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
 
     //Inits
-    if (!Meshes::initBasicMeshes())
+    if (!Meshes::initBasicVBOsAndMeshes())
     {
         fprintf(stderr, "Failed to initialize basic meshes!\n");
         glfwTerminate();

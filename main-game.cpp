@@ -166,15 +166,6 @@ bool GameMainLoop::initTextures()
 {
     using Texture = Textures::Texture2D;
 
-    //White pixel
-    new (&white_pixel) Texture(Color3{255, 255, 255});
-    if (white_pixel.m_id == empty_id)
-    {
-        fprintf(stderr, "Failed to create white 1x1 texture!\n");
-        white_pixel.~Texture2D();
-        return false;
-    }
-
     //Bricks
     const char *bricks_path = "assets/bricks2_512.png";
     brick_texture_world_size = glm::vec2(0.75f, 0.75f); // aspect ratio 1:1
@@ -183,7 +174,6 @@ bool GameMainLoop::initTextures()
     if (brick_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         return false;
     }
@@ -195,7 +185,6 @@ bool GameMainLoop::initTextures()
     if (brick_alt_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create brick alternative texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         return false;
@@ -209,7 +198,6 @@ bool GameMainLoop::initTextures()
     if (orb_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create orb texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -225,7 +213,6 @@ bool GameMainLoop::initTextures()
     if (target_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create target texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -240,7 +227,6 @@ bool GameMainLoop::initTextures()
     if (turret_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create turret texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -256,7 +242,6 @@ bool GameMainLoop::initTextures()
     if (ball_texture.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create ball texture!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -273,7 +258,6 @@ bool GameMainLoop::initTextures()
     if (water_specular_map.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create water specular map!\n");
-        white_pixel.~Texture2D();
         brick_texture.~Texture2D();
         brick_alt_texture.~Texture2D();
         orb_texture.~Texture2D();
@@ -289,7 +273,6 @@ bool GameMainLoop::initTextures()
 
 void GameMainLoop::deinitTextures()
 {
-    white_pixel.~Texture2D();
     brick_texture.~Texture2D();
     brick_alt_texture.~Texture2D();
     orb_texture.~Texture2D();
@@ -483,6 +466,10 @@ void GameMainLoop::deinitLighting()
 
 void GameMainLoop::initMaterials()
 {
+    const SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
+    const Textures::Texture2D& white_pixel = shared_gl_context.white_pixel_tex;
+
     using MaterialProps = Lighting::MaterialProps;
     using Material = Lighting::Material;
 
@@ -516,7 +503,7 @@ void GameMainLoop::initMaterials()
     new (&default_material) Material(default_material_props, white_pixel, white_pixel);
 
     //Ball material
-    new (&ball_material) Material(ball_material_props, ball_texture, white_pixel); //TODO specular map
+    new (&ball_material) Material(ball_material_props, ball_texture, white_pixel);
 
     //Target material
     const MaterialProps target_material_props{Color3F{1.f}, Color3F{1.f}, Color3F{0.f}, 1.f};
@@ -792,8 +779,8 @@ LoopRetVal GameMainLoop::loop()
 {
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
-    SharedGLContext& sharedGLContext = SharedGLContext::instance.value();
-    assert(sharedGLContext.isInitialized());
+    SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
 
     //calculating correct frame delta time
     //TODO this will be wrong when stacking of game loops gets implemented
@@ -1027,16 +1014,16 @@ LoopRetVal GameMainLoop::loop()
 
     // ---Drawing---
     {
-        bool use_fbo = sharedGLContext.use_fbo3d;
+        bool use_fbo = shared_gl_context.use_fbo3d;
 
         //3D block
         {
-            const Drawing::FrameBuffer& fbo3d = sharedGLContext.getFbo3D();
+            const Drawing::FrameBuffer& fbo3d = shared_gl_context.getFbo3D();
 
             //set the viewport according to wanted framebuffer
             if (use_fbo)
             {
-                const glm::ivec2 fbo3d_size = sharedGLContext.getFbo3DSize();
+                const glm::ivec2 fbo3d_size = shared_gl_context.getFbo3DSize();
                 glViewport(0, 0, fbo3d_size.x, fbo3d_size.y);
             }
             else
@@ -1089,7 +1076,7 @@ LoopRetVal GameMainLoop::loop()
                 light_shader.set("cameraPos", camera.m_pos);
                 light_shader.setMaterialProps(default_material_props);
                 light_shader.bindDiffuseMap(brick_texture);
-                light_shader.bindSpecularMap(white_pixel);
+                light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1120,7 +1107,7 @@ LoopRetVal GameMainLoop::loop()
                 light_shader.set("cameraPos", camera.m_pos);
                 light_shader.setMaterialProps(default_material_props);
                 light_shader.bindDiffuseMap(turret_texture);
-                light_shader.bindSpecularMap(white_pixel);
+                light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
             
@@ -1242,7 +1229,7 @@ LoopRetVal GameMainLoop::loop()
                 light_shader.set("cameraPos", camera.m_pos);
                 light_shader.setMaterialProps(default_material_props);
                 light_shader.bindDiffuseMap(ball_texture);
-                light_shader.bindSpecularMap(white_pixel);
+                light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1266,7 +1253,7 @@ LoopRetVal GameMainLoop::loop()
                 light_shader.set("cameraPos", camera.m_pos);
                 light_shader.setMaterialProps(default_material_props);
                 light_shader.bindDiffuseMap(brick_alt_texture);
-                light_shader.bindSpecularMap(white_pixel);
+                light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
             }
 
@@ -1322,7 +1309,7 @@ LoopRetVal GameMainLoop::loop()
             //render the 3D scene as a background from it's framebuffer
             if (use_fbo)
             {
-                const Textures::Texture2D& fbo3d_tex = sharedGLContext.getFbo3DTexture();
+                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
                 // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
                 Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             }

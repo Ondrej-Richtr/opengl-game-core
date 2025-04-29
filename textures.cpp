@@ -139,23 +139,7 @@ Textures::Texture2D::Texture2D(Color3 color) // creates 1x1 texture from singula
         return;
     }
 
-    // bind the OpenGL texture object
-    glBindTexture(GL_TEXTURE_2D, m_id);
-
-    // set the simplest texture wrapping and filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    // upload the singular pixel onto gpu
-    unsigned char pixel[] = { color.r, color.g, color.b };
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)pixel);
-    
-    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
-
-    // unbind the texture just in case
-    glBindTexture(GL_TEXTURE_2D, empty_id);
+    changeTextureToPixel(color);
 }
 
 Textures::Texture2D::~Texture2D()
@@ -179,6 +163,30 @@ void Textures::Texture2D::changeTexture(unsigned int new_width, unsigned int new
     glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, new_data);
     //TODO unbinding is an OpenGL anti-pattern
     glBindTexture(GL_TEXTURE_2D, empty_id); // unbind the texture just in case
+}
+
+void Textures::Texture2D::changeTextureToPixel(Color3 color)
+{
+    m_width = 1;
+    m_height = 1;
+
+    // bind the OpenGL texture object
+    glBindTexture(GL_TEXTURE_2D, m_id);
+
+    // set the simplest texture wrapping and filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // upload the singular pixel onto gpu
+    unsigned char pixel[] = { color.r, color.g, color.b };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)pixel);
+    
+    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+
+    // unbind the texture just in case
+    glBindTexture(GL_TEXTURE_2D, empty_id);
 }
 
 Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const
