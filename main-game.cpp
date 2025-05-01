@@ -627,15 +627,18 @@ bool GameMainLoop::initGameStuff()
     target_pos_offset = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
     new (&targets) std::vector<Target>();
 
-    //targets rng init
+    //Targets rng init
     new (&target_rng_width) Utils::RNG(-1000, 1000);
     new (&target_rng_height) Utils::RNG(-500, 500);
 
-    //Level variables
-    target_last_spawn_time = -1.f; // -1 should get us immediate first spawn, maybe use tick == 0 instead?
-    level_spawn_rate = level_spawn_rate_init;
-    level = 1;
-    level_targets_hit = 0;
+    //Level manager
+    new (&level_manager) Game::LevelManager();
+
+    level_manager.addLevel(Game::Level{ 1, 0.5f, Game::targetMiddleWallPosition, true });
+    level_manager.addLevel(Game::Level{ 3, 0.6f, Game::targetRandomWallPosition });
+    level_manager.addLevel(Game::Level{ 5, 0.65f, Game::targetRandomWallPosition });
+    level_manager.addLevel(Game::Level{ 15, 0.7f, Game::targetRandomWallPosition, true });
+    level_manager.addLevel(Game::Level{ 30, 1.f, Game::targetRandomWallPosition, true });
 
     return true;
 }
@@ -647,6 +650,7 @@ void GameMainLoop::deinitGameStuff()
     targets.~vector();
     target_rng_width.~RNG();
     target_rng_height.~RNG();
+    level_manager.~LevelManager();
 }
 
 int GameMainLoop::init()
@@ -833,9 +837,13 @@ LoopRetVal GameMainLoop::loop()
     glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
 
     // ---Shooting---
+    if (tick == 0)
+    {
+        level_manager.prepareFirstLevel(current_frame_time);
+    }
+
     if (mbutton_left_is_clicked)
     {
-        // puts("Fire!");
         for (size_t i = 0; i < targets.size(); ++i)
         {
             size_t idx = targets.size() - 1 - i; // iterating from the back so the closest targets get hit first
@@ -849,20 +857,10 @@ LoopRetVal GameMainLoop::loop()
             Collision::RayCollision rcoll = Collision::rayTarget(mouse_ray, glm::vec3(0.f, 0.f, 1.f), pos, radius);
             if (rcoll.m_hit)
             {
-                targets.erase(targets.begin() + idx);
+                targets.erase(targets.begin() + idx); // delete the element at `idx`
                 
-                ++level_targets_hit;
-                unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
-                printf("Hit (%zu)! Targets hit: %d/%d\n", idx, level_targets_hit, level_target_amount);
-
-                assert(level_targets_hit <= level_target_amount);
-                if (level_targets_hit >= level_target_amount)
-                {
-                    printf("Level %d completed!\n", level);
-                    ++level;
-                    level_targets_hit = 0;
-                    level_spawn_rate *= level_spawn_rate_mult;
-                }
+                level_manager.handleTargetHit(current_frame_time); // ignoring the return value
+                if (level_manager.levelsCompleted()) level_manager.prepareFirstLevel(current_frame_time);
 
                 break;
             }
@@ -871,17 +869,15 @@ LoopRetVal GameMainLoop::loop()
 
     // ---Target spawning---
     {
-        double time_to_spawn = 1.f / level_spawn_rate;
+        const Game::Level& current_level = level_manager.getCurrentLevel();
+        unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, static_cast<unsigned int>(targets.size()));
 
-        if (current_frame_time - target_last_spawn_time >= time_to_spawn)
+        for (unsigned int i = 0; i < target_spawn_amount; ++i)
         {
             glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
-                                        - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
-            glm::vec3 pos = target_pos_offset + Game::Target::generateXZPosition(target_rng_width, target_rng_height, wall_spawnable_area);
+                                            - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
+            glm::vec3 pos = target_pos_offset + current_level.spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
             targets.emplace_back(target_vbo, target_material, pos, current_frame_time);
-
-            //NOTE simple solution, might produce slower spawn rates on inconsistent/low fps
-            target_last_spawn_time = current_frame_time;
         }
     }
 
@@ -937,7 +933,10 @@ LoopRetVal GameMainLoop::loop()
     {
         //TODO change this probably
         char ui_textbuff[256]{};
-        size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char. 
+        size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
+        unsigned int level = level_manager.m_level_idx,
+                     level_targets_hit = level_manager.m_level_targets_hit,
+                     level_target_amount = level_manager.getCurrentLevelTargetAmount();
 
         nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
 
@@ -967,7 +966,6 @@ LoopRetVal GameMainLoop::loop()
         nk_layout_row_end(&ui.m_ctx);
 
         //target counter
-        unsigned int level_target_amount = level_amount_init + (level - 1) * level_amount_inc;
         nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
         {
             nk_layout_row_push(&ui.m_ctx, 0.5f);

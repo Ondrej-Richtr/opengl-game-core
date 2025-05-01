@@ -838,14 +838,50 @@ namespace Game
 
         Target& operator=(const Target& other);
 
-        static glm::vec3 generateXZPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
-
         glm::vec2 getSize(double time) const;
 
         void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
                   const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
+
+    class Level
+    {
+        typedef glm::vec3 (SpawnNextFnPtr)(Utils::RNG&, Utils::RNG&, glm::vec2);
+        SpawnNextFnPtr *m_spawn_next_fn;
+    public:
+        unsigned int m_target_amount;
+        float m_spawn_rate;
+        bool m_immediate_spawn; // spawn next target immediately if there are no targets spawned
+
+        Level(unsigned int target_amount, float spawn_rate, SpawnNextFnPtr *spawn_next_fn, bool immediate_spawn = false);
+        ~Level() = default;
+
+        glm::vec3 spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
+    };
+
+    class LevelManager
+    {
+        std::vector<Level> m_levels;
+
+        double m_last_spawn_time = 0.0; //IDEA maybe use negative number to indicate immediate respawn?
+    public:
+        unsigned int m_level_idx = 0, m_level_targets_hit = 0;
+
+        void addLevel(Level&& level);
+        const Level& getLevel(unsigned int idx) const;
+        const Level& getCurrentLevel() const;
+        unsigned int getCurrentLevelTargetAmount() const;
+
+        void prepareFirstLevel(double frame_time);
+        bool handleTargetHit(double frame_time);
+        unsigned int targetSpawnAmount(double frame_time, unsigned int targets_spawned);
+
+        bool levelsCompleted() const;
+    };
+
+    glm::vec3 targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
+    glm::vec3 targetRandomWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
 }
 
 //shared_gl_context.cpp
@@ -999,15 +1035,7 @@ struct GameMainLoop
     Meshes::VBO wall_vbo, target_vbo;
     std::vector<Game::Target> targets;
     Utils::RNG target_rng_width, target_rng_height;
-
-    //Level variables
-    static constexpr double level_spawn_rate_init = 0.6f; // target per second
-    static constexpr double level_spawn_rate_mult = 1.35f;
-    static constexpr size_t level_amount_init = 8;
-    static constexpr size_t level_amount_inc = 4;
-
-    double target_last_spawn_time, level_spawn_rate;
-    unsigned int level, level_targets_hit;
+    Game::LevelManager level_manager;
 
     //Misc.
     Color clear_color_3d, clear_color_2d;
