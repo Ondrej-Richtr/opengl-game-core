@@ -6,6 +6,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/ext/scalar_constants.hpp"
 #include <cstring>
+#include <algorithm>
 
 
 bool GameMainLoop::left_mbutton_state = false;
@@ -236,7 +237,9 @@ bool GameMainLoop::initTextures()
     }
 
     //Ball
-    const char *ball_tex_path = "assets/ball/textures/dirty_football_diff_4k.jpg";
+    //NOTE 4k textures might be problem in WebGL
+    // const char *ball_tex_path = "assets/ball/textures/dirty_football_diff_4k.jpg";
+    const char *ball_tex_path = "assets/ball/textures/dirty_football_diff_512.png";
 
     new (&ball_texture) Texture(ball_tex_path);
     if (ball_texture.m_id == empty_id)
@@ -635,10 +638,16 @@ bool GameMainLoop::initGameStuff()
     new (&level_manager) Game::LevelManager();
 
     level_manager.addLevel(Game::Level{ 1, 0.5f, Game::targetMiddleWallPosition, true });
+    // level_manager.addLevel(Game::Level{ 10, 1.f, Game::targetRandomWallPosition, true });
     level_manager.addLevel(Game::Level{ 3, 0.6f, Game::targetRandomWallPosition });
     level_manager.addLevel(Game::Level{ 5, 0.65f, Game::targetRandomWallPosition });
     level_manager.addLevel(Game::Level{ 15, 0.7f, Game::targetRandomWallPosition, true });
     level_manager.addLevel(Game::Level{ 30, 1.f, Game::targetRandomWallPosition, true });
+
+    //Target practice stuff
+    practice_time_start = -1.f;
+    practice_time_end = -1.f;
+    new (&pracice_times) std::vector<float>();
 
     return true;
 }
@@ -651,6 +660,7 @@ void GameMainLoop::deinitGameStuff()
     target_rng_width.~RNG();
     target_rng_height.~RNG();
     level_manager.~LevelManager();
+    pracice_times.~vector();
 }
 
 int GameMainLoop::init()
@@ -857,10 +867,28 @@ LoopRetVal GameMainLoop::loop()
             Collision::RayCollision rcoll = Collision::rayTarget(mouse_ray, glm::vec3(0.f, 0.f, 1.f), pos, radius);
             if (rcoll.m_hit)
             {
-                targets.erase(targets.begin() + idx); // delete the element at `idx`
+                targets.erase(targets.begin() + idx); // delete the target at `idx`
                 
-                level_manager.handleTargetHit(current_frame_time); // ignoring the return value
-                if (level_manager.levelsCompleted()) level_manager.prepareFirstLevel(current_frame_time);
+                bool next_level_reached = level_manager.handleTargetHit(current_frame_time);
+
+                if (next_level_reached && level_manager.m_level_idx == 1) // first level started
+                {
+                    practice_time_start = current_frame_time;
+                    practice_time_end = -1.f;
+                }
+
+                if (level_manager.levelsCompleted()) // all levels completed
+                {
+                    level_manager.prepareFirstLevel(current_frame_time);
+                    practice_time_end = current_frame_time;
+
+                    //save the time
+                    assert(practice_time_start >= 0.f);
+                    float practice_time = static_cast<float>(practice_time_end - practice_time_start);
+                    assert(practice_time >= 0.f);
+                    pracice_times.push_back(practice_time);
+                    printf("Practice time: %.3fs\n", practice_time);
+                }
 
                 break;
             }
@@ -928,65 +956,118 @@ LoopRetVal GameMainLoop::loop()
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
     }
     //GUI definition+logic
-    if (nk_begin(&ui.m_ctx, "Target Practice", nk_rect(30, 30, 150, 190),
-        NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
     {
         //TODO change this probably
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
-        unsigned int level = level_manager.m_level_idx,
-                     level_targets_hit = level_manager.m_level_targets_hit,
-                     level_target_amount = level_manager.getCurrentLevelTargetAmount();
-
-        nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
-
-        //fps calculating and rendering
-        ++fps_calculation_counter;
-        if (current_frame_time >= last_fps_calculation_time + fps_calculation_interval)
+        
+        //General info
+        if (nk_begin(&ui.m_ctx, "Target Practice", nk_rect(30, 30, 150, 240),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
         {
-            const double time_passed = current_frame_time - last_fps_calculation_time;
-            fps_calculated = static_cast<unsigned int>(static_cast<double>(fps_calculation_counter) / time_passed);
-            
-            fps_calculation_counter = 0;
-            last_fps_calculation_time = current_frame_time;
-        }
-        snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
-        nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
+            unsigned int level = level_manager.m_level_idx,
+                         level_targets_hit = level_manager.m_level_targets_hit,
+                         level_amount = level_manager.getLevelAmount(),
+                         level_target_amount = level_manager.getCurrentLevelTargetAmount(),
+                         whole_target_amount = level_manager.getWholeTargetAmount();
 
-        //level counter
-        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
+            nk_layout_row_dynamic(&ui.m_ctx, 0, 1);
+
+            //fps calculating and rendering
+            ++fps_calculation_counter;
+            if (current_frame_time >= last_fps_calculation_time + fps_calculation_interval)
+            {
+                const double time_passed = current_frame_time - last_fps_calculation_time;
+                fps_calculated = static_cast<unsigned int>(static_cast<double>(fps_calculation_counter) / time_passed);
+                
+                fps_calculation_counter = 0;
+                last_fps_calculation_time = current_frame_time;
+            }
+            snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
+            nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
+
+            //level counter
+            nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
+            {
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                nk_label(&ui.m_ctx, "Level:", NK_TEXT_LEFT);
+
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d", level, level_amount);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+            }
+            nk_layout_row_end(&ui.m_ctx);
+
+            //target counter
+            nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
+            {
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                nk_label(&ui.m_ctx, "Progress:", NK_TEXT_LEFT);
+
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d", level_targets_hit, level_target_amount);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+            }
+            nk_layout_row_end(&ui.m_ctx);
+
+            ui.horizontalGap(8);
+
+            //level progress bar
+            {
+                ui.m_ctx.style.progress.cursor_normal = nk_style_item_color(nk_rgb(100, 100, 100));
+            }
+            nk_layout_row_dynamic(&ui.m_ctx, 30, 1);
+            {
+                nk_size level_targets_hit_copy = level_targets_hit;
+                nk_progress(&ui.m_ctx, &level_targets_hit_copy, level_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
+            }
+
+            //complete progress bar
+            {
+                ui.m_ctx.style.progress.cursor_normal = nk_style_item_color(nk_rgb(180, 180, 180));
+            }
+            nk_layout_row_dynamic(&ui.m_ctx, 30, 1);
+            {
+                nk_size whole_targets_copy = level_manager.getPartialTargetAmount(0, level_manager.m_level_idx) + level_targets_hit;
+                nk_progress(&ui.m_ctx, &whole_targets_copy, whole_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
+            }
+
+            //practice time
+            nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
+            {
+                double time;
+                if (practice_time_start < 0.f) time = 0.f;
+                else if (practice_time_end < 0.f) time = current_frame_time - practice_time_start;
+                else time = practice_time_end - practice_time_start;
+
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                nk_label(&ui.m_ctx, "Time:", NK_TEXT_LEFT);
+
+                nk_layout_row_push(&ui.m_ctx, 0.5f);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%.3fs", time);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+            }
+            nk_layout_row_end(&ui.m_ctx);
+        }
+        nk_end(&ui.m_ctx);
+
+        //Time window
+        const int time_window_header_height = 50, time_window_height_min = time_window_header_height + 40;
+        int time_window_height = std::max<int>(time_window_height_min,
+                                               time_window_header_height + 25 * pracice_times.size());
+        if (nk_begin(&ui.m_ctx, "Previous times:", nk_rect(30, 280, 150, time_window_height),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
         {
-            nk_layout_row_push(&ui.m_ctx, 0.5f);
-            nk_label(&ui.m_ctx, "Level:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
 
-            nk_layout_row_push(&ui.m_ctx, 0.5f);
-            snprintf(ui_textbuff, ui_textbuff_capacity, "%d", level);
-            nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+            for (size_t i = 0; i < pracice_times.size(); ++i)
+            {
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%.3fs", pracice_times[i]);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
+            }
         }
-        nk_layout_row_end(&ui.m_ctx);
-
-        //target counter
-        nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
-        {
-            nk_layout_row_push(&ui.m_ctx, 0.5f);
-            nk_label(&ui.m_ctx, "Progress:", NK_TEXT_LEFT);
-
-            nk_layout_row_push(&ui.m_ctx, 0.5f);
-            snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d", level_targets_hit, level_target_amount);
-            nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
-        }
-        nk_layout_row_end(&ui.m_ctx);
-
-        ui.horizontalGap(8);
-
-        //target progress bar
-        nk_layout_row_dynamic(&ui.m_ctx, 30, 1);
-        {
-            nk_size level_targets_hit_copy = level_targets_hit;
-            nk_progress(&ui.m_ctx, &level_targets_hit_copy, level_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
-        }
+        nk_end(&ui.m_ctx);
     }
-    nk_end(&ui.m_ctx);
 
     // Credits 
     {

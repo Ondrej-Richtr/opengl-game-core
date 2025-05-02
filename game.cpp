@@ -70,6 +70,27 @@ unsigned int Game::LevelManager::getCurrentLevelTargetAmount() const
     return getCurrentLevel().m_target_amount;
 }
 
+unsigned int Game::LevelManager::getLevelAmount() const
+{
+    return static_cast<unsigned int>(m_levels.size());
+}
+
+unsigned int Game::LevelManager::getPartialTargetAmount(unsigned int level_from, unsigned int level_amount) const
+{
+    unsigned int result = 0, level_count = getLevelAmount();
+    for (unsigned int i = level_from; i < level_from + level_amount && i < level_count; ++i)
+    {
+        result += getLevel(i).m_target_amount;
+    }
+
+    return result;
+}
+
+unsigned int Game::LevelManager::getWholeTargetAmount() const
+{
+    return getPartialTargetAmount(0, getLevelAmount());
+}
+
 void Game::LevelManager::prepareFirstLevel(double frame_time)
 {
     m_last_spawn_time = frame_time;

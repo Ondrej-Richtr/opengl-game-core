@@ -17,7 +17,7 @@ void WindowManager::windowResizeCallback(GLFWwindow* window, int width, int heig
 
 void WindowManager::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
-    //TODO check for resizes to 0x0?
+    //TODO check for resizes to 0x0? Might also be good idea to limit the max size because of WebGL
     m_framebuffer_size = glm::ivec2(width, height);
 
     if (SharedGLContext::instance.has_value())

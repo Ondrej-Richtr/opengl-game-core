@@ -872,6 +872,9 @@ namespace Game
         const Level& getLevel(unsigned int idx) const;
         const Level& getCurrentLevel() const;
         unsigned int getCurrentLevelTargetAmount() const;
+        unsigned int getLevelAmount() const;
+        unsigned int getPartialTargetAmount(unsigned int level_from, unsigned int level_amount) const;
+        unsigned int getWholeTargetAmount() const;
 
         void prepareFirstLevel(double frame_time);
         bool handleTargetHit(double frame_time);
@@ -1036,6 +1039,8 @@ struct GameMainLoop
     std::vector<Game::Target> targets;
     Utils::RNG target_rng_width, target_rng_height;
     Game::LevelManager level_manager;
+    double practice_time_start, practice_time_end;
+    std::vector<float> pracice_times;
 
     //Misc.
     Color clear_color_3d, clear_color_2d;
