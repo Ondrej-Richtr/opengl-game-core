@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.12)
 project(shooting_practice LANGUAGES C CXX)
 
 #keep this up to date with build.zig
-set(version_string "v0.1")
+set(version_string "v0.2")
 
 list(APPEND cpp_files "collision.cpp" "drawing.cpp" "game.cpp" "lighting.cpp" "main-game.cpp"
                       "main-test.cpp" "main.cpp" "meshes.cpp" "movement.cpp" "shaders.cpp"
