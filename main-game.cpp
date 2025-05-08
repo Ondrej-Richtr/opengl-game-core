@@ -612,6 +612,7 @@ bool GameMainLoop::initGameStuff()
 
     //Targets
     using Target = Game::Target;
+    using BallTarget = Game::BallTarget;
 
     // rewrite the potential garbage values to 0 and id to empty_id
     // memset is here just in case, but the id might be needed for following move assign operator
@@ -630,19 +631,26 @@ bool GameMainLoop::initGameStuff()
     target_pos_offset = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
     new (&targets) std::vector<Target>();
 
+    new (&ball_targets) std::vector<BallTarget>();
+
     //Targets rng init
     new (&target_rng_width) Utils::RNG(-1000, 1000);
     new (&target_rng_height) Utils::RNG(-500, 500);
 
     //Level manager
+    using Level = Game::Level;
+    using LevelPart = Game::LevelPart;
+    using TargetType = Game::TargetType;
+
     new (&level_manager) Game::LevelManager();
 
-    level_manager.addLevel(Game::Level{ 1, 0.5f, Game::targetMiddleWallPosition, true });
-    // level_manager.addLevel(Game::Level{ 10, 1.f, Game::targetRandomWallPosition, true });
-    level_manager.addLevel(Game::Level{ 3, 0.6f, Game::targetRandomWallPosition });
-    level_manager.addLevel(Game::Level{ 5, 0.65f, Game::targetRandomWallPosition });
-    level_manager.addLevel(Game::Level{ 15, 0.7f, Game::targetRandomWallPosition, true });
-    level_manager.addLevel(Game::Level{ 30, 1.f, Game::targetRandomWallPosition, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 1, 0.5f, Game::targetMiddleWallPosition } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 3, 0.6f } } });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 5, 0.65f } } });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 6, 0.7f },
+                                                          LevelPart{ TargetType::target, 6, 4.f } } });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 15, 0.85f } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 30, 1.3f } }, true });
 
     //Target practice stuff
     practice_time_start = -1.f;
@@ -657,6 +665,7 @@ void GameMainLoop::deinitGameStuff()
     wall_vbo.~VBO();
     target_vbo.~VBO();
     targets.~vector();
+    ball_targets.~vector();
     target_rng_width.~RNG();
     target_rng_height.~RNG();
     level_manager.~LevelManager();
@@ -897,15 +906,21 @@ LoopRetVal GameMainLoop::loop()
 
     // ---Target spawning---
     {
-        const Game::Level& current_level = level_manager.getCurrentLevel();
-        unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, static_cast<unsigned int>(targets.size()));
+        glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
+                                            - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
+        
+        unsigned int targets_alive = static_cast<unsigned int>(targets.size());
+        unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, targets_alive);
 
         for (unsigned int i = 0; i < target_spawn_amount; ++i)
         {
-            glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
-                                            - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
-            glm::vec3 pos = target_pos_offset + current_level.spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
-            targets.emplace_back(target_vbo, target_material, pos, current_frame_time);
+            const Game::LevelPart *current_level_part = level_manager.getCurrentLevelPart(targets_alive + i); // +i as we spawned i targets already
+            assert(current_level_part != NULL);
+            if (current_level_part)
+            {
+                glm::vec3 pos = target_pos_offset + current_level_part->spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
+                targets.emplace_back(target_vbo, target_material, pos, current_frame_time);
+            }
         }
     }
 
@@ -993,7 +1008,8 @@ LoopRetVal GameMainLoop::loop()
                 nk_label(&ui.m_ctx, "Level:", NK_TEXT_LEFT);
 
                 nk_layout_row_push(&ui.m_ctx, 0.5f);
-                snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d", level, level_amount);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%d/%d",
+                         level, level_amount ? level_amount - 1 : 0); // -1 as we dont count the intro level
                 nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_RIGHT);
             }
             nk_layout_row_end(&ui.m_ctx);

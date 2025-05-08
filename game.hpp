@@ -598,6 +598,9 @@ namespace Meshes
     constexpr unsigned int attribute3d_pos_amount = 3;       // vec3
     constexpr unsigned int attribute3d_texcoord_amount = 2;  // vec2
     constexpr unsigned int attribute3d_normal_amount = 3;    // vec3
+    constexpr unsigned int attribute3d_complete_amount = attribute3d_pos_amount +
+                                                         attribute3d_texcoord_amount +
+                                                         attribute3d_normal_amount;
 
     constexpr unsigned int attribute2d_pos_amount = 2;       // vec2
     // constexpr unsigned int attribute2d_texcoord_amount = 2;  // vec2
@@ -704,7 +707,11 @@ namespace Meshes
         VBO m_vbo;
 
         Mesh() = default;
+        Mesh(unsigned int vert_count, std::vector<GLfloat>&& positions,
+             std::vector<GLfloat>&& texcoords, std::vector<GLfloat>&& normals);
 
+        int loadFromData(unsigned int vert_count, std::vector<GLfloat>&& positions,
+                          std::vector<GLfloat>&& texcoords, std::vector<GLfloat>&& normals);
         int loadFromObj(const char *obj_file_path);
 
         bool upload();
@@ -713,7 +720,11 @@ namespace Meshes
 
         void draw() const;
     };
+
+    Meshes::Mesh generateCubicMesh(glm::vec3 mesh_scale,  glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
     
+    Meshes::Mesh generateQuadMesh(glm::vec2 mesh_scale, glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
+
     int loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
                 std::vector<GLfloat>& out_positions, std::vector<GLfloat>& out_texcoords, std::vector<GLfloat>& out_normals,
                 std::vector<Lighting::MaterialProps> *out_material_props);
@@ -820,6 +831,11 @@ namespace UI
 //game.cpp
 namespace Game
 {
+    glm::vec3 targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
+    glm::vec3 targetRandomWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
+
+    enum class TargetType { target, ball };
+
     class Target
     {
     public:
@@ -845,19 +861,42 @@ namespace Game
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
 
-    class Level
+    class BallTarget
+    {
+        //TODO implement this
+    };
+
+    struct LevelPart
     {
         typedef glm::vec3 (SpawnNextFnPtr)(Utils::RNG&, Utils::RNG&, glm::vec2);
         SpawnNextFnPtr *m_spawn_next_fn;
-    public:
+        
+        TargetType m_type;
         unsigned int m_target_amount;
         float m_spawn_rate;
-        bool m_immediate_spawn; // spawn next target immediately if there are no targets spawned
+        Color3F m_color;
 
-        Level(unsigned int target_amount, float spawn_rate, SpawnNextFnPtr *spawn_next_fn, bool immediate_spawn = false);
-        ~Level() = default;
+        LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
+                  SpawnNextFnPtr spawn_next_fn = Game::targetRandomWallPosition, Color3F color = Color3F{ 1.0, 1.0, 1.0 });
 
         glm::vec3 spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
+    };
+
+    class Level
+    {
+        std::vector<unsigned int> m_target_amount_cum; // cummulative count of target amounts for level parts
+        unsigned int getCummulativeCountUptoIndex(unsigned int idx) const; // returns cummulative count upto part idx (not counting it's amount)
+    public:
+        std::vector<LevelPart> m_level_parts;
+        bool m_immediate_spawn; // spawn next target immediately if there are no targets spawned
+
+        Level(std::vector<LevelPart>&& level_parts, bool immediate_spawn = false);
+        ~Level() = default;
+
+        const LevelPart& getPart(unsigned int idx) const;
+        unsigned int getPartIdxFromSpawnedTargets(unsigned int targets_spawned) const;
+
+        unsigned int getTargetAmount() const;
     };
 
     class LevelManager
@@ -871,6 +910,8 @@ namespace Game
         void addLevel(Level&& level);
         const Level& getLevel(unsigned int idx) const;
         const Level& getCurrentLevel() const;
+        const LevelPart* getCurrentLevelPart(unsigned int targets_alive) const;
+
         unsigned int getCurrentLevelTargetAmount() const;
         unsigned int getLevelAmount() const;
         unsigned int getPartialTargetAmount(unsigned int level_from, unsigned int level_amount) const;
@@ -878,13 +919,10 @@ namespace Game
 
         void prepareFirstLevel(double frame_time);
         bool handleTargetHit(double frame_time);
-        unsigned int targetSpawnAmount(double frame_time, unsigned int targets_spawned);
+        unsigned int targetSpawnAmount(double frame_time, unsigned int targets_alive);
 
         bool levelsCompleted() const;
     };
-
-    glm::vec3 targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
-    glm::vec3 targetRandomWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
 }
 
 //shared_gl_context.cpp
@@ -1037,6 +1075,7 @@ struct GameMainLoop
     glm::vec3 wall_size, wall_pos, target_pos_offset;
     Meshes::VBO wall_vbo, target_vbo;
     std::vector<Game::Target> targets;
+    std::vector<Game::BallTarget> ball_targets; //TODO use those
     Utils::RNG target_rng_width, target_rng_height;
     Game::LevelManager level_manager;
     double practice_time_start, practice_time_end;

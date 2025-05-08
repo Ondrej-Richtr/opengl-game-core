@@ -211,6 +211,151 @@ void Meshes::VBO::unbind_noVAO() const
     glBindBuffer(GL_ARRAY_BUFFER, empty_id);
 }
 
+static std::array<GLfloat, 6*6*Meshes::attribute3d_complete_amount> generateCubicGeometryData(glm::vec3 scale,
+                                                                                              glm::vec2 texture_world_size,
+                                                                                              Meshes::TexcoordStyle style)
+{
+    // generates cubic vertex data with given size `scale` and returns it as an array,
+    // also generates texcoords, if `style` is Meshes::TexcoordStyle::none it makes them all zeroes,
+    // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating.
+    assert(scale.x > 0.f && scale.y > 0.f && scale.z > 0.f); // probably useless, we could have zero sized cubes
+
+    GLfloat half_x = scale.x / 2.f,
+            half_y = scale.y / 2.f,
+            half_z = scale.z / 2.f;
+    
+    // U is horizontal  -> only in x and z direction
+    // V is vertical    -> only in y and z direction
+    GLfloat u_min_x = 0.f, u_max_x = 0.f,
+            u_min_z = 0.f, u_max_z = 0.f,
+            v_min_y = 0.f, v_max_y = 0.f,
+            v_min_z = 0.f, v_max_z = 0.f;
+    if (style == Meshes::TexcoordStyle::stretch)
+    {
+        u_max_x = 1.f;
+        u_max_z = 1.f;
+
+        v_max_y = 1.f;
+        v_max_z = 1.f;
+    }
+    else if (style == Meshes::TexcoordStyle::repeat)
+    {
+        assert(texture_world_size.x > 0.f && texture_world_size.y > 0.f); // avoid divide by zero
+        
+        // texture_world_size.x -> width of the texture in world coordinates
+        // texture_world_size.y -> height of the texture in world coordinates
+        u_max_x = scale.x / texture_world_size.x;
+        u_max_z = scale.z / texture_world_size.x;
+
+        v_max_y = scale.y / texture_world_size.y;
+        v_max_z = scale.z / texture_world_size.y;
+    }
+
+    // printf("min/max u_x: %f|%f, u_z: %f|%f\n", u_min_x, u_max_x, u_min_z, u_max_z);
+    // printf("min/max v_y: %f|%f, v_z: %f|%f\n", v_min_y, v_max_y, v_min_z, v_max_z);
+    
+    return std::array<GLfloat, 6*6*Meshes::attribute3d_complete_amount>
+    // counter-clockwise vertex winding order
+    {
+        // Position                     // Texcoords        // Normal
+        //+x face                       +u = -z, +v = +y
+         half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
+         half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
+         half_x,  half_y, -half_z,      u_max_z, v_max_y,    1.f,  0.f,  0.f,
+
+         half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
+         half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
+         half_x, -half_y,  half_z,      u_min_z, v_min_y,    1.f,  0.f,  0.f,
+        //-x face                       +u = z, +v = +y
+        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
+        -half_x,  half_y, -half_z,      u_min_z, v_max_y,   -1.f,  0.f,  0.f,
+        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
+
+        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
+        -half_x, -half_y,  half_z,      u_max_z, v_min_y,   -1.f,  0.f,  0.f,
+        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
+        //+y face                       +u = +x, +v = -z
+         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
+         half_x,  half_y, -half_z,      u_max_x, v_max_z,    0.f,  1.f,  0.f,
+        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
+        
+        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
+        -half_x,  half_y,  half_z,      u_min_x, v_min_z,    0.f,  1.f,  0.f,
+         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
+        //-y face                       +u = +x, +v = +z
+         half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
+        -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
+         half_x, -half_y, -half_z,      u_max_x, v_min_z,    0.f, -1.f,  0.f,
+
+        -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
+         half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
+        -half_x, -half_y,  half_z,      u_min_x, v_max_z,    0.f, -1.f,  0.f,
+        //+z face                       +u = +x, +v = +y
+         half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x, -half_y,  half_z,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
+        
+        -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x,  half_y,  half_z,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
+        //-z face                       +u = -x, +v = +y
+         half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
+         half_x, -half_y, -half_z,      u_min_x, v_min_y,    0.f,  0.f, -1.f,
+        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
+        
+        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
+        -half_x,  half_y, -half_z,      u_max_x, v_max_y,    0.f,  0.f, -1.f,
+         half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
+    };
+}
+
+static std::array<GLfloat, 6*Meshes::attribute3d_complete_amount> generateQuadGeometryData(glm::vec2 scale,
+                                                                                           glm::vec2 texture_world_size,
+                                                                                           Meshes::TexcoordStyle style)
+{
+    // generates quad vertex data with given size `scale` facing in the positive z axis,
+    // also generates texcoords, if `style` is Meshes::TexcoordStyle::none it makes them all zeroes,
+    // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating.
+    assert(scale.x > 0.f && scale.y > 0.f); // probably useless, we could have zero sized quads
+
+    GLfloat half_x = scale.x / 2.f,
+            half_y = scale.y / 2.f;
+    
+    // U is horizontal  -> x direction
+    // V is vertical    -> y direction
+    GLfloat u_min_x = 0.f, u_max_x = 0.f,
+            v_min_y = 0.f, v_max_y = 0.f;
+    if (style == Meshes::TexcoordStyle::stretch)
+    {
+        u_max_x = 1.f;
+
+        v_max_y = 1.f;
+    }
+    else if (style == Meshes::TexcoordStyle::repeat)
+    {
+        assert(texture_world_size.x > 0.f && texture_world_size.y > 0.f); // avoid divide by zero
+        
+        // texture_world_size.x -> width of the texture in world coordinates
+        u_max_x = scale.x / texture_world_size.x;
+
+        // texture_world_size.y -> height of the texture in world coordinates
+        v_max_y = scale.y / texture_world_size.y;
+    }
+       
+    return std::array<GLfloat, 6*Meshes::attribute3d_complete_amount>
+    {
+        // Position                  // Texcoords        // Normal
+        //+z face                    +u = +x, +v = +y
+         half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x, -half_y,  0.f,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
+
+        -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
+         half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
+        -half_x,  half_y,  0.f,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
+    };
+}
+
 template <size_t whole_data_len>
 static Meshes::VBO generateVBOfromData3D(const GLfloat *whole_data, bool texcoords, bool normals)
 {
@@ -303,93 +448,13 @@ Meshes::VBO Meshes::generateCubicVBO(glm::vec3 mesh_scale, glm::vec2 texture_wor
     // optionaly also generates texcoords when style is not Meshes::TexcoordStyle::none,
     // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating,
     // optionaly also generates normals,
-    // returns vbo with corresponding data uploaded
-    assert(mesh_scale.x > 0.f && mesh_scale.y > 0.f && mesh_scale.z > 0.f); // probably useless, we could have zero sized cubes
+    // returns vbo with corresponding data uploaded, on error returns vbo with empty id
+    std::array<GLfloat, 6*6*Meshes::attribute3d_complete_amount> whole_data = generateCubicGeometryData(mesh_scale, texture_world_size, style);
 
-    GLfloat half_x = mesh_scale.x / 2.f,
-            half_y = mesh_scale.y / 2.f,
-            half_z = mesh_scale.z / 2.f;
-    
-    // U is horizontal  -> only in x and z direction
-    // V is vertical    -> only in y and z direction
-    GLfloat u_min_x = 0.f, u_max_x = 1.f,
-            u_min_z = 0.f, u_max_z = 1.f,
-            v_min_y = 0.f, v_max_y = 1.f,
-            v_min_z = 0.f, v_max_z = 1.f;
-    if (style == Meshes::TexcoordStyle::repeat)
-    {
-        assert(texture_world_size.x > 0.f && texture_world_size.y > 0.f); // avoid divide by zero
-        
-        // texture_world_size.x -> width of the texture in world coordinates
-        // texture_world_size.y -> height of the texture in world coordinates
-        u_max_x = mesh_scale.x / texture_world_size.x;
-        u_max_z = mesh_scale.z / texture_world_size.x;
-
-        v_max_y = mesh_scale.y / texture_world_size.y;
-        v_max_z = mesh_scale.z / texture_world_size.y;
-    }
-
-    // printf("min/max u_x: %f|%f, u_z: %f|%f\n", u_min_x, u_max_x, u_min_z, u_max_z);
-    // printf("min/max v_y: %f|%f, v_z: %f|%f\n", v_min_y, v_max_y, v_min_z, v_max_z);
-
-    // include texcoords when style given a Texcoord style
+    // include texcoords when given a Texcoord style
     bool texcoords = (style != Meshes::TexcoordStyle::none);
-    
-    // counter-clockwise vertex winding order
-    const GLfloat whole_data[] =
-    {
-        // Position                     // Texcoords        // Normal
-        //+x face                       +u = -z, +v = +y
-         half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
-         half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
-         half_x,  half_y, -half_z,      u_max_z, v_max_y,    1.f,  0.f,  0.f,
 
-         half_x, -half_y, -half_z,      u_max_z, v_min_y,    1.f,  0.f,  0.f,
-         half_x,  half_y,  half_z,      u_min_z, v_max_y,    1.f,  0.f,  0.f,
-         half_x, -half_y,  half_z,      u_min_z, v_min_y,    1.f,  0.f,  0.f,
-        //-x face                       +u = z, +v = +y
-        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
-        -half_x,  half_y, -half_z,      u_min_z, v_max_y,   -1.f,  0.f,  0.f,
-        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
-
-        -half_x, -half_y, -half_z,      u_min_z, v_min_y,   -1.f,  0.f,  0.f,
-        -half_x, -half_y,  half_z,      u_max_z, v_min_y,   -1.f,  0.f,  0.f,
-        -half_x,  half_y,  half_z,      u_max_z, v_max_y,   -1.f,  0.f,  0.f,
-        //+y face                       +u = +x, +v = -z
-         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
-         half_x,  half_y, -half_z,      u_max_x, v_max_z,    0.f,  1.f,  0.f,
-        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
-        
-        -half_x,  half_y, -half_z,      u_min_x, v_max_z,    0.f,  1.f,  0.f,
-        -half_x,  half_y,  half_z,      u_min_x, v_min_z,    0.f,  1.f,  0.f,
-         half_x,  half_y,  half_z,      u_max_x, v_min_z,    0.f,  1.f,  0.f,
-        //-y face                       +u = +x, +v = +z
-         half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
-        -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
-         half_x, -half_y, -half_z,      u_max_x, v_min_z,    0.f, -1.f,  0.f,
-
-        -half_x, -half_y, -half_z,      u_min_x, v_min_z,    0.f, -1.f,  0.f,
-         half_x, -half_y,  half_z,      u_max_x, v_max_z,    0.f, -1.f,  0.f,
-        -half_x, -half_y,  half_z,      u_min_x, v_max_z,    0.f, -1.f,  0.f,
-        //+z face                       +u = +x, +v = +y
-         half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-        -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-         half_x, -half_y,  half_z,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
-        
-        -half_x, -half_y,  half_z,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-         half_x,  half_y,  half_z,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-        -half_x,  half_y,  half_z,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
-        //-z face                       +u = -x, +v = +y
-         half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
-         half_x, -half_y, -half_z,      u_min_x, v_min_y,    0.f,  0.f, -1.f,
-        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
-        
-        -half_x, -half_y, -half_z,      u_max_x, v_min_y,    0.f,  0.f, -1.f,
-        -half_x,  half_y, -half_z,      u_max_x, v_max_y,    0.f,  0.f, -1.f,
-         half_x,  half_y, -half_z,      u_min_x, v_max_y,    0.f,  0.f, -1.f,
-    };
-
-    return generateVBOfromData3D<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
+    return generateVBOfromData3D<whole_data.size()>(whole_data.data(), texcoords, normals);
 }
 
 Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_world_size,
@@ -399,45 +464,13 @@ Meshes::VBO Meshes::generateQuadVBO(glm::vec2 mesh_scale, glm::vec2 texture_worl
     // optionaly also generates texcoords when style is not Meshes::TexcoordStyle::none,
     // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating,
     // optionaly also generates normals,
-    // returns vbo with corresponding data uploaded
-    assert(mesh_scale.x > 0.f && mesh_scale.y > 0.f); // probably useless, we could have zero sized quads
+    // returns vbo with corresponding data uploaded, on error returns vbo with empty id
+    std::array<GLfloat, 6*Meshes::attribute3d_complete_amount> whole_data = generateQuadGeometryData(mesh_scale, texture_world_size, style);
 
-    GLfloat half_x = mesh_scale.x / 2.f,
-            half_y = mesh_scale.y / 2.f;
-    
-    // U is horizontal  -> x direction
-    // V is vertical    -> y direction
-    GLfloat u_min_x = 0.f, u_max_x = 1.f,
-            v_min_y = 0.f, v_max_y = 1.f;
-    if (style == Meshes::TexcoordStyle::repeat)
-    {
-        assert(texture_world_size.x > 0.f && texture_world_size.y > 0.f); // avoid divide by zero
-        
-        // texture_world_size.x -> width of the texture in world coordinates
-        u_max_x = mesh_scale.x / texture_world_size.x;
-
-        // texture_world_size.y -> height of the texture in world coordinates
-        v_max_y = mesh_scale.y / texture_world_size.y;
-    }
-
-    // include texcoords when style given a Texcoord style
+    // include texcoords when given a Texcoord style
     bool texcoords = (style != Meshes::TexcoordStyle::none);
 
-    // counter-clockwise vertex winding order
-    GLfloat whole_data[] =
-    {
-        // Position                  // Texcoords        // Normal
-        //+z face                    +u = +x, +v = +y
-         half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-        -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-         half_x, -half_y,  0.f,      u_max_x, v_min_y,    0.f,  0.f,  1.f,
-
-        -half_x, -half_y,  0.f,      u_min_x, v_min_y,    0.f,  0.f,  1.f,
-         half_x,  half_y,  0.f,      u_max_x, v_max_y,    0.f,  0.f,  1.f,
-        -half_x,  half_y,  0.f,      u_min_x, v_max_y,    0.f,  0.f,  1.f,
-    };
-
-    return generateVBOfromData3D<sizeof(whole_data) / sizeof(whole_data[0])>(whole_data, texcoords, normals);
+    return generateVBOfromData3D<whole_data.size()>(whole_data.data(), texcoords, normals);
 }
 
 static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::AttributeConfig attr_config,
@@ -478,6 +511,64 @@ static std::unique_ptr<GLfloat[]> combineBuffers(size_t vertex_count, Meshes::At
     return std::unique_ptr<GLfloat[]>(result);
 }
 
+Meshes::Mesh::Mesh(unsigned int vert_count, std::vector<GLfloat>&& positions,
+                   std::vector<GLfloat>&& texcoords, std::vector<GLfloat>&& normals)
+                : m_vert_count(0), m_triangle_count(0), m_positions(), m_texcoords(), m_normals(), m_vbo()
+{
+    // ignoring the return value as the caller should check anyways with call to `isUploaded`
+    loadFromData(vert_count, std::move(positions), std::move(texcoords), std::move(normals));
+}
+
+int Meshes::Mesh::loadFromData(unsigned int vert_count, std::vector<GLfloat>&& positions,
+                               std::vector<GLfloat>&& texcoords, std::vector<GLfloat>&& normals)
+{
+    assert(m_vert_count == 0);
+    assert(m_triangle_count == 0);
+    assert(m_positions.size() == 0);
+    assert(m_texcoords.size() == 0);
+    assert(m_normals.size() == 0);
+
+    if (!vert_count)
+    {
+        fprintf(stderr, "Failed to load mesh from data as the vertex count is 0!\n");
+        return 1;
+    }
+    
+    if (vert_count % 3 != 0)
+    {
+        fprintf(stderr, "Failed to load mesh from data as the vertex count(%d) is not divisble by 3!\n", vert_count);
+        return 2;
+    }
+
+    if (vert_count * 3 < positions.size() ||
+        vert_count * 2 < texcoords.size() ||
+        vert_count * 3 < normals.size())
+    {
+        fprintf(stderr, "Failed to load mesh from data as the vectors does not contain enough data!\n");
+        return 3;
+    }
+
+    assert(vert_count * 3 == positions.size());
+    assert(vert_count * 2 == texcoords.size());
+    assert(vert_count * 3 == normals.size());
+
+    m_positions = std::move(positions);
+    m_texcoords = std::move(texcoords);
+    m_normals = std::move(normals);
+
+    m_vert_count = vert_count;
+    m_triangle_count = m_vert_count / 3;
+
+    if (!upload())
+    {
+        fprintf(stderr, "Failed to upload loaded mesh from data into GPU!\n");
+        // intentionally not clearing vectors and other stuff as we might try to upload later
+        return 4;
+    }
+
+    return 0;
+}
+
 int Meshes::Mesh::loadFromObj(const char *obj_file_path)
 {
     assert(obj_file_path);
@@ -501,6 +592,7 @@ int Meshes::Mesh::loadFromObj(const char *obj_file_path)
     if (!upload())
     {
         fprintf(stderr, "Failed to upload loaded mesh from .obj file '%s' into GPU!\n", obj_file_path);
+        // intentionally not clearing vectors and other stuff as we might try to upload later
         return 2;
     }
 
@@ -565,6 +657,68 @@ void Meshes::Mesh::draw() const
         glDrawArrays(GL_TRIANGLES, 0, m_vbo.vertexCount());
         // glDrawArrays(GL_TRIANGLES, 0, 3);
     m_vbo.unbind(); //TODO unbinding is an OpenGL anti-patter
+}
+
+template <size_t whole_data_len>
+static Meshes::Mesh generateMeshfromData3D(const GLfloat *whole_data)
+{
+    // constructs Mesh with vertex data given in whole_data,
+    // whole_data MUST have the full usual layout in correct order!
+    // also the whole_data array must be of length whole_data_len!
+
+    // layout of whole_data must be (in this order): 3 floats for position + 2 floats for texcoords + 3 floats for normal
+    static_assert(whole_data_len % 8 == 0,
+                  "`generateMeshfromData3D` function requires whole_data with length divisible by 8! (8 == 3 for vertices + 2 for uv + 3 for normals)");
+    static_assert(whole_data_len > 0, "`generateMeshfromData3D` function requires non-empty whole_data!"); // empty data makes no sense
+    constexpr unsigned int vert_count = static_cast<unsigned int>(whole_data_len / 8);
+
+    std::vector<GLfloat> positions{}, texcoords{}, normals{};
+
+    for (unsigned int i = 0; i < vert_count; ++i)
+    {
+        positions.push_back(whole_data[0]);
+        positions.push_back(whole_data[1]);
+        positions.push_back(whole_data[2]);
+
+        texcoords.push_back(whole_data[3]);
+        texcoords.push_back(whole_data[4]);
+
+        normals.push_back(whole_data[5]);
+        normals.push_back(whole_data[6]);
+        normals.push_back(whole_data[7]);
+
+        whole_data += 8;
+    }
+
+    assert(vert_count * 3 == positions.size());
+    assert(vert_count * 2 == texcoords.size());
+    assert(vert_count * 3 == normals.size());
+
+    return Meshes::Mesh(vert_count, std::move(positions), std::move(texcoords), std::move(normals));
+}
+
+Meshes::Mesh Meshes::generateCubicMesh(glm::vec3 mesh_scale,  glm::vec2 texture_world_size, Meshes::TexcoordStyle style)
+{
+    // generates cubic vertex data with given size `mesh_scale` and uploads them into mesh,
+    // also generates texcoords, if style is Meshes::TexcoordStyle::none it makes them all zeroes,
+    // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating,
+    // also generates normals,
+    // returns mesh with corresponding data uploaded, on error returns mesh with isUploaded == false
+    std::array<GLfloat, 6*6*Meshes::attribute3d_complete_amount> whole_data = generateCubicGeometryData(mesh_scale, texture_world_size, style);
+
+    return generateMeshfromData3D<whole_data.size()>(whole_data.data());
+}
+    
+Meshes::Mesh Meshes::generateQuadMesh(glm::vec2 mesh_scale, glm::vec2 texture_world_size, Meshes::TexcoordStyle style)
+{
+    // generates quad vertex data with given size `mesh_scale` and uploads them into mesh,
+    // also generates texcoords, if style is Meshes::TexcoordStyle::none it makes them all zeroes,
+    // if Meshes::TexcoordStyle::repeat then texture_world_size is used to deduce UV repeating,
+    // also generates normals,
+    // returns mesh with corresponding data uploaded, on error returns mesh with isUploaded == false
+    std::array<GLfloat, 6*Meshes::attribute3d_complete_amount> whole_data = generateQuadGeometryData(mesh_scale, texture_world_size, style);
+
+    return generateMeshfromData3D<whole_data.size()>(whole_data.data());
 }
 
 //Loads geometry and material data out of .obj files with usage of `tinyobj_loader_c`, returns 0 when success, non-zero when error.
