@@ -23,12 +23,11 @@ glm::vec3 Game::targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, 
     return glm::vec3(0.f);
 }
 
-Game::Target::Target(const Meshes::VBO& vbo, const Lighting::Material& material, glm::vec3 pos, double spawn_time)
-                        : m_vbo(vbo), m_material(material), m_pos(pos), m_spawn_time(spawn_time) {}
+Game::Target::Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time)
+                : m_model(model), m_pos(pos), m_spawn_time(spawn_time) {}
 
 Game::Target::Target(const Target& other)
-                        : m_vbo(other.m_vbo), m_material(other.m_material),
-                          m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
+                : m_model(other.m_model), m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
 
 Game::Target& Game::Target::operator=(const Game::Target& other)
 {
@@ -49,11 +48,11 @@ glm::vec2 Game::Target::getSize(double time) const
     return glm::vec2((float)(t * size_max + (1.f - t) * size_min));
 }
 
-void Game::Target::draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                        const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+void Game::Target::draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                         double current_frame_time, glm::vec3 pos_offset) const
 {
-    Drawing::target(shader, camera, lights, *this, current_frame_time, pos_offset);
+    const glm::vec2 size = getSize(current_frame_time);
+    m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(size.x, size.y, 1.f));
 }
 
 Game::LevelPart::LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,

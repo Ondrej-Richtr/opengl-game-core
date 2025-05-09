@@ -697,6 +697,7 @@ namespace Meshes
     
     struct Mesh
     {
+        //TODO is m_vert_count needed as it is already stored in vbo?
         //TODO add shapes - offset + size into vectors, add draw specific shape
         unsigned int m_vert_count = 0, m_triangle_count = 0;
 
@@ -724,6 +725,24 @@ namespace Meshes
     Meshes::Mesh generateCubicMesh(glm::vec3 mesh_scale,  glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
     
     Meshes::Mesh generateQuadMesh(glm::vec2 mesh_scale, glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
+
+    struct Model
+    {
+        const Shaders::Program& m_shader;
+        Lighting::Material m_material;
+
+        //TODO add mesh shape after it is implemented
+        const Mesh& m_mesh;
+
+        //TODO add rotation too
+        glm::vec3 m_origin_offset, m_translate, m_scale;
+
+        Model(const Shaders::Program& shader, const Meshes::Mesh& mesh, Lighting::Material material);
+
+        //TODO add rotation as a parameter too
+        void draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+                  glm::vec3 pos, glm::vec3 scale = glm::vec3(1.f)) const;
+    };
 
     int loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
                 std::vector<GLfloat>& out_positions, std::vector<GLfloat>& out_texcoords, std::vector<GLfloat>& out_normals,
@@ -842,13 +861,12 @@ namespace Game
         constexpr static const float size_min = 0.1f, size_max = 0.5f;
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
 
-        const Meshes::VBO& m_vbo;
-        const Lighting::Material& m_material;
+        const Meshes::Model& m_model;
 
         glm::vec3 m_pos;
         double m_spawn_time;
 
-        Target(const Meshes::VBO& vbo, const Lighting::Material& material, glm::vec3 pos, double spawn_time);
+        Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time);
         Target(const Target& other);
         ~Target() = default;
 
@@ -856,7 +874,7 @@ namespace Game
 
         glm::vec2 getSize(double time) const;
 
-        void draw(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+        void draw(const Drawing::Camera3D& camera,
                   const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
@@ -1073,7 +1091,9 @@ struct GameMainLoop
 
     //Game
     glm::vec3 wall_size, wall_pos, target_pos_offset;
-    Meshes::VBO wall_vbo, target_vbo;
+    Meshes::VBO wall_vbo;
+    Meshes::Mesh target_mesh;
+    Meshes::Model target_model;
     std::vector<Game::Target> targets;
     std::vector<Game::BallTarget> ball_targets; //TODO use those
     Utils::RNG target_rng_width, target_rng_height;

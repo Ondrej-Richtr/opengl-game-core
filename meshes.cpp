@@ -3,6 +3,8 @@
 #include "game.hpp"
 #include "tinyobj_loader_c.h"
 
+#include "glm/gtc/matrix_transform.hpp" // translate, scale
+
 
 #ifdef USE_VAO
 Meshes::VAO::~VAO()
@@ -655,7 +657,6 @@ void Meshes::Mesh::draw() const
 
     m_vbo.bind();
         glDrawArrays(GL_TRIANGLES, 0, m_vbo.vertexCount());
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
     m_vbo.unbind(); //TODO unbinding is an OpenGL anti-patter
 }
 
@@ -719,6 +720,44 @@ Meshes::Mesh Meshes::generateQuadMesh(glm::vec2 mesh_scale, glm::vec2 texture_wo
     std::array<GLfloat, 6*Meshes::attribute3d_complete_amount> whole_data = generateQuadGeometryData(mesh_scale, texture_world_size, style);
 
     return generateMeshfromData3D<whole_data.size()>(whole_data.data());
+}
+
+Meshes::Model::Model(const Shaders::Program& shader, const Meshes::Mesh& mesh, Lighting::Material material)
+                : m_shader(shader), m_material(material), m_mesh(mesh),
+                  m_origin_offset(0.f), m_translate(0.f), m_scale(1.f) {}
+
+void Meshes::Model::draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+                         glm::vec3 pos, glm::vec3 scale) const
+{
+    m_shader.use();
+
+    //vs
+    glm::mat4 model_mat(1.f);
+    model_mat = glm::translate(model_mat, m_translate + pos);
+    model_mat = glm::scale(model_mat, m_scale * scale);
+    model_mat = glm::translate(model_mat, m_origin_offset);
+
+    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+    m_shader.set("model", model_mat);
+    m_shader.set("normalMat", normal_mat);
+    m_shader.set("view", camera.getViewMatrix());
+    m_shader.set("projection", camera.getProjectionMatrix());
+
+    //fs
+    m_shader.set("cameraPos", camera.m_pos);
+    m_shader.setMaterial(m_material);
+    
+    int lights_set = m_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights);
+    assert(lights_set >= 0);
+    assert((size_t)lights_set <= lights.size());
+    if ((size_t)lights_set < lights.size())
+    {
+        fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %zu, set amount: %d\n.",
+                lights.size(), lights_set);
+    }
+
+    m_mesh.draw();
 }
 
 //Loads geometry and material data out of .obj files with usage of `tinyobj_loader_c`, returns 0 when success, non-zero when error.

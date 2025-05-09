@@ -614,19 +614,17 @@ bool GameMainLoop::initGameStuff()
     using Target = Game::Target;
     using BallTarget = Game::BallTarget;
 
-    // rewrite the potential garbage values to 0 and id to empty_id
-    // memset is here just in case, but the id might be needed for following move assign operator
-    memset((void*)&target_vbo, 0, sizeof(target_vbo)); // not needed for now
-    target_vbo.m_id = empty_id;
-    target_vbo = std::move(Meshes::generateQuadVBO(glm::vec2(1.f), target_texture_world_size,
-                                                   Meshes::TexcoordStyle::stretch, true));
-    if (target_vbo.m_id == empty_id)
+    new (&target_mesh) Meshes::Mesh();
+    target_mesh = std::move(Meshes::generateQuadMesh(glm::vec2(1.f), target_texture_world_size, Meshes::TexcoordStyle::stretch));
+    if (!target_mesh.isUploaded())
     {
-        fprintf(stderr, "Failed to create target's VBO!\n");
+        fprintf(stderr, "Failed to create target's Mesh!\n");
         wall_vbo.~VBO();
-        target_vbo.~VBO();
+        target_mesh.~Mesh();
         return false;
     }
+
+    new (&target_model) Meshes::Model(light_shader, target_mesh, target_material);
 
     target_pos_offset = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
     new (&targets) std::vector<Target>();
@@ -663,7 +661,8 @@ bool GameMainLoop::initGameStuff()
 void GameMainLoop::deinitGameStuff()
 {
     wall_vbo.~VBO();
-    target_vbo.~VBO();
+    target_mesh.~Mesh();
+    target_model.~Model();
     targets.~vector();
     ball_targets.~vector();
     target_rng_width.~RNG();
@@ -919,7 +918,7 @@ LoopRetVal GameMainLoop::loop()
             if (current_level_part)
             {
                 glm::vec3 pos = target_pos_offset + current_level_part->spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
-                targets.emplace_back(target_vbo, target_material, pos, current_frame_time);
+                targets.emplace_back(target_model, pos, current_frame_time);
             }
         }
     }
@@ -978,7 +977,7 @@ LoopRetVal GameMainLoop::loop()
         
         //General info
         if (nk_begin(&ui.m_ctx, "Target Practice", nk_rect(30, 30, 150, 240),
-            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
             unsigned int level = level_manager.m_level_idx,
                          level_targets_hit = level_manager.m_level_targets_hit,
@@ -1072,7 +1071,7 @@ LoopRetVal GameMainLoop::loop()
         int time_window_height = std::max<int>(time_window_height_min,
                                                time_window_header_height + 25 * pracice_times.size());
         if (nk_begin(&ui.m_ctx, "Previous times:", nk_rect(30, 280, 150, time_window_height),
-            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE | NK_WINDOW_NO_SCROLLBAR))
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
             nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
 
@@ -1365,8 +1364,8 @@ LoopRetVal GameMainLoop::loop()
             const size_t tagets_amount = targets.size();
             for (size_t i = 0; i < tagets_amount; ++i)
             {
-                glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
-                targets[i].draw(light_shader, camera, lights, current_frame_time, pos_offset);
+                const glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
+                targets[i].draw(camera, lights, current_frame_time, pos_offset);
             }
 
             if (use_fbo) fbo3d.unbind();

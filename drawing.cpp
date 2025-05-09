@@ -391,7 +391,8 @@ void Drawing::crosshair(const Shaders::Program& line_shader, const Meshes::VBO& 
     Drawing::screenLine(line_shader, line_vbo, screen_res, v1_y, v2_y, thickness, color);
 }
 
-void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
+//USELESS
+/*void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
                      const std::vector<std::reference_wrapper<const Lighting::Light>>& lights, const Game::Target& target,
                      double current_frame_time, glm::vec3 pos_offset)
 {
@@ -429,4 +430,4 @@ void Drawing::target(const Shaders::Program& shader, const Drawing::Camera3D& ca
     target.m_vbo.bind();
         glDrawArrays(GL_TRIANGLES, 0, target.m_vbo.vertexCount());
     target.m_vbo.unbind();
-}
+}*/
