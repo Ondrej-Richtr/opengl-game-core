@@ -22,3 +22,4 @@ X|0. 0. 0|3. 4. 2025|publish web version
  |0. 0. 0|5. 4. 2025|fix pointer locking - https://github.com/emscripten-core/emscripten/issues/5120
  |0. 0. 0|25. 4. 2025|fix slow movement when looking up/down
  |0. 0. 0|8. 5. 2025|add sound - miniaudio or OpenAL?
+ |0. 0. 0|11. 5. 2025|check all members of GameMainLoop and convert to constexpr

@@ -774,14 +774,23 @@ namespace Collision
         float m_travel = 0.f; // distance that ray had to travel to make this collision
         glm::vec3 m_point = glm::vec3(0.f);
 
-        RayCollision() = default;
-        RayCollision(float travel, glm::vec3 point);
-        ~RayCollision() = default;
+        RayCollision() = default;                       // init no hit
+        RayCollision(float travel, glm::vec3 point);    // init hit
     };
+
+    glm::vec3 closestRayProjection(Ray ray, glm::vec3 point);
 
     RayCollision rayPlane(Ray ray, glm::vec3 plane_normal, glm::vec3 plane_pos);
 
     RayCollision rayTarget(Ray ray, glm::vec3 target_normal, glm::vec3 target_pos, float target_radius);
+
+    RayCollision raySphere(Ray ray, glm::vec3 sphere_pos, float sphere_radius);
+
+    RayCollision rayFlatTargets(Ray ray, const std::vector<Game::Target>& targets,
+                                double frame_time, size_t *out_idx);
+
+    RayCollision rayBallTargets(Collision::Ray ray, const std::vector<Game::Target>& ball_targets,
+                                double frame_time, size_t *out_idx);
 }
 
 namespace UI
@@ -858,8 +867,10 @@ namespace Game
     class Target
     {
     public:
-        constexpr static const float size_min = 0.1f, size_max = 0.5f;
+        constexpr static const float size_min = 0.2f, size_max = 1.f; // in scale to target size
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
+        constexpr static const float flat_target_size = 0.5f;
+        constexpr static const float ball_target_size = 0.5f; //TODO this value
 
         const Meshes::Model& m_model;
 
@@ -872,16 +883,11 @@ namespace Game
 
         Target& operator=(const Target& other);
 
-        glm::vec2 getSize(double time) const;
+        float getScale(double time) const;
 
-        void draw(const Drawing::Camera3D& camera,
+        void draw(Game::TargetType type, const Drawing::Camera3D& camera,
                   const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                   double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
-    };
-
-    class BallTarget
-    {
-        //TODO implement this
     };
 
     struct LevelPart
@@ -1061,8 +1067,9 @@ struct GameMainLoop
     //Textures
     Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture,
                         turret_texture, ball_texture, water_specular_map;
-    glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size, target_texture_world_size;
-    float target_texture_dish_radius; // radius of the target dish compared to the size of the full image (1.0x1.0)
+    glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size;
+    static constexpr glm::vec2 target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio should be kept
+    static constexpr float target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     //RenderBuffers
     // GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
@@ -1090,12 +1097,13 @@ struct GameMainLoop
     // Drawing::FrameBuffer fbo3d;
 
     //Game
+    static constexpr float ball_world_radius = 0.11f;
+    static constexpr glm::vec3 ball_origin_offset = glm::vec3(0.f, -ball_world_radius, 0.f);
     glm::vec3 wall_size, wall_pos, target_pos_offset;
     Meshes::VBO wall_vbo;
     Meshes::Mesh target_mesh;
-    Meshes::Model target_model;
-    std::vector<Game::Target> targets;
-    std::vector<Game::BallTarget> ball_targets; //TODO use those
+    Meshes::Model target_model, ball_model;
+    std::vector<Game::Target> targets, ball_targets;
     Utils::RNG target_rng_width, target_rng_height;
     Game::LevelManager level_manager;
     double practice_time_start, practice_time_end;
@@ -1121,7 +1129,7 @@ struct GameMainLoop
 
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!
-    //destructor does the job of deinits automatically, but we can't call destructor before the whole init is completed
+    //  destructor does the job of deinits automatically, but we can't call destructor before the whole init is completed
     void initCamera();
     void deinitCamera();
     bool initVBOsAndMeshes();
@@ -1142,4 +1150,8 @@ private:
     // void deinitFrameBuffers();
     bool initGameStuff();
     void deinitGameStuff();
+
+    //other utility methods
+    unsigned int getTargetsAlive() const;
+    void handleTargetHit(double current_frame_time);
 };

@@ -207,8 +207,6 @@ bool GameMainLoop::initTextures()
 
     //Target
     const char *target_path = "assets/target_256.png";
-    target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio, size itself does not matter really
-    target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
     new (&target_texture) Texture(target_path);
     if (target_texture.m_id == empty_id)
@@ -612,7 +610,6 @@ bool GameMainLoop::initGameStuff()
 
     //Targets
     using Target = Game::Target;
-    using BallTarget = Game::BallTarget;
 
     new (&target_mesh) Meshes::Mesh();
     target_mesh = std::move(Meshes::generateQuadMesh(glm::vec2(1.f), target_texture_world_size, Meshes::TexcoordStyle::stretch));
@@ -625,11 +622,21 @@ bool GameMainLoop::initGameStuff()
     }
 
     new (&target_model) Meshes::Model(light_shader, target_mesh, target_material);
+    assert(target_texture_world_size.x == target_texture_world_size.y);
+    const float target_dish_world_size = target_texture_world_size.x * target_texture_dish_radius * 2.f;
+    target_model.m_scale *= Game::Target::flat_target_size / target_dish_world_size;
+
+    new (&ball_model) Meshes::Model(light_shader, ball_mesh, ball_material);
+    ball_model.m_origin_offset = ball_origin_offset;
+    const float ball_world_size = ball_world_radius * 2.f;
+    ball_model.m_scale *= Game::Target::ball_target_size / ball_world_size;
+    const Color3F ball_model_color_tint(0.8f, 0.3f, 0.15f);
+    ball_model.m_material.m_props.m_ambient = ball_model_color_tint;
+    ball_model.m_material.m_props.m_diffuse = ball_model_color_tint;
 
     target_pos_offset = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
     new (&targets) std::vector<Target>();
-
-    new (&ball_targets) std::vector<BallTarget>();
+    new (&ball_targets) std::vector<Target>();
 
     //Targets rng init
     new (&target_rng_width) Utils::RNG(-1000, 1000);
@@ -645,7 +652,7 @@ bool GameMainLoop::initGameStuff()
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 1, 0.5f, Game::targetMiddleWallPosition } }, true });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 3, 0.6f } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 5, 0.65f } } });
-    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 6, 0.7f },
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 6, 0.7f },
                                                           LevelPart{ TargetType::target, 6, 4.f } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 15, 0.85f } }, true });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 30, 1.3f } }, true });
@@ -663,12 +670,42 @@ void GameMainLoop::deinitGameStuff()
     wall_vbo.~VBO();
     target_mesh.~Mesh();
     target_model.~Model();
+    ball_model.~Model();
     targets.~vector();
     ball_targets.~vector();
     target_rng_width.~RNG();
     target_rng_height.~RNG();
     level_manager.~LevelManager();
     pracice_times.~vector();
+}
+
+unsigned int GameMainLoop::getTargetsAlive() const
+{
+    return static_cast<unsigned int>(targets.size() + ball_targets.size());
+}
+
+void GameMainLoop::handleTargetHit(double current_frame_time)
+{
+    bool next_level_reached = level_manager.handleTargetHit(current_frame_time);
+
+    if (next_level_reached && level_manager.m_level_idx == 1) // first level started
+    {
+        practice_time_start = current_frame_time;
+        practice_time_end = -1.f;
+    }
+
+    if (level_manager.levelsCompleted()) // all levels completed
+    {
+        level_manager.prepareFirstLevel(current_frame_time);
+        practice_time_end = current_frame_time;
+
+        //save the time
+        assert(practice_time_start >= 0.f);
+        float practice_time = static_cast<float>(practice_time_end - practice_time_start);
+        assert(practice_time >= 0.f);
+        pracice_times.push_back(practice_time);
+        printf("Practice time: %.3fs\n", practice_time);
+    }
 }
 
 int GameMainLoop::init()
@@ -860,55 +897,40 @@ LoopRetVal GameMainLoop::loop()
         level_manager.prepareFirstLevel(current_frame_time);
     }
 
+    //TODO this system does not work properly when shooting from an angle - ball gets hit even when aiming at the flat target
+    // possible fix could be to also check for a hit of the wall, if target hit is further from the player than the wall hit count it as a miss
     if (mbutton_left_is_clicked)
     {
-        for (size_t i = 0; i < targets.size(); ++i)
+        size_t hit_idx = 0;
+
+        //ball targets - they go first as they get hit before flat targets
+        Collision::RayCollision rcoll = Collision::rayBallTargets(mouse_ray, ball_targets, current_frame_time, &hit_idx);
+        if (rcoll.m_hit)
         {
-            size_t idx = targets.size() - 1 - i; // iterating from the back so the closest targets get hit first
-
-            glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE * (i + 1)); // adding offset so we reduce z-fighting
-            glm::vec3 pos = targets[idx].m_pos + pos_offset;
-            glm::vec2 size = targets[idx].getSize(current_frame_time);
-            assert(size.x == size.y);
-            float radius = size.x * target_texture_dish_radius;
-
-            Collision::RayCollision rcoll = Collision::rayTarget(mouse_ray, glm::vec3(0.f, 0.f, 1.f), pos, radius);
+            assert(hit_idx < ball_targets.size());
+            ball_targets.erase(ball_targets.begin() + hit_idx); // delete the target at `out_idx`
+            handleTargetHit(current_frame_time);
+        }
+        else
+        {
+            //flat targets - only if no ball target hit
+            rcoll = Collision::rayFlatTargets(mouse_ray, targets, current_frame_time, &hit_idx);
             if (rcoll.m_hit)
             {
-                targets.erase(targets.begin() + idx); // delete the target at `idx`
-                
-                bool next_level_reached = level_manager.handleTargetHit(current_frame_time);
-
-                if (next_level_reached && level_manager.m_level_idx == 1) // first level started
-                {
-                    practice_time_start = current_frame_time;
-                    practice_time_end = -1.f;
-                }
-
-                if (level_manager.levelsCompleted()) // all levels completed
-                {
-                    level_manager.prepareFirstLevel(current_frame_time);
-                    practice_time_end = current_frame_time;
-
-                    //save the time
-                    assert(practice_time_start >= 0.f);
-                    float practice_time = static_cast<float>(practice_time_end - practice_time_start);
-                    assert(practice_time >= 0.f);
-                    pracice_times.push_back(practice_time);
-                    printf("Practice time: %.3fs\n", practice_time);
-                }
-
-                break;
+                assert(hit_idx < targets.size());
+                targets.erase(targets.begin() + hit_idx); // delete the target at `out_idx`
+                handleTargetHit(current_frame_time);
             }
         }
     }
 
     // ---Target spawning---
     {
+        //TODO correct spawnable area for both flat and ball targets
         glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
                                             - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
         
-        unsigned int targets_alive = static_cast<unsigned int>(targets.size());
+        unsigned int targets_alive = getTargetsAlive();
         unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, targets_alive);
 
         for (unsigned int i = 0; i < target_spawn_amount; ++i)
@@ -918,7 +940,17 @@ LoopRetVal GameMainLoop::loop()
             if (current_level_part)
             {
                 glm::vec3 pos = target_pos_offset + current_level_part->spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
-                targets.emplace_back(target_model, pos, current_frame_time);
+
+                switch(current_level_part->m_type)
+                {
+                case Game::TargetType::target:
+                    targets.emplace_back(target_model, pos, current_frame_time);
+                    break;
+                case Game::TargetType::ball:
+                    ball_targets.emplace_back(ball_model, pos, current_frame_time);
+                    break;
+                default: assert(false); // unimplemented case for TargetType enum
+                }
             }
         }
     }
@@ -948,7 +980,6 @@ LoopRetVal GameMainLoop::loop()
         flashlight.m_pos = camera.m_pos;
         flashlight.m_dir = camera.getDirection();
 
-        // lights.emplace_back(&flashlight);
         lights.push_back(flashlight);
     }
 
@@ -1043,8 +1074,8 @@ LoopRetVal GameMainLoop::loop()
             }
             nk_layout_row_dynamic(&ui.m_ctx, 30, 1);
             {
-                nk_size whole_targets_copy = level_manager.getPartialTargetAmount(0, level_manager.m_level_idx) + level_targets_hit;
-                nk_progress(&ui.m_ctx, &whole_targets_copy, whole_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
+                nk_size whole_targets_hit_copy = level_manager.getPartialTargetAmount(0, level_manager.m_level_idx) + level_targets_hit;
+                nk_progress(&ui.m_ctx, &whole_targets_hit_copy, whole_target_amount, NK_FIXED); // ignoring the return value as we use NK_FIXED
             }
 
             //practice time
@@ -1242,7 +1273,6 @@ LoopRetVal GameMainLoop::loop()
                 glm::vec3 pos = glm::vec3(3.6f, 0.33f, 2.2f);
                 glm::vec3 scale = glm::vec3(2.5f);
                 const float outline_scale_factor = 1.1f;
-                glm::vec3 origin_offset = glm::vec3(0.f, -0.11f, 0.f);
                 const Color3F outline_color(0.f, 1.f, 1.f);
 
                 //drawing the object itself
@@ -1252,7 +1282,7 @@ LoopRetVal GameMainLoop::loop()
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, pos);
                     model_mat = glm::scale(model_mat, scale);
-                    model_mat = glm::translate(model_mat, origin_offset);
+                    model_mat = glm::translate(model_mat, ball_origin_offset);
 
                     glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
 
@@ -1278,7 +1308,7 @@ LoopRetVal GameMainLoop::loop()
                         glm::mat4 model_mat(1.f);
                         model_mat = glm::translate(model_mat, pos);
                         model_mat = glm::scale(model_mat, scale * outline_scale_factor);
-                        model_mat = glm::translate(model_mat, origin_offset);
+                        model_mat = glm::translate(model_mat, ball_origin_offset);
 
                         light_src_shader.set("model", model_mat);
                         light_src_shader.set("view", view_mat);
@@ -1365,7 +1395,19 @@ LoopRetVal GameMainLoop::loop()
             for (size_t i = 0; i < tagets_amount; ++i)
             {
                 const glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
-                targets[i].draw(camera, lights, current_frame_time, pos_offset);
+                targets[i].draw(Game::TargetType::target, camera, lights, current_frame_time, pos_offset);
+            }
+
+            //ball targets
+            // we change the GL settings back
+            glEnable(GL_CULL_FACE);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
+
+            const size_t ball_targets_amount = ball_targets.size();
+            for (size_t i = 0; i < ball_targets_amount; ++i)
+            {
+                ball_targets[i].draw(Game::TargetType::ball, camera, lights, current_frame_time);
             }
 
             if (use_fbo) fbo3d.unbind();

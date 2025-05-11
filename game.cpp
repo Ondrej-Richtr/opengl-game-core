@@ -35,24 +35,38 @@ Game::Target& Game::Target::operator=(const Game::Target& other)
     return *this;
 }
 
-glm::vec2 Game::Target::getSize(double time) const
+float Game::Target::getScale(double time) const
 {
     assert(size_min <= size_max);
 
-    if (time <= m_spawn_time) return glm::vec2(size_min);
+    if (time <= m_spawn_time) return size_min;
     
-    if (time >= m_spawn_time + grow_time) return glm::vec2(size_max);
+    if (time >= m_spawn_time + grow_time) return size_max;
 
     // linear interpolation:
     double t = (time - m_spawn_time) / grow_time;
-    return glm::vec2((float)(t * size_max + (1.f - t) * size_min));
+    return static_cast<float>(t * size_max + (1.f - t) * size_min);
 }
 
-void Game::Target::draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
+                        const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                         double current_frame_time, glm::vec3 pos_offset) const
 {
-    const glm::vec2 size = getSize(current_frame_time);
-    m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(size.x, size.y, 1.f));
+    const float scale = getScale(current_frame_time);
+
+    switch (type)
+    {
+    case Game::TargetType::target:
+        {
+            m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(scale, scale, 1.f));
+            return;
+        }
+    case Game::TargetType::ball:
+        {
+            m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(scale));
+            return;
+        }
+    }
 }
 
 Game::LevelPart::LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
@@ -99,9 +113,12 @@ const Game::LevelPart& Game::Level::getPart(unsigned int idx) const
 unsigned int Game::Level::getPartIdxFromSpawnedTargets(unsigned int targets_spawned) const
 {
     //TODO check this, it might also be slower than simple linear loop
-    auto upper = std::upper_bound(m_target_amount_cum.begin(), m_target_amount_cum.end(), targets_spawned);
+    auto begin = m_target_amount_cum.begin();
+    auto end = m_target_amount_cum.end();
+
+    auto upper = std::upper_bound(begin, end, targets_spawned);
     assert(upper != m_target_amount_cum.end());
-    return std::distance(m_target_amount_cum.begin(), upper);
+    return static_cast<unsigned int>(std::distance(begin, upper));
 }
 
 unsigned int Game::Level::getTargetAmount() const
