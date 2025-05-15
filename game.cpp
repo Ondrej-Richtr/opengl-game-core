@@ -10,10 +10,12 @@ glm::vec3 Game::targetRandomWallPosition(Utils::RNG& width, Utils::RNG& height, 
     assert(wall_size.x > 0.f);
     float wall_width_half = wall_size.x / 2.f;
     float width_rolled = width.generateFloatRange(-wall_width_half, wall_width_half);
+    // float width_rolled = wall_width_half; //DEBUG
 
     assert(wall_size.y > 0.f);
     float wall_height_half = wall_size.y / 2.f;
     float height_rolled = height.generateFloatRange(-wall_height_half, wall_height_half);
+    // float height_rolled = -wall_height_half; //DEBUG
 
     return glm::vec3(width_rolled, height_rolled, 0.f);
 }

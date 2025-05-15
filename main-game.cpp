@@ -634,7 +634,7 @@ bool GameMainLoop::initGameStuff()
     ball_model.m_material.m_props.m_ambient = ball_model_color_tint;
     ball_model.m_material.m_props.m_diffuse = ball_model_color_tint;
 
-    target_pos_offset = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
+    wall_center = glm::vec3(0.f, wall_size.y / 2.f, wall_size.z / 2.f);
     new (&targets) std::vector<Target>();
     new (&ball_targets) std::vector<Target>();
 
@@ -926,9 +926,11 @@ LoopRetVal GameMainLoop::loop()
 
     // ---Target spawning---
     {
-        //TODO correct spawnable area for both flat and ball targets
-        glm::vec2 wall_spawnable_area = glm::vec2(wall_size.x, wall_size.y)
-                                            - glm::vec2(target_texture_dish_radius * Game::Target::size_max * 2.f); // *2 for both borders
+        // not using radius as we would *2 for both borders
+        glm::vec2 flat_target_spawn_area = glm::vec2(wall_size.x, wall_size.y)
+                                            - glm::vec2(Game::Target::flat_target_size);
+        glm::vec2 ball_target_spawn_area = glm::vec2(wall_size.x, wall_size.y)
+                                            - glm::vec2(Game::Target::ball_target_size);
         
         unsigned int targets_alive = getTargetsAlive();
         unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, targets_alive);
@@ -939,16 +941,21 @@ LoopRetVal GameMainLoop::loop()
             assert(current_level_part != NULL);
             if (current_level_part)
             {
-                glm::vec3 pos = target_pos_offset + current_level_part->spawnNext(target_rng_width, target_rng_height, wall_spawnable_area);
 
                 switch(current_level_part->m_type)
                 {
                 case Game::TargetType::target:
-                    targets.emplace_back(target_model, pos, current_frame_time);
-                    break;
+                    {
+                        glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, flat_target_spawn_area);
+                        targets.emplace_back(target_model, pos, current_frame_time);
+                        break;
+                    }
                 case Game::TargetType::ball:
-                    ball_targets.emplace_back(ball_model, pos, current_frame_time);
-                    break;
+                    {
+                        glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, ball_target_spawn_area);
+                        ball_targets.emplace_back(ball_model, pos, current_frame_time);
+                        break;
+                    }
                 default: assert(false); // unimplemented case for TargetType enum
                 }
             }

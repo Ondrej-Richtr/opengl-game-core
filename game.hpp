@@ -870,7 +870,7 @@ namespace Game
         constexpr static const float size_min = 0.2f, size_max = 1.f; // in scale to target size
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
         constexpr static const float flat_target_size = 0.5f;
-        constexpr static const float ball_target_size = 0.5f; //TODO this value
+        constexpr static const float ball_target_size = 0.35f;
 
         const Meshes::Model& m_model;
 
@@ -1099,7 +1099,7 @@ struct GameMainLoop
     //Game
     static constexpr float ball_world_radius = 0.11f;
     static constexpr glm::vec3 ball_origin_offset = glm::vec3(0.f, -ball_world_radius, 0.f);
-    glm::vec3 wall_size, wall_pos, target_pos_offset;
+    glm::vec3 wall_size, wall_pos, wall_center;
     Meshes::VBO wall_vbo;
     Meshes::Mesh target_mesh;
     Meshes::Model target_model, ball_model;
