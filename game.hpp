@@ -108,6 +108,10 @@ struct Color3F
             : r(color.r), g(color.g), b(color.b) {}
     Color3F(const GLfloat rgb[])
             : r(rgb[0]), g(rgb[1]), b(rgb[2]) {}
+    
+    glm::vec3 toVec() const { return glm::vec3(r, g, b); }
+
+    Color3F mult(const Color3F other) const { return toVec() * other.toVec(); }
 };
 
 struct Color
@@ -278,6 +282,8 @@ namespace Drawing
 
         bool isComplete() const;
     };
+
+    Color3F blendScreen(Color3F a, Color3F b);
 
     void clear(Color color);
 
@@ -742,6 +748,10 @@ namespace Meshes
         //TODO add rotation as a parameter too
         void draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                   glm::vec3 pos, glm::vec3 scale = glm::vec3(1.f)) const;
+        
+        void drawWithColorTint(const Drawing::Camera3D& camera,
+                               const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+                               glm::vec3 pos, const Color3F color_tint, glm::vec3 scale = glm::vec3(1.f)) const;
     };
 
     int loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
@@ -862,11 +872,23 @@ namespace Game
     glm::vec3 targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
     glm::vec3 targetRandomWallPosition(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size);
 
+    //TODO this to take double as a template parameter
+    template <unsigned int factor> float targetGetScale_linearFactor(double alive_time);
+
+    //TODO impelment this
+    // struct PosChanger
+    // {
+    //     virtual glm::vec3 getPos(glm::vec3 size, double alive_time);
+    // };
+
     enum class TargetType { target, ball };
 
     class Target
     {
+        static float getScale_default(double time);
     public:
+        typedef float (ScaleFnPtr)(double alive_time);
+
         constexpr static const float size_min = 0.2f, size_max = 1.f; // in scale to target size
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
         constexpr static const float flat_target_size = 0.5f;
@@ -874,10 +896,13 @@ namespace Game
 
         const Meshes::Model& m_model;
 
+        Color3F m_color_tint;
+        ScaleFnPtr *m_scale_fn;
         glm::vec3 m_pos;
         double m_spawn_time;
 
-        Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time);
+        Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time,
+               Color3F color_tint = Color3F(1.f, 1.f, 1.f), ScaleFnPtr *m_scale_fn = NULL);
         Target(const Target& other);
         ~Target() = default;
 
@@ -894,6 +919,7 @@ namespace Game
     {
         typedef glm::vec3 (SpawnNextFnPtr)(Utils::RNG&, Utils::RNG&, glm::vec2);
         SpawnNextFnPtr *m_spawn_next_fn;
+        Target::ScaleFnPtr *m_scale_fn;
         
         TargetType m_type;
         unsigned int m_target_amount;
@@ -901,7 +927,8 @@ namespace Game
         Color3F m_color;
 
         LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
-                  SpawnNextFnPtr spawn_next_fn = Game::targetRandomWallPosition, Color3F color = Color3F{ 1.0, 1.0, 1.0 });
+                  SpawnNextFnPtr spawn_next_fn = Game::targetRandomWallPosition,
+                  Target::ScaleFnPtr scale_fn = NULL, Color3F color = Color3F{ 1.0, 1.0, 1.0 });
 
         glm::vec3 spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
     };

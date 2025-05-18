@@ -274,6 +274,15 @@ bool Drawing::FrameBuffer::isComplete() const
     return status == GL_FRAMEBUFFER_COMPLETE;
 }
 
+Color3F Drawing::blendScreen(Color3F a, Color3F b)
+{
+    const glm::vec3 one(1.f);
+    const glm::vec3 one_a = one - a.toVec();
+    const glm::vec3 one_b = one - b.toVec();
+    const glm::vec3 color = one - (one_a * one_b);
+    return Color3F(color);
+}
+
 void Drawing::clear(Color color)
 {
     const ColorF colorf = color.toFloat();

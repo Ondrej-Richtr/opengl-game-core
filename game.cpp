@@ -25,11 +25,47 @@ glm::vec3 Game::targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, 
     return glm::vec3(0.f);
 }
 
-Game::Target::Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time)
-                : m_model(model), m_pos(pos), m_spawn_time(spawn_time) {}
+float Game::Target::getScale_default(double alive_time) //TODO probably unite with targetGetScale_linearFactor
+{
+    assert(size_min <= size_max);
+
+    if (alive_time <= 0.f) return size_min;
+    
+    if (alive_time >= grow_time) return size_max;
+
+    // linear interpolation:
+    double t = alive_time / grow_time;
+    return static_cast<float>(t * size_max + (1.f - t) * size_min);
+}
+
+template <unsigned int factor>
+float Game::targetGetScale_linearFactor(double alive_time)
+{
+    assert(Game::Target::size_min <= Game::Target::size_max);
+    double grow_time_factored = Game::Target::grow_time / static_cast<double>(factor);
+    assert(grow_time_factored >= 0.f);
+
+    if (alive_time <= 0.f) return Game::Target::size_min;
+    
+    if (alive_time >= grow_time_factored) return Game::Target::size_max;
+
+    // linear interpolation:
+    double t = alive_time / grow_time_factored;
+    return static_cast<float>(t * Game::Target::size_max + (1.f - t) * Game::Target::size_min);
+}
+template float Game::targetGetScale_linearFactor<3>(double alive_time);
+
+Game::Target::Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time,
+                     Color3F color_tint, Game::Target::ScaleFnPtr *scale_fn)
+                : m_model(model), m_color_tint(color_tint), m_scale_fn(scale_fn),
+                  m_pos(pos), m_spawn_time(spawn_time)
+{
+    if (m_scale_fn == NULL) m_scale_fn = getScale_default;
+}
 
 Game::Target::Target(const Target& other)
-                : m_model(other.m_model), m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
+                : m_model(other.m_model), m_color_tint(other.m_color_tint), m_scale_fn(other.m_scale_fn),
+                  m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
 
 Game::Target& Game::Target::operator=(const Game::Target& other)
 {
@@ -39,15 +75,11 @@ Game::Target& Game::Target::operator=(const Game::Target& other)
 
 float Game::Target::getScale(double time) const
 {
-    assert(size_min <= size_max);
+    assert(m_scale_fn != NULL);
 
-    if (time <= m_spawn_time) return size_min;
-    
-    if (time >= m_spawn_time + grow_time) return size_max;
+    const double alive_time = time - m_spawn_time;
 
-    // linear interpolation:
-    double t = (time - m_spawn_time) / grow_time;
-    return static_cast<float>(t * size_max + (1.f - t) * size_min);
+    return m_scale_fn(alive_time);
 }
 
 void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
@@ -60,21 +92,21 @@ void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
     {
     case Game::TargetType::target:
         {
-            m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(scale, scale, 1.f));
+            m_model.drawWithColorTint(camera, lights, m_pos + pos_offset, m_color_tint, glm::vec3(scale, scale, 1.f));
             return;
         }
     case Game::TargetType::ball:
         {
-            m_model.draw(camera, lights, m_pos + pos_offset, glm::vec3(scale));
+            m_model.drawWithColorTint(camera, lights, m_pos + pos_offset, m_color_tint, glm::vec3(scale));
             return;
         }
     }
 }
 
 Game::LevelPart::LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
-                           SpawnNextFnPtr *spawn_next_fn, Color3F color)
+                           SpawnNextFnPtr *spawn_next_fn, Game::Target::ScaleFnPtr scale_fn, Color3F color)
         : m_spawn_next_fn(spawn_next_fn), m_type(type), m_target_amount(target_amount),
-          m_spawn_rate(spawn_rate), m_color(color)
+          m_spawn_rate(spawn_rate), m_scale_fn(scale_fn), m_color(color)
 {
     assert(m_target_amount > 0); // level part without any targets makes no sense
     assert(spawn_next_fn != NULL); // spawning function must be defined

@@ -630,7 +630,8 @@ bool GameMainLoop::initGameStuff()
     ball_model.m_origin_offset = ball_origin_offset;
     const float ball_world_size = ball_world_radius * 2.f;
     ball_model.m_scale *= Game::Target::ball_target_size / ball_world_size;
-    const Color3F ball_model_color_tint(0.8f, 0.3f, 0.15f);
+    // const Color3F ball_model_color_tint(0.8f, 0.3f, 0.15f);
+    const Color3F ball_model_color_tint(1.f, 1.f, 1.f);
     ball_model.m_material.m_props.m_ambient = ball_model_color_tint;
     ball_model.m_material.m_props.m_diffuse = ball_model_color_tint;
 
@@ -649,11 +650,16 @@ bool GameMainLoop::initGameStuff()
 
     new (&level_manager) Game::LevelManager();
 
-    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 1, 0.5f, Game::targetMiddleWallPosition } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 1, 0.5f,
+                                                                     Game::targetMiddleWallPosition, NULL, Color3F(0.3f, 0.9f, 0.6f) } }, true });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 3, 0.6f } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 5, 0.65f } } });
-    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 6, 0.7f },
-                                                          LevelPart{ TargetType::target, 6, 4.f } } });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 6, 0.7f,
+                                                                     Game::targetRandomWallPosition, Game::targetGetScale_linearFactor<3>,
+                                                                     Color3F(0.8f, 0.3f, 0.15f) },
+                                                          LevelPart{ TargetType::target, 6, 4.f,
+                                                                     Game::targetRandomWallPosition, NULL,
+                                                                     Color3F(0.35f, 0.6f, 0.9f) } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 15, 0.85f } }, true });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 30, 1.3f } }, true });
 
@@ -941,19 +947,21 @@ LoopRetVal GameMainLoop::loop()
             assert(current_level_part != NULL);
             if (current_level_part)
             {
+                Game::Target::ScaleFnPtr *scale_fn = current_level_part->m_scale_fn;
+                Color3F color = current_level_part->m_color;
 
                 switch(current_level_part->m_type)
                 {
                 case Game::TargetType::target:
                     {
                         glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, flat_target_spawn_area);
-                        targets.emplace_back(target_model, pos, current_frame_time);
+                        targets.emplace_back(target_model, pos, current_frame_time, color, scale_fn);
                         break;
                     }
                 case Game::TargetType::ball:
                     {
                         glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, ball_target_spawn_area);
-                        ball_targets.emplace_back(ball_model, pos, current_frame_time);
+                        ball_targets.emplace_back(ball_model, pos, current_frame_time, color, scale_fn);
                         break;
                     }
                 default: assert(false); // unimplemented case for TargetType enum

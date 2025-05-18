@@ -760,6 +760,47 @@ void Meshes::Model::draw(const Drawing::Camera3D& camera, const std::vector<std:
     m_mesh.draw();
 }
 
+void Meshes::Model::drawWithColorTint(const Drawing::Camera3D& camera,
+                                      const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
+                                      glm::vec3 pos, const Color3F color_tint, glm::vec3 scale) const
+{
+    m_shader.use();
+
+    //vs
+    glm::mat4 model_mat(1.f);
+    model_mat = glm::translate(model_mat, m_translate + pos);
+    model_mat = glm::scale(model_mat, m_scale * scale);
+    model_mat = glm::translate(model_mat, m_origin_offset);
+
+    glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+    m_shader.set("model", model_mat);
+    m_shader.set("normalMat", normal_mat);
+    m_shader.set("view", camera.getViewMatrix());
+    m_shader.set("projection", camera.getProjectionMatrix());
+
+    //fs
+    Lighting::Material tinted_material = m_material;
+    // tinted_material.m_props.m_ambient = Drawing::blendScreen(m_material.m_props.m_ambient, color_tint);
+    // tinted_material.m_props.m_diffuse = Drawing::blendScreen(m_material.m_props.m_diffuse, color_tint);
+    tinted_material.m_props.m_ambient = m_material.m_props.m_ambient.mult(color_tint);
+    tinted_material.m_props.m_diffuse = m_material.m_props.m_diffuse.mult(color_tint);
+
+    m_shader.set("cameraPos", camera.m_pos);
+    m_shader.setMaterial(tinted_material);
+    
+    int lights_set = m_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights);
+    assert(lights_set >= 0);
+    assert((size_t)lights_set <= lights.size());
+    if ((size_t)lights_set < lights.size())
+    {
+        fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %zu, set amount: %d\n.",
+                lights.size(), lights_set);
+    }
+
+    m_mesh.draw();
+}
+
 //Loads geometry and material data out of .obj files with usage of `tinyobj_loader_c`, returns 0 when success, non-zero when error.
 //Optionally can load materials as well.
 int Meshes::loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
