@@ -955,19 +955,29 @@ LoopRetVal GameMainLoop::loop()
                 case Game::TargetType::target:
                     {
                         glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, flat_target_spawn_area);
-                        targets.emplace_back(target_model, pos, current_frame_time, color, scale_fn);
+                        targets.emplace_back(target_model, current_frame_time, Game::PosChanger(pos), color, scale_fn);
                         break;
                     }
                 case Game::TargetType::ball:
                     {
                         glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, ball_target_spawn_area);
-                        ball_targets.emplace_back(ball_model, pos, current_frame_time, color, scale_fn);
+                        ball_targets.emplace_back(ball_model, current_frame_time, Game::PosChanger(pos), color, scale_fn);
                         break;
                     }
                 default: assert(false); // unimplemented case for TargetType enum
                 }
             }
         }
+    }
+
+    // ---Target position updating---
+    for (size_t i = 0; i < targets.size(); ++i)
+    {
+        targets[i].updatePos(current_frame_time);
+    }
+    for (size_t i = 0; i < ball_targets.size(); ++i)
+    {
+        ball_targets[i].updatePos(current_frame_time);
     }
 
     // ---Player movement---

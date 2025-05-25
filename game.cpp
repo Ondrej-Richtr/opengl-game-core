@@ -55,17 +55,22 @@ float Game::targetGetScale_linearFactor(double alive_time)
 }
 template float Game::targetGetScale_linearFactor<3>(double alive_time);
 
-Game::Target::Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time,
+Game::PosChanger& Game::Target::getCurrentPosChanger()
+{
+    return std::visit([](Game::PosChanger& val) -> Game::PosChanger& { return val; }, m_pos_changer);
+}
+
+Game::Target::Target(const Meshes::Model& model, double spawn_time, Game::Target::PosChangerVariant&& pos_changer,
                      Color3F color_tint, Game::Target::ScaleFnPtr *scale_fn)
-                : m_model(model), m_color_tint(color_tint), m_scale_fn(scale_fn),
-                  m_pos(pos), m_spawn_time(spawn_time)
+                : m_model(model), m_pos(0.f), m_color_tint(color_tint), m_scale_fn(scale_fn),
+                  m_pos_changer(std::move(pos_changer)), m_spawn_time(spawn_time)
 {
     if (m_scale_fn == NULL) m_scale_fn = getScale_default;
 }
 
 Game::Target::Target(const Target& other)
-                : m_model(other.m_model), m_color_tint(other.m_color_tint), m_scale_fn(other.m_scale_fn),
-                  m_pos(other.m_pos), m_spawn_time(other.m_spawn_time) {}
+                : m_model(other.m_model), m_pos(other.m_pos), m_color_tint(other.m_color_tint), m_scale_fn(other.m_scale_fn),
+                  m_pos_changer(other.m_pos_changer), m_spawn_time(other.m_spawn_time) {}
 
 Game::Target& Game::Target::operator=(const Game::Target& other)
 {
@@ -82,22 +87,37 @@ float Game::Target::getScale(double time) const
     return m_scale_fn(alive_time);
 }
 
+void Game::Target::updatePos(double current_frame_time)
+{
+    const float scale = getScale(current_frame_time);
+    const double alive_time = current_frame_time - m_spawn_time;
+
+    PosChanger& pos_changer = getCurrentPosChanger();
+    m_pos = pos_changer.getPos(glm::vec3(scale), alive_time);
+}
+
+glm::vec3 Game::Target::getPos() const
+{
+    return m_pos;
+}
+
 void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
                         const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
                         double current_frame_time, glm::vec3 pos_offset) const
 {
     const float scale = getScale(current_frame_time);
+    const glm::vec3 pos = getPos();
 
     switch (type)
     {
     case Game::TargetType::target:
         {
-            m_model.drawWithColorTint(camera, lights, m_pos + pos_offset, m_color_tint, glm::vec3(scale, scale, 1.f));
+            m_model.drawWithColorTint(camera, lights, pos + pos_offset, m_color_tint, glm::vec3(scale, scale, 1.f));
             return;
         }
     case Game::TargetType::ball:
         {
-            m_model.drawWithColorTint(camera, lights, m_pos + pos_offset, m_color_tint, glm::vec3(scale));
+            m_model.drawWithColorTint(camera, lights, pos + pos_offset, m_color_tint, glm::vec3(scale));
             return;
         }
     }

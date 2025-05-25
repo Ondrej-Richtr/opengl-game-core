@@ -96,7 +96,7 @@ Collision::RayCollision Collision::rayFlatTargets(Ray ray, const std::vector<Gam
         size_t idx = targets.size() - 1 - i;
 
         const glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
-        const glm::vec3 pos = targets[idx].m_pos + pos_offset;
+        const glm::vec3 pos = targets[idx].getPos() + pos_offset;
         const float radius = targets[idx].getScale(frame_time) * Game::Target::flat_target_size / 2.f;
 
         Collision::RayCollision rcoll = Collision::rayTarget(ray, target_normal, pos, radius);
@@ -119,8 +119,9 @@ Collision::RayCollision Collision::rayBallTargets(Collision::Ray ray, const std:
     for (size_t idx = 0; idx < ball_targets.size(); ++idx)
     {
         const float radius = ball_targets[idx].getScale(frame_time) * Game::Target::ball_target_size / 2.f;
+        const glm::vec3 pos = ball_targets[idx].getPos();
 
-        Collision::RayCollision rcoll = Collision::raySphere(ray, ball_targets[idx].m_pos, radius);
+        Collision::RayCollision rcoll = Collision::raySphere(ray, pos, radius);
         if (rcoll.m_hit && (!closest_rcoll.m_hit || rcoll.m_travel < closest_rcoll.m_travel))
         {
             // rcoll is closer hit than closest_hit or closest_hit is empty -> set rcoll as closest

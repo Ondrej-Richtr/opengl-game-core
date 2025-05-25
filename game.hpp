@@ -875,10 +875,23 @@ namespace Game
     //TODO this to take double as a template parameter
     template <unsigned int factor> float targetGetScale_linearFactor(double alive_time);
 
-    //TODO impelment this
-    // struct PosChanger
+    struct PosChanger
+    {
+        glm::vec3 m_init_pos;
+
+        PosChanger(glm::vec3 init_pos) : m_init_pos(init_pos) {}
+        virtual ~PosChanger() = default;
+
+        virtual glm::vec3 getPos(glm::vec3 size, double alive_time) { return m_init_pos; }
+    };
+
+    //TODO implement this
+    // struct PosChanger_float : PosChanger
     // {
-    //     virtual glm::vec3 getPos(glm::vec3 size, double alive_time);
+    //     PosChanger_float(glm::vec3 init_pos);
+    //     ~PosChanger_float() = default;
+
+    //     virtual glm::vec3 getPos(glm::vec3 size, double alive_time) override;
     // };
 
     enum class TargetType { target, ball };
@@ -886,8 +899,12 @@ namespace Game
     class Target
     {
         static float getScale_default(double time);
+
+        PosChanger& getCurrentPosChanger();
     public:
         typedef float (ScaleFnPtr)(double alive_time);
+        // using PosChangerVariant = std::variant<PosChanger, PosChanger_float>;
+        using PosChangerVariant = std::variant<PosChanger>;
 
         constexpr static const float size_min = 0.2f, size_max = 1.f; // in scale to target size
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
@@ -895,13 +912,14 @@ namespace Game
         constexpr static const float ball_target_size = 0.35f;
 
         const Meshes::Model& m_model;
+        glm::vec3 m_pos;
 
         Color3F m_color_tint;
         ScaleFnPtr *m_scale_fn;
-        glm::vec3 m_pos;
+        PosChangerVariant m_pos_changer;
         double m_spawn_time;
 
-        Target(const Meshes::Model& model, glm::vec3 pos, double spawn_time,
+        Target(const Meshes::Model& model, double spawn_time, PosChangerVariant&& pos_changer,
                Color3F color_tint = Color3F(1.f, 1.f, 1.f), ScaleFnPtr *m_scale_fn = NULL);
         Target(const Target& other);
         ~Target() = default;
@@ -909,6 +927,10 @@ namespace Game
         Target& operator=(const Target& other);
 
         float getScale(double time) const;
+
+        void updatePos(double current_frame_time);
+
+        glm::vec3 getPos() const;
 
         void draw(Game::TargetType type, const Drawing::Camera3D& camera,
                   const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
