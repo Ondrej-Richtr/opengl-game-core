@@ -25,6 +25,37 @@ glm::vec3 Game::targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, 
     return glm::vec3(0.f);
 }
 
+Game::PosChanger_float::PosChanger_float(glm::vec3 init_pos, glm::vec3 dir, glm::vec3 spawn_area_pos,
+                                         glm::vec2 spawn_area_size, float speed)
+                            : PosChanger(init_pos), m_dir(dir), m_area_pos(spawn_area_pos), m_area_size(spawn_area_size),
+                              m_prev_alive_time(0.f), m_speed(speed) {}
+
+void Game::PosChanger_float::updatePos(glm::vec3 size, double alive_time)
+{
+    float delta_time = static_cast<float>(alive_time) - m_prev_alive_time;
+    m_prev_alive_time = alive_time;
+
+    const float right = m_area_pos.x + (m_area_size.x / 2.f);
+    const float left  = m_area_pos.x - (m_area_size.x / 2.f);
+    const float up    = m_area_pos.y + (m_area_size.y / 2.f);
+    const float down  = m_area_pos.y - (m_area_size.y / 2.f);
+
+    glm::vec3 move = (delta_time * m_speed) * m_dir;
+    glm::vec3 new_pos = m_pos + move;
+
+    //check if hit and correct the position
+    if (new_pos.x > right) new_pos.x = right;
+    if (new_pos.x < left) new_pos.x = left;
+    if (new_pos.y > up) new_pos.y = up;
+    if (new_pos.y < down) new_pos.y = down;
+
+    //update the direction if hit
+    if (FLOAT_EQUALS(new_pos.x, right) || FLOAT_EQUALS(new_pos.x, left)) m_dir.x *= -1; 
+    if (FLOAT_EQUALS(new_pos.y, up)    || FLOAT_EQUALS(new_pos.y, down)) m_dir.y *= -1; 
+
+    m_pos = new_pos;
+}
+
 float Game::Target::getScale_default(double alive_time) //TODO probably unite with targetGetScale_linearFactor
 {
     assert(size_min <= size_max);
@@ -60,16 +91,22 @@ Game::PosChanger& Game::Target::getCurrentPosChanger()
     return std::visit([](Game::PosChanger& val) -> Game::PosChanger& { return val; }, m_pos_changer);
 }
 
+const Game::PosChanger& Game::Target::getCurrentPosChanger() const
+{
+    return std::visit([](const Game::PosChanger& val) -> const Game::PosChanger& { return val; }, m_pos_changer);
+}
+
+
 Game::Target::Target(const Meshes::Model& model, double spawn_time, Game::Target::PosChangerVariant&& pos_changer,
                      Color3F color_tint, Game::Target::ScaleFnPtr *scale_fn)
-                : m_model(model), m_pos(0.f), m_color_tint(color_tint), m_scale_fn(scale_fn),
+                : m_model(model), m_color_tint(color_tint), m_scale_fn(scale_fn),
                   m_pos_changer(std::move(pos_changer)), m_spawn_time(spawn_time)
 {
     if (m_scale_fn == NULL) m_scale_fn = getScale_default;
 }
 
 Game::Target::Target(const Target& other)
-                : m_model(other.m_model), m_pos(other.m_pos), m_color_tint(other.m_color_tint), m_scale_fn(other.m_scale_fn),
+                : m_model(other.m_model), m_color_tint(other.m_color_tint), m_scale_fn(other.m_scale_fn),
                   m_pos_changer(other.m_pos_changer), m_spawn_time(other.m_spawn_time) {}
 
 Game::Target& Game::Target::operator=(const Game::Target& other)
@@ -93,12 +130,13 @@ void Game::Target::updatePos(double current_frame_time)
     const double alive_time = current_frame_time - m_spawn_time;
 
     PosChanger& pos_changer = getCurrentPosChanger();
-    m_pos = pos_changer.getPos(glm::vec3(scale), alive_time);
+    pos_changer.updatePos(glm::vec3(scale), alive_time);
 }
 
 glm::vec3 Game::Target::getPos() const
 {
-    return m_pos;
+    const PosChanger& pos_changer = getCurrentPosChanger();
+    return pos_changer.m_pos;
 }
 
 void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,

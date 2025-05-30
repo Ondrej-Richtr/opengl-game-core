@@ -72,7 +72,8 @@
 //Macro functions
 // returns normalized vector or zero vector if the given vector is zero
 //TODO find a better solution than macros
-#define NORMALIZE_OR_0(v) (Utils::isZero((v)) ? glm::vec3(0.f) : (v))
+//TODO there is no normalization?
+#define NORMALIZE_OR_0(v) (Utils::isZero((v)) ? glm::vec3(0.f) : (glm::normalize((v))))
 // returns size_t length of string (must be string literal or char array with term. char.),
 // -1 as we dont count the term. char.
 #define STR_LEN(S) ((sizeof((S)) / sizeof((S)[0])) - 1)
@@ -877,22 +878,27 @@ namespace Game
 
     struct PosChanger
     {
-        glm::vec3 m_init_pos;
+        glm::vec3 m_pos;
 
-        PosChanger(glm::vec3 init_pos) : m_init_pos(init_pos) {}
+        PosChanger(glm::vec3 init_pos) : m_pos(init_pos) {}
         virtual ~PosChanger() = default;
 
-        virtual glm::vec3 getPos(glm::vec3 size, double alive_time) { return m_init_pos; }
+        virtual void updatePos(glm::vec3 size, double alive_time) {}
     };
 
-    //TODO implement this
-    // struct PosChanger_float : PosChanger
-    // {
-    //     PosChanger_float(glm::vec3 init_pos);
-    //     ~PosChanger_float() = default;
+    struct PosChanger_float : PosChanger
+    {
+        glm::vec3 m_dir;
+        glm::vec3 m_area_pos;
+        glm::vec2 m_area_size;
+        float m_prev_alive_time;
+        float m_speed;
 
-    //     virtual glm::vec3 getPos(glm::vec3 size, double alive_time) override;
-    // };
+        PosChanger_float(glm::vec3 init_pos, glm::vec3 dir, glm::vec3 spawn_area_pos, glm::vec2 spawn_area_size, float speed);
+        ~PosChanger_float() = default;
+
+        virtual void updatePos(glm::vec3 size, double alive_time) override;
+    };
 
     enum class TargetType { target, ball };
 
@@ -901,10 +907,10 @@ namespace Game
         static float getScale_default(double time);
 
         PosChanger& getCurrentPosChanger();
+        const PosChanger& getCurrentPosChanger() const;
     public:
         typedef float (ScaleFnPtr)(double alive_time);
-        // using PosChangerVariant = std::variant<PosChanger, PosChanger_float>;
-        using PosChangerVariant = std::variant<PosChanger>;
+        using PosChangerVariant = std::variant<PosChanger, PosChanger_float>;
 
         constexpr static const float size_min = 0.2f, size_max = 1.f; // in scale to target size
         constexpr static const float grow_time = 2.5f; // 2.5 seconds
@@ -912,7 +918,6 @@ namespace Game
         constexpr static const float ball_target_size = 0.35f;
 
         const Meshes::Model& m_model;
-        glm::vec3 m_pos;
 
         Color3F m_color_tint;
         ScaleFnPtr *m_scale_fn;

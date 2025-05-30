@@ -961,7 +961,9 @@ LoopRetVal GameMainLoop::loop()
                 case Game::TargetType::ball:
                     {
                         glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, ball_target_spawn_area);
-                        ball_targets.emplace_back(ball_model, current_frame_time, Game::PosChanger(pos), color, scale_fn);
+                        ball_targets.emplace_back(ball_model, current_frame_time,
+                                                  Game::PosChanger_float(pos, glm::normalize(glm::vec3(-1.f, -1.f, 0.f)), wall_center, ball_target_spawn_area, 2.5f),
+                                                  color, scale_fn);
                         break;
                     }
                 default: assert(false); // unimplemented case for TargetType enum
