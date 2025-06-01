@@ -4,7 +4,6 @@
 #include "stb_image.h"
 
 #include "glm/gtc/matrix_transform.hpp"
-#include "glm/ext/scalar_constants.hpp"
 #include <cstring>
 #include <algorithm>
 
@@ -651,16 +650,39 @@ bool GameMainLoop::initGameStuff()
     new (&level_manager) Game::LevelManager();
 
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 1, 0.5f,
-                                                                     Game::targetMiddleWallPosition, NULL, Color3F(0.3f, 0.9f, 0.6f) } }, true });
+                                                                     Game::targetMiddleWallPosition, std::monostate{}, NULL,
+                                                                     Color3F(0.3f, 0.9f, 0.6f) } }, true });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 3, 0.6f } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 5, 0.65f } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 6, 0.7f,
-                                                                     Game::targetRandomWallPosition, Game::targetGetScale_linearFactor<3>,
+                                                                     Game::targetRandomWallPosition,
+                                                                    //  std::monostate{},
+                                                                     Game::PosChanger_float::Params{ glm::vec2(1.f), glm::vec3(0.f), 2.5f },
+                                                                     Game::targetGetScale_linearFactor<3>,
                                                                      Color3F(0.8f, 0.3f, 0.15f) },
                                                           LevelPart{ TargetType::target, 6, 4.f,
-                                                                     Game::targetRandomWallPosition, NULL,
+                                                                     Game::targetRandomWallPosition, std::monostate{}, NULL,
                                                                      Color3F(0.35f, 0.6f, 0.9f) } } });
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 15, 0.85f } }, true });
+
+    const glm::vec2 wall_size_quarter2d = glm::vec2{ wall_size.x, wall_size.y } / 4.f;
+    const glm::vec3 wall_size_center_UL{ -wall_size_quarter2d.x, wall_size_quarter2d.y, 0.f };
+    const glm::vec3 wall_size_center_UR{ wall_size_quarter2d.x, wall_size_quarter2d.y, 0.f };
+    const glm::vec3 wall_size_center_DR{ wall_size_quarter2d.x, -wall_size_quarter2d.y, 0.f };
+    const glm::vec3 wall_size_center_DL{ -wall_size_quarter2d.x, -wall_size_quarter2d.y, 0.f };
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 4, 1.2f,
+                                                                     Game::targetMiddleWallPosition,
+                                                                     Game::PosChanger_float::Params{ glm::vec2(0.5f), wall_size_center_UL, 2.f } } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 4, 1.2f,
+                                                                     Game::targetMiddleWallPosition,
+                                                                     Game::PosChanger_float::Params{ glm::vec2(0.5f), wall_size_center_UR, 2.f } } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 4, 1.2f,
+                                                                     Game::targetMiddleWallPosition,
+                                                                     Game::PosChanger_float::Params{ glm::vec2(0.5f), wall_size_center_DR, 2.f } } }, true });
+    level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::ball, 4, 1.2f,
+                                                                     Game::targetMiddleWallPosition,
+                                                                     Game::PosChanger_float::Params{ glm::vec2(0.5f), wall_size_center_DL, 2.f } } }, true });
+    
     level_manager.addLevel(Level{ std::vector<LevelPart>{ LevelPart{ TargetType::target, 30, 1.3f } }, true });
 
     //Target practice stuff
@@ -954,15 +976,15 @@ LoopRetVal GameMainLoop::loop()
                 {
                 case Game::TargetType::target:
                     {
-                        glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, flat_target_spawn_area);
-                        targets.emplace_back(target_model, current_frame_time, Game::PosChanger(pos), color, scale_fn);
+                        targets.emplace_back(target_model, current_frame_time,
+                                             current_level_part->spawnNext(target_rng_width, target_rng_height, wall_center, flat_target_spawn_area),
+                                             color, scale_fn);
                         break;
                     }
                 case Game::TargetType::ball:
                     {
-                        glm::vec3 pos = wall_center + current_level_part->spawnNext(target_rng_width, target_rng_height, ball_target_spawn_area);
                         ball_targets.emplace_back(ball_model, current_frame_time,
-                                                  Game::PosChanger_float(pos, glm::normalize(glm::vec3(-1.f, -1.f, 0.f)), wall_center, ball_target_spawn_area, 2.5f),
+                                                  current_level_part->spawnNext(target_rng_width, target_rng_height, wall_center, ball_target_spawn_area),
                                                   color, scale_fn);
                         break;
                     }

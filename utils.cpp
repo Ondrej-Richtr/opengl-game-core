@@ -3,6 +3,7 @@
 #include "game.hpp"
 
 #include <fstream>
+#include "glm/trigonometric.hpp" // glm::cos, glm::sin
 
 
 Utils::RNG::RNG(int min_val, int max_val)
@@ -19,11 +20,20 @@ int Utils::RNG::generate()
 
 float Utils::RNG::generateFloatRange(float range_min, float range_max)
 {
+    assert(range_min <= range_max);
+
     int rolled = generate();
 
     float normalized = (float)(rolled - getMin()) / (getMax() - getMin()); // rolled number normalized to interval [0; 1]
 
     return normalized * (range_max - range_min) + range_min; // scaled to interval [range_min; range_max]
+}
+
+glm::vec2 Utils::RNG::generateAngledNormal(float angle_from, float angle_to)
+{
+    const float angle = generateFloatRange(angle_from, angle_to);
+
+    return glm::vec2(glm::cos(angle), glm::sin(angle)); // no need to normalize as cos^2(t) + sin^2(t) == 1 
 }
 
 int Utils::RNG::getMin() const

@@ -26,9 +26,12 @@ glm::vec3 Game::targetMiddleWallPosition(Utils::RNG& width, Utils::RNG& height, 
 }
 
 Game::PosChanger_float::PosChanger_float(glm::vec3 init_pos, glm::vec3 dir, glm::vec3 spawn_area_pos,
-                                         glm::vec2 spawn_area_size, float speed)
-                            : PosChanger(init_pos), m_dir(dir), m_area_pos(spawn_area_pos), m_area_size(spawn_area_size),
-                              m_prev_alive_time(0.f), m_speed(speed) {}
+                                         glm::vec2 spawn_area_size, Game::PosChanger_float::Params params)
+                            : PosChanger(init_pos), m_dir(dir), m_area_pos(spawn_area_pos + params.area_pos_offset),
+                              m_area_size(spawn_area_size * params.area_size), m_prev_alive_time(0.f), m_speed(params.speed)
+{
+    //nothing
+}
 
 void Game::PosChanger_float::updatePos(glm::vec3 size, double alive_time)
 {
@@ -162,18 +165,40 @@ void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
 }
 
 Game::LevelPart::LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
-                           SpawnNextFnPtr *spawn_next_fn, Game::Target::ScaleFnPtr scale_fn, Color3F color)
-        : m_spawn_next_fn(spawn_next_fn), m_type(type), m_target_amount(target_amount),
-          m_spawn_rate(spawn_rate), m_scale_fn(scale_fn), m_color(color)
+                           SpawnNextFnPtr *spawn_next_fn, Game::LevelPart::PosChangerParamsVariant pos_changer_params,
+                           Game::Target::ScaleFnPtr scale_fn, Color3F color)
+        : m_spawn_next_fn(spawn_next_fn), m_pos_changer_params(pos_changer_params), m_type(type),
+          m_target_amount(target_amount), m_spawn_rate(spawn_rate), m_scale_fn(scale_fn), m_color(color)
 {
     assert(m_target_amount > 0); // level part without any targets makes no sense
     assert(spawn_next_fn != NULL); // spawning function must be defined
 }
 
-glm::vec3 Game::LevelPart::spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const
+glm::vec3 Game::LevelPart::nextSpawnPos(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const
 {
     //TODO probably pass pointer to instance as well as index of spawned target
     return m_spawn_next_fn(width, height, wall_size);
+}
+
+Game::Target::PosChangerVariant Game::LevelPart::spawnNext(Utils::RNG& width, Utils::RNG& height,// Utils::RNG& angle,
+                                                           glm::vec3 wall_pos, glm::vec2 wall_size) const
+{
+    const glm::vec3 pos = wall_pos + nextSpawnPos(width, height, wall_size);
+
+    switch (m_pos_changer_params.index())
+    {
+    case 0: // PosChanger (base class)
+        return Game::PosChanger(pos);
+    case 1: // PosChanger_float
+        {
+            //TODO angle rng
+            glm::vec2 dir2d = width.generateAngledNormal();
+            glm::vec3 dir{ dir2d, 0.f };
+            return Game::PosChanger_float(pos, dir, wall_pos, wall_size, std::get<1>(m_pos_changer_params));
+        }
+    default: assert(false); // unimplemented variant case
+        return Game::PosChanger(pos);
+    }
 }
 
 unsigned int Game::Level::getCummulativeCountUptoIndex(unsigned int idx) const

@@ -4,6 +4,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
+#include "glm/ext/scalar_constants.hpp" // glm::pi
 
 //nuklear
 // both header and implementation defines
@@ -425,6 +426,7 @@ namespace Utils
 
         int generate();
         float generateFloatRange(float range_min, float range_max);
+        glm::vec2 generateAngledNormal(float angle_from = 0.f, float angle_to = 2 * glm::pi<float>());
 
         int getMin() const;
         int getMax() const;
@@ -894,7 +896,9 @@ namespace Game
         float m_prev_alive_time;
         float m_speed;
 
-        PosChanger_float(glm::vec3 init_pos, glm::vec3 dir, glm::vec3 spawn_area_pos, glm::vec2 spawn_area_size, float speed);
+        struct Params { glm::vec2 area_size; glm::vec3 area_pos_offset; float speed; };
+
+        PosChanger_float(glm::vec3 init_pos, glm::vec3 dir, glm::vec3 spawn_area_pos, glm::vec2 spawn_area_size, Params params);
         ~PosChanger_float() = default;
 
         virtual void updatePos(glm::vec3 size, double alive_time) override;
@@ -947,6 +951,10 @@ namespace Game
         typedef glm::vec3 (SpawnNextFnPtr)(Utils::RNG&, Utils::RNG&, glm::vec2);
         SpawnNextFnPtr *m_spawn_next_fn;
         Target::ScaleFnPtr *m_scale_fn;
+
+        // monostate is for the base PosChanger type
+        using PosChangerParamsVariant = std::variant<std::monostate, Game::PosChanger_float::Params>;
+        PosChangerParamsVariant m_pos_changer_params;
         
         TargetType m_type;
         unsigned int m_target_amount;
@@ -955,9 +963,12 @@ namespace Game
 
         LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
                   SpawnNextFnPtr spawn_next_fn = Game::targetRandomWallPosition,
+                  PosChangerParamsVariant pos_changer_params = std::monostate{},
                   Target::ScaleFnPtr scale_fn = NULL, Color3F color = Color3F{ 1.0, 1.0, 1.0 });
 
-        glm::vec3 spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
+        glm::vec3 nextSpawnPos(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
+        
+        Target::PosChangerVariant spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec3 wall_pos, glm::vec2 wall_size) const;
     };
 
     class Level
