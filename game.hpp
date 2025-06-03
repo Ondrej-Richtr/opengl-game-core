@@ -419,6 +419,7 @@ namespace Utils
     {
         std::mt19937 m_generator; // mersenne_twister_engine
         std::uniform_int_distribution<int> m_distribution;
+        std::uniform_int_distribution<int> m_distribution_circular; // just with max_val-1
 
     public:
         RNG(int min_val, int max_val);
@@ -968,7 +969,8 @@ namespace Game
 
         glm::vec3 nextSpawnPos(Utils::RNG& width, Utils::RNG& height, glm::vec2 wall_size) const;
         
-        Target::PosChangerVariant spawnNext(Utils::RNG& width, Utils::RNG& height, glm::vec3 wall_pos, glm::vec2 wall_size) const;
+        Target::PosChangerVariant spawnNext(Utils::RNG& width, Utils::RNG& height, Utils::RNG& angle,
+                                            glm::vec3 wall_pos, glm::vec2 wall_size) const;
     };
 
     class Level
@@ -1169,7 +1171,7 @@ struct GameMainLoop
     Meshes::Mesh target_mesh;
     Meshes::Model target_model, ball_model;
     std::vector<Game::Target> targets, ball_targets;
-    Utils::RNG target_rng_width, target_rng_height;
+    Utils::RNG target_rng_width, target_rng_height, target_rng_dir;
     Game::LevelManager level_manager;
     double practice_time_start, practice_time_end;
     std::vector<float> pracice_times;

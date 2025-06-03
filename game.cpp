@@ -180,7 +180,7 @@ glm::vec3 Game::LevelPart::nextSpawnPos(Utils::RNG& width, Utils::RNG& height, g
     return m_spawn_next_fn(width, height, wall_size);
 }
 
-Game::Target::PosChangerVariant Game::LevelPart::spawnNext(Utils::RNG& width, Utils::RNG& height,// Utils::RNG& angle,
+Game::Target::PosChangerVariant Game::LevelPart::spawnNext(Utils::RNG& width, Utils::RNG& height, Utils::RNG& angle,
                                                            glm::vec3 wall_pos, glm::vec2 wall_size) const
 {
     const glm::vec3 pos = wall_pos + nextSpawnPos(width, height, wall_size);
@@ -191,8 +191,7 @@ Game::Target::PosChangerVariant Game::LevelPart::spawnNext(Utils::RNG& width, Ut
         return Game::PosChanger(pos);
     case 1: // PosChanger_float
         {
-            //TODO angle rng
-            glm::vec2 dir2d = width.generateAngledNormal();
+            glm::vec2 dir2d = angle.generateAngledNormal();
             glm::vec3 dir{ dir2d, 0.f };
             return Game::PosChanger_float(pos, dir, wall_pos, wall_size, std::get<1>(m_pos_changer_params));
         }

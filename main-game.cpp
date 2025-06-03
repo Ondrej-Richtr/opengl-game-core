@@ -641,6 +641,7 @@ bool GameMainLoop::initGameStuff()
     //Targets rng init
     new (&target_rng_width) Utils::RNG(-1000, 1000);
     new (&target_rng_height) Utils::RNG(-500, 500);
+    new (&target_rng_dir) Utils::RNG(0, 360);
 
     //Level manager
     using Level = Game::Level;
@@ -703,6 +704,7 @@ void GameMainLoop::deinitGameStuff()
     ball_targets.~vector();
     target_rng_width.~RNG();
     target_rng_height.~RNG();
+    target_rng_dir.~RNG();
     level_manager.~LevelManager();
     pracice_times.~vector();
 }
@@ -977,14 +979,16 @@ LoopRetVal GameMainLoop::loop()
                 case Game::TargetType::target:
                     {
                         targets.emplace_back(target_model, current_frame_time,
-                                             current_level_part->spawnNext(target_rng_width, target_rng_height, wall_center, flat_target_spawn_area),
+                                             current_level_part->spawnNext(target_rng_width, target_rng_height, target_rng_dir,
+                                                                           wall_center, flat_target_spawn_area),
                                              color, scale_fn);
                         break;
                     }
                 case Game::TargetType::ball:
                     {
                         ball_targets.emplace_back(ball_model, current_frame_time,
-                                                  current_level_part->spawnNext(target_rng_width, target_rng_height, wall_center, ball_target_spawn_area),
+                                                  current_level_part->spawnNext(target_rng_width, target_rng_height, target_rng_dir,
+                                                                                wall_center, ball_target_spawn_area),
                                                   color, scale_fn);
                         break;
                     }

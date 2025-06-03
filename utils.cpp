@@ -7,7 +7,7 @@
 
 
 Utils::RNG::RNG(int min_val, int max_val)
-                : m_generator(), m_distribution(min_val, max_val)
+                : m_generator(), m_distribution(min_val, max_val), m_distribution_circular(min_val, max_val - 1)
 {
     std::random_device rd;
     m_generator = std::mt19937(rd());
@@ -31,7 +31,24 @@ float Utils::RNG::generateFloatRange(float range_min, float range_max)
 
 glm::vec2 Utils::RNG::generateAngledNormal(float angle_from, float angle_to)
 {
-    const float angle = generateFloatRange(angle_from, angle_to);
+    assert(angle_from <= angle_to);
+
+    int rolled;
+    if (angle_from == 0.f && angle_to == 2 * glm::pi<float>())
+    {
+        rolled = m_distribution_circular(m_generator);
+    }
+    else
+    {
+        rolled = generate();
+    }
+
+    // rolled number normalized to interval [0; 1) for angle range [0; 2pi)
+    // and to [0; 1] for other ranges
+    float normalized = (float)(rolled - getMin()) / (getMax() - getMin());
+
+    // scaled to interval [angle_from; angle_to) for [0; 2pi] or to [angle_from; angle_to] for other ranges
+    const float angle = normalized * (angle_to - angle_from) + angle_from;
 
     return glm::vec2(glm::cos(angle), glm::sin(angle)); // no need to normalize as cos^2(t) + sin^2(t) == 1 
 }
