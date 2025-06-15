@@ -131,14 +131,15 @@ int desktop_main(void)
         return -2;
     }
 
-    while(!glfwWindowShouldClose(window))
+    //main loop
     {
-        const LoopData* loop = main_loop_stack.currentLoopData();
-        assert(loop != NULL);
-
-        glfwPollEvents();
-        loop->loopCallback(); //TODO retval
-        glfwSwapBuffers(window);
+        const LoopData* loop = NULL;
+        while(!glfwWindowShouldClose(window) && (loop = main_loop_stack.currentLoopData()) != NULL)
+        {
+            glfwPollEvents();
+            loop->loopCallback(); //TODO retval
+            glfwSwapBuffers(window);
+        }
     }
 
     //deinitialization
@@ -166,6 +167,7 @@ extern "C"
 
     void web_loop(void *arg)
     {
+        //TODO use MainLoopStack and LoopData here as well
         GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(arg); //TODO better cast
         GLFWwindow *window = WindowManager::getWindow();
         assert(window != NULL); //TODO error?
