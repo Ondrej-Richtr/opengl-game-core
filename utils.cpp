@@ -1,9 +1,7 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "game.hpp"
 
-#include <fstream>
 #include "glm/trigonometric.hpp" // glm::cos, glm::sin
+#include <fstream>
 
 
 Utils::RNG::RNG(int min_val, int max_val)

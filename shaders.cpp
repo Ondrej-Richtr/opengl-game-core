@@ -1,9 +1,6 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "game.hpp"
 
 #include "glm/gtc/type_ptr.hpp"
-
 #include <array>
 
 #define ERR_MSG_MAX_LEN 1024

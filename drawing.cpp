@@ -1,5 +1,3 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "game.hpp"
 
 #include "glm/ext/matrix_transform.hpp" //glm::lookAt
