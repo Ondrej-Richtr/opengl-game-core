@@ -1016,6 +1016,58 @@ namespace Game
     };
 }
 
+//loop_data.cpp
+enum class LoopRetVal { exit, success };
+
+struct LoopData // vtable + pointer to data itself
+{
+    typedef int         (InitFnPtr)         (void *data);
+    typedef void        (DeinitFnPtr)       (void *data);
+    typedef LoopRetVal  (LoopCallbackFnPtr) (void *data);
+
+    unsigned char *m_raw_data;
+
+    InitFnPtr *m_init_fn;
+    DeinitFnPtr *m_deinit_fn;
+    LoopCallbackFnPtr *m_loop_callback_fn;
+
+    LoopData(size_t data_size, InitFnPtr *init_fn, DeinitFnPtr *deinit_fn, LoopCallbackFnPtr *loop_callback_fn);
+    ~LoopData();
+
+    void* getData() const;
+
+    int init() const;
+    void deinit() const;
+    LoopRetVal loop_callback() const;
+};
+
+template <typename T>
+int init(void *data)
+{
+    return reinterpret_cast<T*>(data)->init();
+}
+
+template <typename T>
+void deinit(void *data)
+{
+    // reinterpret_cast<T*>(data)->T::~T();
+    // reinterpret_cast<T*>(data)->~T();
+
+    std::destroy_at(reinterpret_cast<T*>(data));
+}
+
+template <typename T>
+LoopRetVal loop(void *data)
+{
+    return reinterpret_cast<T*>(data)->loop();
+}
+
+template <typename T>
+LoopData createAsLoopData()
+{
+    return LoopData(sizeof(T), init<T>, deinit<T>, loop<T>);
+}
+
 //shared_gl_context.cpp
 struct SharedGLContext
 {
@@ -1053,19 +1105,7 @@ public:
     static std::optional<SharedGLContext> instance;
 };
 
-//Game loops
-enum class LoopRetVal { exit, success };
-
-/*struct LoopData
-{
-    typedef int InitFnPtr();
-    typedef LoopRetVal LoopFnPtr(void*);
-
-    void *data;
-    InitFnPtr *initFn;
-    LoopFnPtr *loopFn;
-};*/
-
+//Game loops:
 //main-test.cpp
 struct TestMainLoop //TODO proper deinit of objects
 {
@@ -1193,6 +1233,8 @@ struct GameMainLoop
     //TODO global mouse button manager for all main loops
     static bool left_mbutton_state;
     static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
+
+    // static LoopData createAsLoopData(); //TODO remove this
 
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!

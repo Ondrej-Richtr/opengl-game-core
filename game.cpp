@@ -167,8 +167,8 @@ void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
 Game::LevelPart::LevelPart(TargetType type, unsigned int target_amount, float spawn_rate,
                            SpawnNextFnPtr *spawn_next_fn, Game::LevelPart::PosChangerParamsVariant pos_changer_params,
                            Game::Target::ScaleFnPtr scale_fn, Color3F color)
-        : m_spawn_next_fn(spawn_next_fn), m_pos_changer_params(pos_changer_params), m_type(type),
-          m_target_amount(target_amount), m_spawn_rate(spawn_rate), m_scale_fn(scale_fn), m_color(color)
+        : m_spawn_next_fn(spawn_next_fn), m_scale_fn(scale_fn), m_pos_changer_params(pos_changer_params), m_type(type),
+          m_target_amount(target_amount), m_spawn_rate(spawn_rate), m_color(color)
 {
     assert(m_target_amount > 0); // level part without any targets makes no sense
     assert(spawn_next_fn != NULL); // spawning function must be defined
