@@ -1029,7 +1029,7 @@ struct LoopData // vtable + pointer to data itself
     typedef void        (DeinitFnPtr)       (void *data);
     typedef LoopRetVal  (LoopCallbackFnPtr) (void *data);
 
-    unsigned char *m_raw_data;
+    std::unique_ptr<unsigned char[]> m_raw_data;
 
     InitFnPtr *m_init_fn;
     DeinitFnPtr *m_deinit_fn;
