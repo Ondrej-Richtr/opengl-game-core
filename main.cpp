@@ -115,17 +115,15 @@ int desktop_main(void)
     GLFWwindow *window = WindowManager::getWindow();
     assert(window != NULL);
 
-    std::vector<LoopData> main_loop_stack{};
-
-    main_loop_stack.emplace_back(LoopData::createFromType<GameMainLoop>());
-    if (main_loop_stack.empty() || !main_loop_stack.back().isInitialized())
+    MainLoopStack main_loop_stack{};
+    if (!main_loop_stack.pushFromTemplate<GameMainLoop>())
     {
         fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
         deinit();
         return -1;
     }
 
-    int init_result = main_loop_stack.back().init();
+    int init_result = main_loop_stack.currentLoopData()->init();
     if (init_result)
     {
         fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);
@@ -135,19 +133,15 @@ int desktop_main(void)
 
     while(!glfwWindowShouldClose(window))
     {
-        assert(!main_loop_stack.empty());
-        const LoopData& loop = main_loop_stack.back();
+        const LoopData* loop = main_loop_stack.currentLoopData();
+        assert(loop != NULL);
 
         glfwPollEvents();
-        loop.loop_callback(); //TODO retval
+        loop->loopCallback(); //TODO retval
         glfwSwapBuffers(window);
     }
 
     //deinitialization
-    for (size_t i = 0; i < main_loop_stack.size(); ++i)
-    {
-        main_loop_stack[i].deinit();
-    }
     deinit();
 
     puts("End main.");

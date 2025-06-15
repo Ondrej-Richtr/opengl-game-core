@@ -1040,11 +1040,12 @@ struct LoopData // vtable + pointer to data itself
     ~LoopData();
 
     void* getData() const;
-    bool isInitialized() const;
+    bool dataInitialized() const;
 
     int init() const;
     void deinit() const;
-    LoopRetVal loop_callback() const;
+    void deinitAndFree();
+    LoopRetVal loopCallback() const;
 
     template <typename T>
     static int init_template(void *data)
@@ -1071,6 +1072,24 @@ struct LoopData // vtable + pointer to data itself
     {
         return LoopData(sizeof(T), init_template<T>, deinit_template<T>, loop_template<T>);
     }
+};
+
+class MainLoopStack
+{
+    std::vector<LoopData> m_stack;
+
+public:
+    const LoopData* currentLoopData() const;
+
+    bool push(LoopData&& new_data);
+
+    template <typename T>
+    bool pushFromTemplate()
+    {
+        return push(LoopData::createFromType<T>());
+    }
+
+    void pop();
 };
 
 //shared_gl_context.cpp
