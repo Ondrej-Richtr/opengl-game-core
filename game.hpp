@@ -1,5 +1,8 @@
 #pragma once
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include "glm/mat3x3.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
@@ -25,6 +28,7 @@
 #include <functional>
 #include <random>
 #include <optional>
+#include <variant>
 
 #define FLOAT_TOLERANCE 0.001f
 
@@ -1032,41 +1036,42 @@ struct LoopData // vtable + pointer to data itself
     LoopCallbackFnPtr *m_loop_callback_fn;
 
     LoopData(size_t data_size, InitFnPtr *init_fn, DeinitFnPtr *deinit_fn, LoopCallbackFnPtr *loop_callback_fn);
+    LoopData(LoopData&& other);
     ~LoopData();
 
     void* getData() const;
+    bool isInitialized() const;
 
     int init() const;
     void deinit() const;
     LoopRetVal loop_callback() const;
+
+    template <typename T>
+    static int init_template(void *data)
+    {
+        return reinterpret_cast<T*>(data)->init();
+    }
+
+    template <typename T>
+    static void deinit_template(void *data)
+    {
+        // reinterpret_cast<T*>(data)->T::~T();
+        // reinterpret_cast<T*>(data)->~T();
+        std::destroy_at(reinterpret_cast<T*>(data));
+    }
+
+    template <typename T>
+    static LoopRetVal loop_template(void *data)
+    {
+        return reinterpret_cast<T*>(data)->loop();
+    }
+
+    template <typename T>
+    static LoopData createFromType()
+    {
+        return LoopData(sizeof(T), init_template<T>, deinit_template<T>, loop_template<T>);
+    }
 };
-
-template <typename T>
-int init(void *data)
-{
-    return reinterpret_cast<T*>(data)->init();
-}
-
-template <typename T>
-void deinit(void *data)
-{
-    // reinterpret_cast<T*>(data)->T::~T();
-    // reinterpret_cast<T*>(data)->~T();
-
-    std::destroy_at(reinterpret_cast<T*>(data));
-}
-
-template <typename T>
-LoopRetVal loop(void *data)
-{
-    return reinterpret_cast<T*>(data)->loop();
-}
-
-template <typename T>
-LoopData createAsLoopData()
-{
-    return LoopData(sizeof(T), init<T>, deinit<T>, loop<T>);
-}
 
 //shared_gl_context.cpp
 struct SharedGLContext
@@ -1233,8 +1238,6 @@ struct GameMainLoop
     //TODO global mouse button manager for all main loops
     static bool left_mbutton_state;
     static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
-
-    // static LoopData createAsLoopData(); //TODO remove this
 
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!

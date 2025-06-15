@@ -1,5 +1,3 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "game.hpp"
 #include "stb_image.h"
 
@@ -117,31 +115,43 @@ int desktop_main(void)
     GLFWwindow *window = WindowManager::getWindow();
     assert(window != NULL);
 
-    // Creating struct this way so it's fields won't get initialized before init method call
-    unsigned char loop_memory[sizeof(GameMainLoop)];
-    //TODO check if optimizer optimizes this and omits pointless dereference
-    GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(&loop_memory); //TODO better cast
-    int result = loop.init();
-    if (result)
+    std::vector<LoopData> main_loop_stack{};
+
+    main_loop_stack.emplace_back(LoopData::createFromType<GameMainLoop>());
+    if (main_loop_stack.empty() || !main_loop_stack.back().isInitialized())
     {
-        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", result);
+        fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
         deinit();
-        return result;
+        return -1;
+    }
+
+    int init_result = main_loop_stack.back().init();
+    if (init_result)
+    {
+        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);
+        deinit();
+        return -2;
     }
 
     while(!glfwWindowShouldClose(window))
     {
+        assert(!main_loop_stack.empty());
+        const LoopData& loop = main_loop_stack.back();
+
         glfwPollEvents();
-        loop.loop(); //TODO retval
+        loop.loop_callback(); //TODO retval
         glfwSwapBuffers(window);
     }
 
-    //destructors
-    loop.~GameMainLoop();
-
+    //deinitialization
+    for (size_t i = 0; i < main_loop_stack.size(); ++i)
+    {
+        main_loop_stack[i].deinit();
+    }
     deinit();
+
     puts("End main.");
-    return result;
+    return 0;
 }
 
 #ifdef PLATFORM_WEB
