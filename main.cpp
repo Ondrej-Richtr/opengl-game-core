@@ -133,11 +133,11 @@ int desktop_main(void)
 
     //main loop
     {
-        const LoopData* loop = NULL;
-        while(!glfwWindowShouldClose(window) && (loop = main_loop_stack.currentLoopData()) != NULL)
+        const LoopData* loop_data = NULL;
+        while(!glfwWindowShouldClose(window) && (loop_data = main_loop_stack.currentLoopData()) != NULL)
         {
             glfwPollEvents();
-            loop->loopCallback(); //TODO retval
+            loop_data->loopCallback(); //TODO retval
             glfwSwapBuffers(window);
         }
     }
@@ -167,13 +167,17 @@ extern "C"
 
     void web_loop(void *arg)
     {
-        //TODO use MainLoopStack and LoopData here as well
-        GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(arg); //TODO better cast
+        MainLoopStack* main_loop_stack = reinterpret_cast<MainLoopStack*>(arg);
+        if (!main_loop_stack) return;
+
+        const LoopData *loop_data = main_loop_stack->currentLoopData();
+        if (!loop_data) return; //TODO maybe swap buffers anyways?
+
         GLFWwindow *window = WindowManager::getWindow();
         assert(window != NULL); //TODO error?
 
         glfwPollEvents();
-        loop.loop(); //TODO retval
+        loop_data->loopCallback(); //TODO retval
         glfwSwapBuffers(window);
     }
 }
@@ -191,29 +195,31 @@ int web_main()
 
     puts("Begin main.");
 
-    // Creating struct this way so it's fields won't get initialized before init method call
-    unsigned char loop_memory[sizeof(GameMainLoop)];
-    //TODO check if optimizer optimizes this and omits pointless dereference
-    GameMainLoop& loop = *reinterpret_cast<GameMainLoop*>(&loop_memory); //TODO better cast
-    int result = loop.init();
-    if (result)
+    MainLoopStack main_loop_stack{};
+    if (!main_loop_stack.pushFromTemplate<GameMainLoop>())
     {
-        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", result);
+        fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
         deinit();
-        return result;
+        return -1;
     }
 
-    emscripten_set_main_loop_arg(web_loop, reinterpret_cast<void*>(&loop), 0, true);
+    int init_result = main_loop_stack.currentLoopData()->init();
+    if (init_result)
+    {
+        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);
+        deinit();
+        return -2;
+    }
 
-    //destructors
-    loop.~GameMainLoop();
+    emscripten_set_main_loop_arg(web_loop, reinterpret_cast<void*>(&main_loop_stack), 0, true);
 
+    //deinitialization
     deinit();
+
     puts("web_main end");
-    return result;
-    // return 0;
+    return 0;
 }
-#endif
+#endif /* PLATFORM_WEB */
 
 int main()
 {
