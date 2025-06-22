@@ -116,19 +116,22 @@ int desktop_main(void)
     assert(window != NULL);
 
     MainLoopStack main_loop_stack{};
-    if (!main_loop_stack.pushFromTemplate<GameMainLoop>())
     {
-        fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
-        deinit();
-        return -1;
-    }
+        LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<GameMainLoop>();
+        if (pushed_loop_data == NULL)
+        {
+            fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
+            deinit();
+            return -1;
+        }
 
-    int init_result = main_loop_stack.currentLoopData()->init();
-    if (init_result)
-    {
-        fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);
-        deinit();
-        return -2;
+        int init_result = pushed_loop_data->init();
+        if (init_result)
+        {
+            fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);
+            deinit();
+            return -2;
+        }
     }
 
     //main loop
@@ -196,14 +199,15 @@ int web_main()
     puts("Begin main.");
 
     MainLoopStack main_loop_stack{};
-    if (!main_loop_stack.pushFromTemplate<GameMainLoop>())
+    LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<GameMainLoop>();
+    if (pushed_loop_data == NULL)
     {
         fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
         deinit();
         return -1;
     }
 
-    int init_result = main_loop_stack.currentLoopData()->init();
+    int init_result = pushed_loop_data->init();
     if (init_result)
     {
         fprintf(stderr, "Failed to initialize wanted Main Loop! Error value: %d\n", init_result);

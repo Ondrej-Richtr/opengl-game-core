@@ -83,9 +83,9 @@ const LoopData* MainLoopStack::currentLoopData() const
     return m_stack.empty() ? NULL : &m_stack.back();
 }
 
-bool MainLoopStack::push(LoopData&& new_data)
+LoopData* MainLoopStack::push(LoopData&& new_data)
 {
-    if (!new_data.dataInitialized()) return false;
+    if (!new_data.dataInitialized()) return NULL;
 
     try
     {
@@ -93,10 +93,11 @@ bool MainLoopStack::push(LoopData&& new_data)
     }
     catch (...)
     {
-        return false;
+        return NULL;
     }
 
-    return true;
+    assert(!m_stack.empty());
+    return &m_stack.back();
 }
 
 void MainLoopStack::pop()

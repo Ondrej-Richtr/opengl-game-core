@@ -1081,10 +1081,10 @@ class MainLoopStack
 public:
     const LoopData* currentLoopData() const;
 
-    bool push(LoopData&& new_data);
+    LoopData* push(LoopData&& new_data);
 
     template <typename T>
-    bool pushFromTemplate()
+    LoopData* pushFromTemplate()
     {
         return push(LoopData::createFromType<T>());
     }
