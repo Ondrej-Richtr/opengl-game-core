@@ -66,13 +66,13 @@ void LoopData::deinitAndFree()
     assert(!dataInitialized());
 }
 
-LoopRetVal LoopData::loopCallback() const
+LoopRetVal LoopData::loopCallback(double frame_time, float frame_delta) const
 {
     assert(dataInitialized());
 
     if (m_loop_callback_fn != NULL)
     {
-        return m_loop_callback_fn(getData());
+        return m_loop_callback_fn(getData(), frame_time, frame_delta);
     }
     
     return LoopRetVal::exit; //TODO other value instead?
@@ -106,4 +106,17 @@ void MainLoopStack::pop()
     {
         m_stack.pop_back();
     }
+}
+
+float MainLoopStack::getFrameDelta(double frame_time)
+{
+    float frame_delta = 0.f;
+    if (m_last_frame_time >= 0.f)
+    {
+        frame_delta = frame_time - m_last_frame_time;
+    }
+
+    m_last_frame_time = frame_time;
+
+    return frame_delta;
 }

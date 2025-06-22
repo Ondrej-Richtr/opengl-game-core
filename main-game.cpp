@@ -842,10 +842,8 @@ int GameMainLoop::init()
     // clear_color_3d = Color(10, 10, 10); //DEBUG
     clear_color_2d = Color(0, 0, 0);
     tick = 0;
-    frame_delta = 0.f;
-    last_frame_time = glfwGetTime();
     fps_calculation_interval = 0.5f; // in seconds
-    last_fps_calculation_time = last_frame_time;
+    last_fps_calculation_time = glfwGetTime();
     fps_calculation_counter = 0;
     fps_calculated = 0;
     last_mouse_x = 0.f;
@@ -862,20 +860,12 @@ GameMainLoop::~GameMainLoop()
     // glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
 }
 
-LoopRetVal GameMainLoop::loop()
+LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
 {
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
-
-    //calculating correct frame delta time
-    //TODO this will be wrong when stacking of game loops gets implemented
-    double current_frame_time = glfwGetTime();
-    frame_delta = current_frame_time - last_frame_time;
-    last_frame_time = current_frame_time;
-
-    glfwPollEvents();
 
     // ---Mouse input---
     double mouse_x = 0.f, mouse_y = 0.f;
@@ -922,7 +912,7 @@ LoopRetVal GameMainLoop::loop()
     // ---Shooting---
     if (tick == 0)
     {
-        level_manager.prepareFirstLevel(current_frame_time);
+        level_manager.prepareFirstLevel(frame_time);
     }
 
     //TODO this system does not work properly when shooting from an angle - ball gets hit even when aiming at the flat target
@@ -932,22 +922,22 @@ LoopRetVal GameMainLoop::loop()
         size_t hit_idx = 0;
 
         //ball targets - they go first as they get hit before flat targets
-        Collision::RayCollision rcoll = Collision::rayBallTargets(mouse_ray, ball_targets, current_frame_time, &hit_idx);
+        Collision::RayCollision rcoll = Collision::rayBallTargets(mouse_ray, ball_targets, frame_time, &hit_idx);
         if (rcoll.m_hit)
         {
             assert(hit_idx < ball_targets.size());
             ball_targets.erase(ball_targets.begin() + hit_idx); // delete the target at `out_idx`
-            handleTargetHit(current_frame_time);
+            handleTargetHit(frame_time);
         }
         else
         {
             //flat targets - only if no ball target hit
-            rcoll = Collision::rayFlatTargets(mouse_ray, targets, current_frame_time, &hit_idx);
+            rcoll = Collision::rayFlatTargets(mouse_ray, targets, frame_time, &hit_idx);
             if (rcoll.m_hit)
             {
                 assert(hit_idx < targets.size());
                 targets.erase(targets.begin() + hit_idx); // delete the target at `out_idx`
-                handleTargetHit(current_frame_time);
+                handleTargetHit(frame_time);
             }
         }
     }
@@ -961,7 +951,7 @@ LoopRetVal GameMainLoop::loop()
                                             - glm::vec2(Game::Target::ball_target_size);
         
         unsigned int targets_alive = getTargetsAlive();
-        unsigned int target_spawn_amount = level_manager.targetSpawnAmount(current_frame_time, targets_alive);
+        unsigned int target_spawn_amount = level_manager.targetSpawnAmount(frame_time, targets_alive);
 
         for (unsigned int i = 0; i < target_spawn_amount; ++i)
         {
@@ -976,7 +966,7 @@ LoopRetVal GameMainLoop::loop()
                 {
                 case Game::TargetType::target:
                     {
-                        targets.emplace_back(target_model, current_frame_time,
+                        targets.emplace_back(target_model, frame_time,
                                              current_level_part->spawnNext(target_rng_width, target_rng_height, target_rng_dir,
                                                                            wall_center, flat_target_spawn_area),
                                              color, scale_fn);
@@ -984,7 +974,7 @@ LoopRetVal GameMainLoop::loop()
                     }
                 case Game::TargetType::ball:
                     {
-                        ball_targets.emplace_back(ball_model, current_frame_time,
+                        ball_targets.emplace_back(ball_model, frame_time,
                                                   current_level_part->spawnNext(target_rng_width, target_rng_height, target_rng_dir,
                                                                                 wall_center, ball_target_spawn_area),
                                                   color, scale_fn);
@@ -999,11 +989,11 @@ LoopRetVal GameMainLoop::loop()
     // ---Target position updating---
     for (size_t i = 0; i < targets.size(); ++i)
     {
-        targets[i].updatePos(current_frame_time);
+        targets[i].updatePos(frame_time);
     }
     for (size_t i = 0; i < ball_targets.size(); ++i)
     {
-        ball_targets[i].updatePos(current_frame_time);
+        ball_targets[i].updatePos(frame_time);
     }
 
     // ---Player movement---
@@ -1071,13 +1061,13 @@ LoopRetVal GameMainLoop::loop()
 
             //fps calculating and rendering
             ++fps_calculation_counter;
-            if (current_frame_time >= last_fps_calculation_time + fps_calculation_interval)
+            if (frame_time >= last_fps_calculation_time + fps_calculation_interval)
             {
-                const double time_passed = current_frame_time - last_fps_calculation_time;
+                const double time_passed = frame_time - last_fps_calculation_time;
                 fps_calculated = static_cast<unsigned int>(static_cast<double>(fps_calculation_counter) / time_passed);
                 
                 fps_calculation_counter = 0;
-                last_fps_calculation_time = current_frame_time;
+                last_fps_calculation_time = frame_time;
             }
             snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
             nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
@@ -1134,7 +1124,7 @@ LoopRetVal GameMainLoop::loop()
             {
                 double time;
                 if (practice_time_start < 0.f) time = 0.f;
-                else if (practice_time_end < 0.f) time = current_frame_time - practice_time_start;
+                else if (practice_time_end < 0.f) time = frame_time - practice_time_start;
                 else time = practice_time_end - practice_time_start;
 
                 nk_layout_row_push(&ui.m_ctx, 0.5f);
@@ -1446,7 +1436,7 @@ LoopRetVal GameMainLoop::loop()
             for (size_t i = 0; i < tagets_amount; ++i)
             {
                 const glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
-                targets[i].draw(Game::TargetType::target, camera, lights, current_frame_time, pos_offset);
+                targets[i].draw(Game::TargetType::target, camera, lights, frame_time, pos_offset);
             }
 
             //ball targets
@@ -1458,7 +1448,7 @@ LoopRetVal GameMainLoop::loop()
             const size_t ball_targets_amount = ball_targets.size();
             for (size_t i = 0; i < ball_targets_amount; ++i)
             {
-                ball_targets[i].draw(Game::TargetType::ball, camera, lights, current_frame_time);
+                ball_targets[i].draw(Game::TargetType::ball, camera, lights, frame_time);
             }
 
             if (use_fbo) fbo3d.unbind();
@@ -1532,5 +1522,27 @@ LoopRetVal GameMainLoop::loop()
     last_left_mbutton = left_mbutton_state;
     ++tick;
 
+    return LoopRetVal::success;
+}
+
+int GamePauseMainLoop::init()
+{
+    // nothing for now
+    return 0;
+}
+
+GamePauseMainLoop::~GamePauseMainLoop()
+{
+    // nothing for now
+}
+
+LoopRetVal GamePauseMainLoop::loop()
+{
+    GLFWwindow * const window = WindowManager::getWindow();
+    const glm::vec2 win_size = WindowManager::getSizeF();
+    SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
+
+    //TODO
     return LoopRetVal::success;
 }

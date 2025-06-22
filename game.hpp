@@ -1027,7 +1027,7 @@ struct LoopData // vtable + pointer to data itself
 {
     typedef int         (InitFnPtr)         (void *data);
     typedef void        (DeinitFnPtr)       (void *data);
-    typedef LoopRetVal  (LoopCallbackFnPtr) (void *data);
+    typedef LoopRetVal  (LoopCallbackFnPtr) (void *data, double frame_time, float frame_delta);
 
     std::unique_ptr<unsigned char[]> m_raw_data;
 
@@ -1045,7 +1045,7 @@ struct LoopData // vtable + pointer to data itself
     int init() const;
     void deinit() const;
     void deinitAndFree();
-    LoopRetVal loopCallback() const;
+    LoopRetVal loopCallback(double frame_time, float frame_delta) const;
 
     template <typename T>
     static int init_template(void *data)
@@ -1062,9 +1062,9 @@ struct LoopData // vtable + pointer to data itself
     }
 
     template <typename T>
-    static LoopRetVal loop_template(void *data)
+    static LoopRetVal loop_template(void *data, double frame_time, float frame_delta)
     {
-        return reinterpret_cast<T*>(data)->loop();
+        return reinterpret_cast<T*>(data)->loop(frame_time, frame_delta);
     }
 
     template <typename T>
@@ -1078,6 +1078,8 @@ class MainLoopStack
 {
     std::vector<LoopData> m_stack;
 
+    double m_last_frame_time = -1.f;
+
 public:
     const LoopData* currentLoopData() const;
 
@@ -1088,6 +1090,8 @@ public:
     {
         return push(LoopData::createFromType<T>());
     }
+
+    float getFrameDelta(double frame_time);
 
     void pop();
 };
@@ -1243,8 +1247,7 @@ struct GameMainLoop
     //Misc.
     Color clear_color_3d, clear_color_2d;
     unsigned int tick;
-    float frame_delta;
-    double last_frame_time, fps_calculation_interval, last_fps_calculation_time;
+    double fps_calculation_interval, last_fps_calculation_time;
     unsigned int fps_calculation_counter, fps_calculated;
     double last_mouse_x, last_mouse_y;
     bool last_left_mbutton;
@@ -1252,7 +1255,7 @@ struct GameMainLoop
     int init();
     ~GameMainLoop();
 
-    LoopRetVal loop();
+    LoopRetVal loop(double frame_time, float frame_delta);
 
     //TODO global mouse button manager for all main loops
     static bool left_mbutton_state;
@@ -1285,4 +1288,12 @@ private:
     //other utility methods
     unsigned int getTargetsAlive() const;
     void handleTargetHit(double current_frame_time);
+};
+
+struct GamePauseMainLoop // also in main-game.cpp
+{
+    int init();
+    ~GamePauseMainLoop();
+
+    LoopRetVal loop();
 };

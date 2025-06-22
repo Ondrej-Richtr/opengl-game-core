@@ -140,7 +140,11 @@ int desktop_main(void)
         while(!glfwWindowShouldClose(window) && (loop_data = main_loop_stack.currentLoopData()) != NULL)
         {
             glfwPollEvents();
-            loop_data->loopCallback(); //TODO retval
+
+            const double current_frame_time = glfwGetTime();
+            const float frame_delta = main_loop_stack.getFrameDelta(current_frame_time);
+            loop_data->loopCallback(current_frame_time, frame_delta); //TODO retval
+
             glfwSwapBuffers(window);
         }
     }
@@ -157,7 +161,6 @@ extern "C"
 {
     void emsc_set_window_size(int width, int height)
     {
-        //TODO
         printf("emsc_set_window_size called with: %dx%d\n", width, height);
 
         GLFWwindow *window = WindowManager::getWindow();
@@ -179,8 +182,13 @@ extern "C"
         GLFWwindow *window = WindowManager::getWindow();
         assert(window != NULL); //TODO error?
 
+        //loop routine
         glfwPollEvents();
-        loop_data->loopCallback(); //TODO retval
+
+        const double current_frame_time = glfwGetTime();
+        const float frame_delta = main_loop_stack->getFrameDelta(current_frame_time);
+        loop_data->loopCallback(current_frame_time, frame_delta); //TODO retval
+
         glfwSwapBuffers(window);
     }
 }
