@@ -603,7 +603,7 @@ LoopRetVal TestMainLoop::loop()
     last_mouse_y = mouse_y;
     ++tick;
 
-    return LoopRetVal::success;
+    return LoopRetVal::ok;
 }
 
 /*int test_main(void)

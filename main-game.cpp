@@ -849,6 +849,7 @@ int GameMainLoop::init()
     last_mouse_x = 0.f;
     last_mouse_y = 0.f;
     last_left_mbutton = false;
+    last_esc_state = GLFW_PRESS;
 
     puts("GameMainLoop init end");
     return 0;
@@ -902,7 +903,25 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     bool mbutton_left_is_pressed = left_mbutton_state;
     bool mbutton_left_is_clicked = left_mbutton_state && !last_left_mbutton;
 
-    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+    int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    if(esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE)
+    {
+        MainLoopStack& main_loop_stack = MainLoopStack::instance;
+
+        LoopData* pause_loop = main_loop_stack.pushFromTemplate<GamePauseMainLoop>();
+        if (pause_loop == NULL)
+        {
+            fprintf(stderr, "Failed to pause the game! Can't push pause main loop on the stack.\n");
+        }
+        else
+        {
+            int init_result = pause_loop->init();
+            if (init_result)
+            {
+                fprintf(stderr, "Failed to pause the game! Initialization failed with return value: %d.\n", init_result);
+            }
+        }
+    }
 
     if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
     if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
@@ -1520,14 +1539,140 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     last_mouse_x = mouse_x;
     last_mouse_y = mouse_y;
     last_left_mbutton = left_mbutton_state;
+    last_esc_state = esc_state;
     ++tick;
 
-    return LoopRetVal::success;
+    return LoopRetVal::ok;
+}
+
+bool GamePauseMainLoop::initShaders()
+{
+    //shader partials
+    // used only during this init method, thus loaded as local unique_ptr, so we dont have to call delete/destructor
+    // const char *postprocess_fs_partial_path = SHADERS_PARTIALS_DIR_PATH "postprocess.fspart";
+    // std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path, NULL); //TODO check for NULL
+    // if (!postprocess_fs_partial)
+    // {
+    //     fprintf(stderr, "Failed to load postprocessing fragment shader partial file: '%s'!\n", postprocess_fs_partial_path);
+    //     return false;
+    // }
+
+    using ShaderP = Shaders::Program;
+
+    const char // *default_vs_path = SHADERS_DIR_PATH "default.vs",
+            //    *default_fs_path = SHADERS_DIR_PATH "default.fs",
+            //    *passthrough_pos_vs_path = SHADERS_DIR_PATH "passthrough-pos.vs",
+            //    *passthrough_pos_uv_vs_path = SHADERS_DIR_PATH "passthrough-pos-uv.vs",
+               *transform_vs_path = SHADERS_DIR_PATH "transform.vs",
+               *static_color_fs_path = SHADERS_DIR_PATH "static-color.fs";
+
+    //line shader
+    const char *screen_line_vs_path = SHADERS_DIR_PATH "screen2d-line.vs";
+
+    new (&screen_line_shader) ShaderP(screen_line_vs_path, static_color_fs_path);
+    if (screen_line_shader.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create screen line shader program!\n");
+        screen_line_shader.~Program();
+        return false;
+    }
+
+    //ui shader
+    const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
+               *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
+    std::vector<Shaders::ShaderInclude> ui_vs_includes = {},
+                                        ui_fs_includes = {};
+    
+    new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path, ui_vs_includes, ui_fs_includes);
+    if (ui_shader.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create UI shader program!\n");
+        screen_line_shader.~Program();
+        ui_shader.~Program();
+        return false;
+    }
+
+    //textured rectangle shader
+    const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
+    std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
+                                        tex_rect_fs_includes = {
+                                                                // Shaders::ShaderInclude(postprocess_fs_partial.get()),
+                                                               };
+
+    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);
+    if (tex_rect_shader.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create textured rectangle shader program!\n");
+        screen_line_shader.~Program();
+        ui_shader.~Program();
+        tex_rect_shader.~Program();
+        return false;
+    }
+
+    return true;
+}
+
+void GamePauseMainLoop::deinitShaders()
+{
+    screen_line_shader.~Program();
+    ui_shader.~Program();
+    tex_rect_shader.~Program();
+}
+
+bool GamePauseMainLoop::initUI()
+{
+    const char *font_path = "assets/DINEngschrift-Regular.ttf";
+    const float font_size = 22;
+
+    //TODO load stuff into textbuffer
+    memset(textbuffer, 0, sizeof(textbuffer));
+    textbuffer_len = 0;
+
+    new (&font) UI::Font(font_path, font_size);
+    if (font.getFontPtr() == NULL)
+    {
+        fprintf(stderr, "Failed to initialize UI font!\n");
+        font.~Font();
+        return false;
+    }
+
+    new (&ui) UI::Context(ui_shader, font);
+    if (!ui.m_ctx_initialized)
+    {
+        fprintf(stderr, "Failed to initialize UI!\n");
+        font.~Font();
+        ui.~Context();
+        return false;
+    }
+
+    return true;
+}
+void GamePauseMainLoop::deinitUI()
+{
+    font.~Font();
+    ui.~Context();
 }
 
 int GamePauseMainLoop::init()
 {
-    // nothing for now
+    //Shaders
+    if (!initShaders())
+    {
+        return 1;
+    }
+
+    //UI
+    if (!initUI())
+    {
+        deinitShaders();
+        return 2;
+    }
+
+    //Misc.
+    clear_color = Color(0, 0, 0);
+    tick = 0;
+    last_esc_state = GLFW_PRESS;
+
     return 0;
 }
 
@@ -1536,13 +1681,153 @@ GamePauseMainLoop::~GamePauseMainLoop()
     // nothing for now
 }
 
-LoopRetVal GamePauseMainLoop::loop()
+LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
 {
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
 
-    //TODO
-    return LoopRetVal::success;
+    // ---Mouse input---
+    double mouse_x = 0.f, mouse_y = 0.f;
+    glfwGetCursorPos(window, &mouse_x, &mouse_y);
+
+    const bool mbutton_left_is_pressed = false; //TODO get this from global manager
+    const glm::vec2 mouse_pos(static_cast<float>(mouse_x), static_cast<float>(mouse_y));
+
+    // ---Keyboard input---
+    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) // exit on Q
+    {
+        return LoopRetVal::exit;
+    }
+    int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    if (esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE) // go back to the game on ESC
+    {
+        return LoopRetVal::popCurrent;
+    }
+
+    // ---UI---
+    //pump the input into UI
+    if (!ui.getInput(window, mouse_pos, mbutton_left_is_pressed, textbuffer, textbuffer_len))
+    {
+        fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
+    }
+
+    //GUI styling    
+    {
+        nk_color ui_background_color = nk_rgba(200, 200, 80, 200);
+        ui.m_ctx.style.window.background = ui_background_color;
+        ui.m_ctx.style.window.fixed_background = nk_style_item_color(ui_background_color);
+        ui.m_ctx.style.window.border_color = nk_rgb(100, 100, 80);
+        ui.m_ctx.style.window.border = 3;
+        ui.m_ctx.style.window.padding = nk_vec2(8, 4);
+        ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
+    }
+    //GUI definition+logic
+    {
+        //TODO change this probably
+        char ui_textbuff[256]{};
+        size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
+
+        const glm::vec2 menu_size(150, 150);
+        
+        //Menu
+        if (nk_begin(&ui.m_ctx, "Menu", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
+                                                menu_size.x, menu_size.y),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
+        {
+            nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+            nk_label(&ui.m_ctx, "Paused.", NK_TEXT_CENTERED);
+            nk_label(&ui.m_ctx, "ESC to unpause", NK_TEXT_CENTERED);
+            nk_label(&ui.m_ctx, "Q to quit", NK_TEXT_CENTERED);
+        }
+        nk_end(&ui.m_ctx);
+    }
+
+    // Credits 
+    {
+        ui.m_ctx.style.window.background = nk_rgba(0, 0, 0, 0);
+        ui.m_ctx.style.window.fixed_background = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+        ui.m_ctx.style.text.color = nk_rgba(0, 0, 0, 100);
+        ui.m_ctx.style.window.padding = nk_vec2(3, 3);
+    }
+    const glm::vec2 credits_size(156, 56);
+    if (nk_begin(&ui.m_ctx, "Credits", nk_rect(win_size.x - credits_size.x, win_size.y - credits_size.y,
+                                               credits_size.x, credits_size.y),
+        NK_WINDOW_NO_SCROLLBAR))
+    {
+        nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+        #ifdef VERSION_STRING
+            nk_label(&ui.m_ctx, VERSION_STRING, NK_TEXT_RIGHT);
+        #else
+            ui.horizontalGap(25.f);
+        #endif
+        nk_label(&ui.m_ctx, "Ondrej Richtr, 2025", NK_TEXT_RIGHT);
+    }
+    nk_end(&ui.m_ctx);
+
+    // ---Drawing---
+    {
+        bool use_fbo = shared_gl_context.use_fbo3d;
+
+        //2D block
+        {
+            //TODO use correct win size + check whether some functions need it as parameter
+            const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
+            const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
+            // glm::vec2 window_middle = win_fbo_size / 2.f;
+
+            //TODO this might be wrong on some displays?
+            //set the viewport according to window size
+            glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
+
+            //bind the default framebuffer
+            glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
+            if (use_fbo)
+            {
+                Drawing::clear(clear_color);
+                //TODO maybe useless in 2D block?
+                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+            }
+
+            glDepthMask(GL_FALSE);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_CULL_FACE);
+            glEnable(GL_BLEND); //TODO check this
+            glBlendEquation(GL_FUNC_ADD); //TODO check this
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+            
+            //render the 3D scene as a background from it's framebuffer
+            if (use_fbo)
+            {
+                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+                // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            }
+            
+            //line test
+            // Drawing::screenLine(screen_line_shader, line_vbo, win_size,
+            //                     window_middle, glm::vec2(50.f),
+            //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
+
+            //UI drawing
+            glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+            if (!ui.draw(win_fbo_size))
+            {
+                fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
+            }
+            glDisable(GL_SCISSOR_TEST);
+
+            glDisable(GL_BLEND);
+
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+        }
+    }
+    
+    ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
+
+    last_esc_state = esc_state;
+    ++tick;
+
+    return LoopRetVal::ok;
 }

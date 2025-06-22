@@ -3,6 +3,8 @@
 #include <cstring> // memcpy, memset
 
 
+MainLoopStack MainLoopStack::instance{};
+
 LoopData::LoopData(size_t data_size, InitFnPtr *init_fn, DeinitFnPtr *deinit_fn, LoopCallbackFnPtr *loop_callback_fn)
             : m_raw_data(std::make_unique<unsigned char[]>(data_size)), m_init_fn(init_fn), m_deinit_fn(deinit_fn), m_loop_callback_fn(loop_callback_fn)
 {

@@ -115,7 +115,7 @@ int desktop_main(void)
     GLFWwindow *window = WindowManager::getWindow();
     assert(window != NULL);
 
-    MainLoopStack main_loop_stack{};
+    MainLoopStack& main_loop_stack = MainLoopStack::instance;
     {
         LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<GameMainLoop>();
         if (pushed_loop_data == NULL)
@@ -143,9 +143,27 @@ int desktop_main(void)
 
             const double current_frame_time = glfwGetTime();
             const float frame_delta = main_loop_stack.getFrameDelta(current_frame_time);
-            loop_data->loopCallback(current_frame_time, frame_delta); //TODO retval
+            const LoopRetVal loop_ret_val = loop_data->loopCallback(current_frame_time, frame_delta);
 
             glfwSwapBuffers(window);
+
+            //resolve loop_ret_val
+            switch (loop_ret_val)
+            {
+            case LoopRetVal::ok:
+                // continue normally
+                break;
+            case LoopRetVal::exit:
+                // exit
+                glfwSetWindowShouldClose(window, true);
+                break;
+            case LoopRetVal::popCurrent:
+                main_loop_stack.pop();
+                break;
+            default:
+                assert(false); // unimplemented case!
+                break;
+            }
         }
     }
 
@@ -187,9 +205,27 @@ extern "C"
 
         const double current_frame_time = glfwGetTime();
         const float frame_delta = main_loop_stack->getFrameDelta(current_frame_time);
-        loop_data->loopCallback(current_frame_time, frame_delta); //TODO retval
+        const LoopRetVal loop_ret_val = loop_data->loopCallback(current_frame_time, frame_delta);
 
         glfwSwapBuffers(window);
+
+        //resolve loop_ret_val
+        switch (loop_ret_val)
+        {
+        case LoopRetVal::ok:
+            // continue normally
+            break;
+        case LoopRetVal::exit:
+            // exit
+            glfwSetWindowShouldClose(window, true); //TODO implement exiting on web
+            break;
+        case LoopRetVal::popCurrent:
+            main_loop_stack->pop();
+            break;
+        default:
+            assert(false); // unimplemented case!
+            break;
+        }
     }
 }
 
@@ -206,7 +242,7 @@ int web_main()
 
     puts("Begin main.");
 
-    MainLoopStack main_loop_stack{};
+    MainLoopStack& main_loop_stack = MainLoopStack::instance;
     LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<GameMainLoop>();
     if (pushed_loop_data == NULL)
     {

@@ -1021,7 +1021,7 @@ namespace Game
 }
 
 //loop_data.cpp
-enum class LoopRetVal { exit, success };
+enum class LoopRetVal { exit, ok, popCurrent };
 
 struct LoopData // vtable + pointer to data itself
 {
@@ -1094,6 +1094,8 @@ public:
     float getFrameDelta(double frame_time);
 
     void pop();
+
+    static MainLoopStack instance;
 };
 
 //shared_gl_context.cpp
@@ -1251,6 +1253,7 @@ struct GameMainLoop
     unsigned int fps_calculation_counter, fps_calculated;
     double last_mouse_x, last_mouse_y;
     bool last_left_mbutton;
+    int last_esc_state;
 
     int init();
     ~GameMainLoop();
@@ -1292,8 +1295,28 @@ private:
 
 struct GamePauseMainLoop // also in main-game.cpp
 {
+    //Shaders
+    Shaders::Program screen_line_shader, ui_shader, tex_rect_shader;
+
+    //UI
+    unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
+    size_t textbuffer_len;
+    UI::Font font;
+    UI::Context ui;
+
+    //Misc.
+    Color clear_color;
+    unsigned int tick;
+    int last_esc_state;
+
     int init();
     ~GamePauseMainLoop();
 
-    LoopRetVal loop();
+    LoopRetVal loop(double frame_time, float frame_delta);
+
+private:
+    bool initShaders();
+    void deinitShaders();
+    bool initUI();
+    void deinitUI();
 };

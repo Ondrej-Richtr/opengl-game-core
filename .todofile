@@ -4,7 +4,7 @@
  |0. 0. 0|13. 3. 2025|proper deinit for TestMainLoop too
 X|0. 0. 0|13. 3. 2025|update README.md to reflect new build with Zig
  |0. 0. 0|13. 3. 2025|main menu + maybe with settings
- |0. 0. 0|13. 3. 2025|stacking of main loops
+X|0. 0. 0|13. 3. 2025|stacking of main loops
  |0. 0. 0|13. 3. 2025|get and compile glfw from their gitrepo + add option to link system glfw instead
  |0. 0. 0|13. 3. 2025|maybe for glfw use https://github.com/lpstankus/zig-glfw (pass options to it with https://ziggit.dev/t/pass-build-option-to-a-dependency/4196/14)
 X|0. 0. 0|13. 3. 2025|include system for shaders
@@ -24,3 +24,4 @@ X|0. 0. 0|25. 4. 2025|fix slow movement when looking up/down
  |0. 0. 0|8. 5. 2025|add sound - miniaudio or OpenAL?
  |0. 0. 0|11. 5. 2025|check all members of GameMainLoop and convert to constexpr
 X|0. 0. 0|15. 5. 2025|targets with size and position changing objects with their respective interfaces
+ |0. 0. 0|22. 6. 2025|muzzle flash light source when shooting
