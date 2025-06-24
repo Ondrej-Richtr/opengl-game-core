@@ -25,3 +25,4 @@ X|0. 0. 0|25. 4. 2025|fix slow movement when looking up/down
  |0. 0. 0|11. 5. 2025|check all members of GameMainLoop and convert to constexpr
 X|0. 0. 0|15. 5. 2025|targets with size and position changing objects with their respective interfaces
  |0. 0. 0|22. 6. 2025|muzzle flash light source when shooting
+X|0. 0. 0|23. 6. 2025|make resize to 0x0 work (minimizing of the window)

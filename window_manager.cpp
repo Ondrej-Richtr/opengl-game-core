@@ -15,15 +15,18 @@ void WindowManager::windowResizeCallback(GLFWwindow* window, int width, int heig
 
 void WindowManager::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
-    //TODO check for resizes to 0x0? Might also be good idea to limit the max size because of WebGL
     m_framebuffer_size = glm::ivec2(width, height);
 
-    if (SharedGLContext::instance.has_value())
+    if (SharedGLContext::instance.has_value() && m_framebuffer_size.x > 0 && m_framebuffer_size.y > 0)
     {
         SharedGLContext::instance.value().changeFbo3DSize(width, height);
+        printf("Framebuffer resized to: %dx%d\n", m_framebuffer_size.x, m_framebuffer_size.y);
     }
-
-    printf("Framebuffer resized to: %dx%d\n", m_framebuffer_size.x, m_framebuffer_size.y);
+    else
+    {
+        printf("Framebuffer requested resize to %dx%d was saved, but framebuffer object not resized.\n",
+               m_framebuffer_size.x, m_framebuffer_size.y);
+    }
 }
 
 void WindowManager::init(GLFWwindow *window)

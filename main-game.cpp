@@ -868,6 +868,9 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
 
+    //TODO make this functionality part of the mouse manager
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     // ---Mouse input---
     double mouse_x = 0.f, mouse_y = 0.f;
     glfwGetCursorPos(window, &mouse_x, &mouse_y);
@@ -1687,6 +1690,9 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
     const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
+
+    //TODO make this functionality part of the mouse manager
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     // ---Mouse input---
     double mouse_x = 0.f, mouse_y = 0.f;
