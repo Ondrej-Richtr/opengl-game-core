@@ -886,7 +886,7 @@ namespace UI
         void clear();
 
         //GUI helper methods
-        void horizontalGap(float gap_height);
+        void verticalGap(float gap_height);
     
     private:
         void setupVBOAttributes() const;

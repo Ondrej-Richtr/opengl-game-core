@@ -1097,7 +1097,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
             }
             nk_layout_row_end(&ui.m_ctx);
 
-            ui.horizontalGap(8);
+            ui.verticalGap(8);
 
             //level progress bar
             {
@@ -1172,7 +1172,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
         #ifdef VERSION_STRING
             nk_label(&ui.m_ctx, VERSION_STRING, NK_TEXT_RIGHT);
         #else
-            ui.horizontalGap(25.f);
+            ui.verticalGap(25.f);
         #endif
         nk_label(&ui.m_ctx, "Ondrej Richtr, 2025", NK_TEXT_RIGHT);
     }
@@ -1711,21 +1711,39 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
 
-        const glm::vec2 menu_size(150, 250);
+        const glm::vec2 menu_size(200, 250);
         
         //Menu
-        if (nk_begin(&ui.m_ctx, "Menu", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
+        if (nk_begin(&ui.m_ctx, "Paused", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
                                                 menu_size.x, menu_size.y),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
-            nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
-            nk_label(&ui.m_ctx, "Paused.", NK_TEXT_CENTERED);
-            nk_label(&ui.m_ctx, "ESC to unpause", NK_TEXT_CENTERED);
-            nk_label(&ui.m_ctx, "Q to quit", NK_TEXT_CENTERED);
+            // nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+            // nk_label(&ui.m_ctx, "Paused", NK_TEXT_CENTERED);
+            // nk_label(&ui.m_ctx, "ESC to unpause,", NK_TEXT_CENTERED);
+            // nk_label(&ui.m_ctx, "Q to quit.", NK_TEXT_CENTERED);
+            ui.verticalGap(12.f);
 
-            if(nk_button_label(&ui.m_ctx, "Test label"))
+            nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
+            if(nk_button_label(&ui.m_ctx, "Resume [ESC]"))
             {
-                puts("button pressed");
+                return LoopRetVal::popCurrent;
+            }
+
+            ui.verticalGap(12.f);
+
+            nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
+            if(nk_button_label(&ui.m_ctx, "Options"))
+            {
+                puts("Options not implemented yet");
+            }
+
+            ui.verticalGap(20.f);
+
+            nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
+            if(nk_button_label(&ui.m_ctx, "Quit [Q]"))
+            {
+                return LoopRetVal::exit;
             }
         }
         nk_end(&ui.m_ctx);
@@ -1747,7 +1765,7 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
         #ifdef VERSION_STRING
             nk_label(&ui.m_ctx, VERSION_STRING, NK_TEXT_RIGHT);
         #else
-            ui.horizontalGap(25.f);
+            ui.verticalGap(25.f);
         #endif
         nk_label(&ui.m_ctx, "Ondrej Richtr, 2025", NK_TEXT_RIGHT);
     }

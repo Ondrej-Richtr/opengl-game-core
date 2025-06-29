@@ -342,7 +342,7 @@ void UI::Context::clear()
     nk_clear(&m_ctx);
 }
 
-void UI::Context::horizontalGap(float gap_height)
+void UI::Context::verticalGap(float gap_height)
 {
     nk_layout_row_dynamic(&m_ctx, gap_height, 1);
 }
