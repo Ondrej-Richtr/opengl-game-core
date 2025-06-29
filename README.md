@@ -69,4 +69,8 @@ Next you can run it using any http server, for example with python3:
 ```console
 python3 -m http.server 8080 -d ./zig-out/web/
 ```
+You can also combine both previous commands into one with:
+```console
+zig build -Dtarget=wasm32-emscripten run
+```
 After that you open it in your browser (`localhost:8080/shooting_practice.html`).

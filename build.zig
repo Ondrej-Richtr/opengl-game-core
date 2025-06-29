@@ -20,6 +20,10 @@ pub const c_std_ver = "c99"; // good idea to use c99 or newer, GLFW 3.4 seems to
 const glfw_lib_dir_path: ?String = null;
 const glfw_include_dir_path: ?String = null;
 
+// Python web server settings
+const python_cmd_name = "python";
+const python_http_port = 8080;
+
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -72,6 +76,19 @@ pub fn build(b: *std.Build) !void {
             // b.installArtifact(lib);
             // emcc.step.dependOn(&lib.step);
             b.getInstallStep().dependOn(&emcc.step);
+
+            // python https server script when run command specified
+            const python_http_port_string = std.fmt.comptimePrint("{d}", .{ python_http_port });
+            const python_http_arguments = [_]String{
+                python_cmd_name,
+                "-m", "http.server", python_http_port_string,
+                "-d", web_out_dir,
+            };
+
+            const python_http_run = b.addSystemCommand(&python_http_arguments);
+            python_http_run.step.dependOn(b.getInstallStep());
+            var run_step = b.step("run", "run " ++ project_name);
+            run_step.dependOn(&python_http_run.step);
         },
         else =>
         {
