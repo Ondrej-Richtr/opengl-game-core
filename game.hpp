@@ -202,6 +202,27 @@ public:
     static glm::vec2 getFBOSizeF(); 
 };
 
+//mouse_manager.cpp
+class MouseManager
+{
+    static glm::vec2 mouse_pos;
+
+public:
+    static bool left_button, right_button;
+
+    static void init(GLFWwindow *window);
+
+    static glm::ivec2 mousePos();
+    static glm::ivec2 mousePosF();
+
+    static void setCursorLocked();
+    static void setCursorVisible();
+
+private:
+    static void mousePositionCallback(GLFWwindow* window, double xpos, double ypos);
+    static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
+};
+
 //drawing.cpp
 namespace Drawing
 {
@@ -1251,18 +1272,14 @@ struct GameMainLoop
     unsigned int tick;
     double fps_calculation_interval, last_fps_calculation_time;
     unsigned int fps_calculation_counter, fps_calculated;
-    double last_mouse_x, last_mouse_y;
-    bool last_left_mbutton;
+    glm::vec2 last_mouse_posF;
+    bool last_left_mbutton, last_right_mbutton;
     int last_esc_state;
 
     int init();
     ~GameMainLoop();
 
     LoopRetVal loop(double frame_time, float frame_delta);
-
-    //TODO global mouse button manager for all main loops
-    static bool left_mbutton_state;
-    static void mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods);
 
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!

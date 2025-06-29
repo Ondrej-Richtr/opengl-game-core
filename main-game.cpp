@@ -6,19 +6,6 @@
 #include <algorithm>
 
 
-bool GameMainLoop::left_mbutton_state = false;
-
-//TODO global manager for mouse callbacks! Call from different init will remove this one!
-void GameMainLoop::mouseButtonsCallback(GLFWwindow *window, int button, int action, int mods)
-{
-    //TODO use glfwGetWindowUserPointer or make a manager for this callback
-
-    if (button == GLFW_MOUSE_BUTTON_LEFT)
-    {
-        GameMainLoop::left_mbutton_state = (action == GLFW_PRESS);
-    }
-}
-
 //!IMPORTANT: we need to call destructor on objects even if their constructor "failed" (aka id == empty_id)
 void GameMainLoop::initCamera()
 {
@@ -740,11 +727,6 @@ int GameMainLoop::init()
 {
     puts("GameMainLoop init begin");
 
-    GLFWwindow * const window = WindowManager::getWindow();
-
-    //mouse callback setup
-    glfwSetMouseButtonCallback(window, &GameMainLoop::mouseButtonsCallback); //TODO mouse manager
-
     //Camera
     initCamera();
 
@@ -846,9 +828,9 @@ int GameMainLoop::init()
     last_fps_calculation_time = glfwGetTime();
     fps_calculation_counter = 0;
     fps_calculated = 0;
-    last_mouse_x = 0.f;
-    last_mouse_y = 0.f;
+    last_mouse_posF = glm::vec2(0.f);
     last_left_mbutton = false;
+    last_right_mbutton = false;
     last_esc_state = GLFW_PRESS;
 
     puts("GameMainLoop init end");
@@ -868,20 +850,17 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
 
-    //TODO make this functionality part of the mouse manager
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     // ---Mouse input---
-    double mouse_x = 0.f, mouse_y = 0.f;
-    glfwGetCursorPos(window, &mouse_x, &mouse_y);
+    MouseManager::setCursorLocked();
+
+    const glm::vec2 mouse_posF = MouseManager::mousePosF();
 
     if (tick == 0)
     {
-        last_mouse_x = mouse_x;
-        last_mouse_y = mouse_y;
+        last_mouse_posF = mouse_posF;
     }
 
-    float mouse_delta_x = (float)(mouse_x - last_mouse_x), mouse_delta_y = (float)(mouse_y - last_mouse_y);
+    const float mouse_delta_x = mouse_posF.x - last_mouse_posF.x, mouse_delta_y = mouse_posF.y - last_mouse_posF.y;
     //printf("mouse_delta_x: %f, mouse_delta_y: %f\n", mouse_delta_x, mouse_delta_y);
 
     if (!CLOSE_TO_0(mouse_delta_x) || !CLOSE_TO_0(mouse_delta_y))
@@ -899,13 +878,12 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
         camera.setProjectionMatrix(fov, camera_aspect_ratio);
     }
 
-    const glm::vec2 mouse_pos(static_cast<float>(mouse_x), static_cast<float>(mouse_y));
     const Collision::Ray mouse_ray = camera.getRay();
 
-    // ---Keyboard input---
-    bool mbutton_left_is_pressed = left_mbutton_state;
-    bool mbutton_left_is_clicked = left_mbutton_state && !last_left_mbutton;
+    const bool left_mbutton = MouseManager::left_button, right_mbutton = MouseManager::right_button;
+    const bool left_mbutton_is_clicked = left_mbutton && !last_left_mbutton, right_mbutton_is_clicked = right_mbutton && !last_right_mbutton;
 
+    // ---Keyboard input---
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
     if(esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE)
     {
@@ -939,7 +917,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
 
     //TODO this system does not work properly when shooting from an angle - ball gets hit even when aiming at the flat target
     // possible fix could be to also check for a hit of the wall, if target hit is further from the player than the wall hit count it as a miss
-    if (mbutton_left_is_clicked)
+    if (left_mbutton_is_clicked)
     {
         size_t hit_idx = 0;
 
@@ -1048,7 +1026,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
 
     // ---UI---
     //pump the input into UI
-    if (!ui.getInput(window, mouse_pos, mbutton_left_is_pressed, textbuffer, textbuffer_len))
+    if (!ui.getInput(window, mouse_posF, left_mbutton, textbuffer, textbuffer_len))
     {
         fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
     }
@@ -1519,7 +1497,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
             //                     50.f, ColorF(1.0f, 0.0f, 0.0f));
 
             //crosshair
-            const ColorF crosshair_color = ColorF(1.f, 1.f, mbutton_left_is_pressed ? 1.f : 0.f);
+            const ColorF crosshair_color = ColorF(1.f, 1.f, left_mbutton ? 1.f : 0.f);
             Drawing::crosshair(screen_line_shader, line_vbo, win_fbo_size,
                                 glm::vec2(50.f, 30.f), window_middle, 1.f, crosshair_color);
 
@@ -1539,9 +1517,9 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     
     ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
 
-    last_mouse_x = mouse_x;
-    last_mouse_y = mouse_y;
-    last_left_mbutton = left_mbutton_state;
+    last_mouse_posF = mouse_posF;
+    last_left_mbutton = left_mbutton;
+    last_right_mbutton = right_mbutton;
     last_esc_state = esc_state;
     ++tick;
 
@@ -1691,15 +1669,13 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
 
-    //TODO make this functionality part of the mouse manager
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
     // ---Mouse input---
-    double mouse_x = 0.f, mouse_y = 0.f;
-    glfwGetCursorPos(window, &mouse_x, &mouse_y);
+    MouseManager::setCursorVisible();
 
-    const bool mbutton_left_is_pressed = false; //TODO get this from global manager
-    const glm::vec2 mouse_pos(static_cast<float>(mouse_x), static_cast<float>(mouse_y));
+    const glm::vec2 mouse_posF = MouseManager::mousePosF();
+
+    const bool left_mbutton = MouseManager::left_button, right_mbutton = MouseManager::right_button;
+    // const bool left_mbutton_is_clicked = left_mbutton && !last_left_mbutton, right_mbutton_is_clicked = right_mbutton && !last_right_mbutton;
 
     // ---Keyboard input---
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) // exit on Q
@@ -1714,7 +1690,7 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
 
     // ---UI---
     //pump the input into UI
-    if (!ui.getInput(window, mouse_pos, mbutton_left_is_pressed, textbuffer, textbuffer_len))
+    if (!ui.getInput(window, mouse_posF, left_mbutton, textbuffer, textbuffer_len))
     {
         fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
     }
@@ -1735,7 +1711,7 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
 
-        const glm::vec2 menu_size(150, 150);
+        const glm::vec2 menu_size(150, 250);
         
         //Menu
         if (nk_begin(&ui.m_ctx, "Menu", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
@@ -1746,6 +1722,11 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
             nk_label(&ui.m_ctx, "Paused.", NK_TEXT_CENTERED);
             nk_label(&ui.m_ctx, "ESC to unpause", NK_TEXT_CENTERED);
             nk_label(&ui.m_ctx, "Q to quit", NK_TEXT_CENTERED);
+
+            if(nk_button_label(&ui.m_ctx, "Test label"))
+            {
+                puts("button pressed");
+            }
         }
         nk_end(&ui.m_ctx);
     }

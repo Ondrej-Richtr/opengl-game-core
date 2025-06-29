@@ -78,6 +78,9 @@ static int init(void)
         }
     #endif
 
+    //initializing mouse manager
+    MouseManager::init(window);
+
     //initializing shared gl context
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
     //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
