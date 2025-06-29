@@ -1,10 +1,10 @@
-Game core made using OpenGL, supposed to be first person target shooter.
+Game core made using OpenGL. It is tightly bundled together with a game built on top if it, supposed to be first person target shooter.
 
-It uses GLFW3 and OpenGL 3.3 on desktops and OpenGLES 2.0 for the web build.
+It uses GLFW3 and OpenGL 3.3 on desktops and OpenGLES 2.0/WebGL for the web build.
 
 ## Build
 The only official way to build this project is using [Zig](https://ziglang.org/).
-_There is also an experimental CMake support, but I don't recommend it, currently only tested on Windows with [ninja](https://ninja-build.org/) build system._
+_There is also an experimental CMake support, but I don't recommend it, CMake build currently only tested on Windows with [ninja](https://ninja-build.org/) build system._
 
 Other method might be compiling everything yourself with `gcc` or `clang`, but that requires linking all needed libraries by yourself.
 
@@ -53,11 +53,11 @@ Generate build files and run the build system:
 cmake ..
 cmake --build .
 ```
-Resulting binary gets written into `cmake-build/bin` folder.
+Resulting binary gets written into `cmake-build/bin` folder. To further run this executable, just place it in the root folder of this repository.
 
 ## Web build
 This project is structured in a way that it is possible to compile it for the web (wasm with WebGL).
-However the rendering in the web build is still broken, so I don't recommend it.
+However the web version has some issues, so I don't recommend it for proper experience.
 
 You need to have [emscripten](https://emscripten.org/) toolchain installed and accessible through path.
 You then use:
