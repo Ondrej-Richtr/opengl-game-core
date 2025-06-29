@@ -1727,6 +1727,8 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
             if(nk_button_label(&ui.m_ctx, "Resume [ESC]"))
             {
+                nk_end(&ui.m_ctx);
+                nk_clear(&ui.m_ctx);
                 return LoopRetVal::popCurrent;
             }
 
@@ -1743,6 +1745,8 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
             if(nk_button_label(&ui.m_ctx, "Quit [Q]"))
             {
+                nk_end(&ui.m_ctx);
+                nk_clear(&ui.m_ctx);
                 return LoopRetVal::exit;
             }
         }
