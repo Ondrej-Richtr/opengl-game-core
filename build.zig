@@ -3,7 +3,7 @@ const std = @import("std");
 const String = [:0]const u8;
 
 // Public constants related to build configuration.
-// Please keep list of cpp and c files updated with all file that need to get compiled.
+// Please keep list of cpp and c files updated with all file names that need to get compiled.
 pub const project_name = "shooting_practice";
 pub const version_string = "v0.2";
 
@@ -37,13 +37,12 @@ pub fn build(b: *std.Build) !void {
 
             const web_out_dir = "zig-out/web/"; //TODO create this directory if it does not exist yet
             const local_em_dir = "emscripten-stuff/";
-            const shell_file = "shell.html"; //TODO shell file
+            const shell_file = "shell.html";
 
             const emcc_arguments = [_]String{
-                "em++", //TODO em++ or emcc?
+                "em++",
                 // "--use-port=contrib.glfw3",
                 "-o", web_out_dir ++ project_name ++ ".html",   //output
-                //TODO c + cpp files
             } ++ cpp_files ++ c_files ++ [_]String{
                 "-Os", "-O3", "-Wall",
                 "-I.", "-I./include",                           //includes (header files)
@@ -72,9 +71,6 @@ pub fn build(b: *std.Build) !void {
             };
 
             const emcc = b.addSystemCommand(&emcc_arguments);
-
-            // b.installArtifact(lib);
-            // emcc.step.dependOn(&lib.step);
             b.getInstallStep().dependOn(&emcc.step);
 
             // python https server script when run command specified
@@ -150,14 +146,6 @@ pub fn build(b: *std.Build) !void {
             run_step.dependOn(&run_cmd.step);
 
             b.installArtifact(exe);
-
-            //TODO is check command useful for C++ project?
-            //check
-            // const exe_check = b.addExecutable(.{ .name = project_name, .target = target, .optimize = optimize });
-
-            // const check = b.step("check", "Check if " ++ project_name ++ " compiles");
-            // check.dependOn(&exe_check.step);
         },
     }
-    
 }
