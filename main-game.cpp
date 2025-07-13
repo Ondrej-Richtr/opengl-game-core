@@ -874,11 +874,14 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     }
 
     //updating camera's aspect ratio if the window aspect ration changed
-    const float win_aspect_ratio = win_size.x / win_size.y;
-    if (!FLOAT_EQUALS(camera_aspect_ratio, win_aspect_ratio))
+    if (!CLOSE_TO_0(win_size.x) && !CLOSE_TO_0(win_size.y)) // ...but only when having meaningful window size
     {
-        camera_aspect_ratio = win_aspect_ratio;
-        camera.setProjectionMatrix(fov, camera_aspect_ratio);
+        const float win_aspect_ratio = win_size.x / win_size.y;
+        if (!FLOAT_EQUALS(camera_aspect_ratio, win_aspect_ratio))
+        {
+            camera_aspect_ratio = win_aspect_ratio;
+            camera.setProjectionMatrix(fov, camera_aspect_ratio);
+        }
     }
 
     const Collision::Ray mouse_ray = camera.getRay();
