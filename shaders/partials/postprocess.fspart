@@ -88,9 +88,9 @@ vec4 _postproc(sampler2D _inputTexture, vec2 tpos)
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tex, tpos) (vec4(0.0, 1.0, 1.0, 1.0))
     // #define POSTPROCESS(tex, tpos) (TEXTURE2D((tex), (tpos)))
-    // #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
+    #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
     // #define POSTPROCESS(tex, tpos) (_postproc_greyscale((tex), (tpos)))
-    #define POSTPROCESS(tex, tpos) (_postproc((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc((tex), (tpos)))
 #endif
 
 #ifndef SETUP

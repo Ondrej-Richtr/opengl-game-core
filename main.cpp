@@ -140,13 +140,14 @@ int desktop_main(void)
     //main loop
     {
         const LoopData* loop_data = NULL;
+        unsigned int global_ticks = 0;
         while(!glfwWindowShouldClose(window) && (loop_data = main_loop_stack.currentLoopData()) != NULL)
         {
             glfwPollEvents();
 
             const double current_frame_time = glfwGetTime();
             const float frame_delta = main_loop_stack.getFrameDelta(current_frame_time);
-            const LoopRetVal loop_ret_val = loop_data->loopCallback(current_frame_time, frame_delta);
+            const LoopRetVal loop_ret_val = loop_data->loopCallback(global_ticks, current_frame_time, frame_delta);
 
             glfwSwapBuffers(window);
 
@@ -160,13 +161,15 @@ int desktop_main(void)
                 // exit
                 glfwSetWindowShouldClose(window, true);
                 break;
-            case LoopRetVal::popCurrent:
+            case LoopRetVal::popTop:
                 main_loop_stack.pop();
                 break;
             default:
                 assert(false); // unimplemented case!
                 break;
             }
+
+            ++global_ticks;
         }
     }
 
@@ -178,6 +181,11 @@ int desktop_main(void)
 }
 
 #ifdef PLATFORM_WEB
+typedef struct
+{
+    unsigned int global_ticks;
+} WebLoopState;
+
 extern "C"
 {
     void emsc_set_window_size(int width, int height)
@@ -194,10 +202,13 @@ extern "C"
 
     void web_loop(void *arg)
     {
-        MainLoopStack* main_loop_stack = reinterpret_cast<MainLoopStack*>(arg);
-        if (!main_loop_stack) return;
+        WebLoopState* state = reinterpret_cast<WebLoopState*>(arg);
+        if (!state) return;
 
-        const LoopData *loop_data = main_loop_stack->currentLoopData();
+        MainLoopStack& main_loop_stack = MainLoopStack::instance;
+        unsigned int& global_ticks = state->global_ticks;
+
+        const LoopData *loop_data = main_loop_stack.currentLoopData();
         if (!loop_data) return; //TODO maybe swap buffers anyways?
 
         GLFWwindow *window = WindowManager::getWindow();
@@ -207,8 +218,8 @@ extern "C"
         glfwPollEvents();
 
         const double current_frame_time = glfwGetTime();
-        const float frame_delta = main_loop_stack->getFrameDelta(current_frame_time);
-        const LoopRetVal loop_ret_val = loop_data->loopCallback(current_frame_time, frame_delta);
+        const float frame_delta = main_loop_stack.getFrameDelta(current_frame_time);
+        const LoopRetVal loop_ret_val = loop_data->loopCallback(global_ticks, current_frame_time, frame_delta);
 
         glfwSwapBuffers(window);
 
@@ -222,13 +233,15 @@ extern "C"
             // exit
             glfwSetWindowShouldClose(window, true); //TODO implement exiting on web
             break;
-        case LoopRetVal::popCurrent:
-            main_loop_stack->pop();
+        case LoopRetVal::popTop:
+            main_loop_stack.pop();
             break;
         default:
             assert(false); // unimplemented case!
             break;
         }
+
+        ++global_ticks;
     }
 }
 
@@ -262,7 +275,8 @@ int web_main()
         return -2;
     }
 
-    emscripten_set_main_loop_arg(web_loop, reinterpret_cast<void*>(&main_loop_stack), 0, true);
+    WebLoopState state{ 0 };
+    emscripten_set_main_loop_arg(web_loop, reinterpret_cast<void*>(&state), 0, true);
 
     //deinitialization
     deinit();

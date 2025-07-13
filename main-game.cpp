@@ -824,6 +824,7 @@ int GameMainLoop::init()
     // clear_color_3d = Color(10, 10, 10); //DEBUG
     clear_color_2d = Color(0, 0, 0);
     tick = 0;
+    last_global_tick = 0;
     fps_calculation_interval = 0.5f; // in seconds
     last_fps_calculation_time = glfwGetTime();
     fps_calculation_counter = 0;
@@ -843,19 +844,21 @@ GameMainLoop::~GameMainLoop()
     // glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
 }
 
-LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
+LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float frame_delta)
 {
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
 
+    const bool consecutive_tick = (last_global_tick + 1) == global_tick;
+
     // ---Mouse input---
     MouseManager::setCursorLocked();
 
     const glm::vec2 mouse_posF = MouseManager::mousePosF();
 
-    if (tick == 0)
+    if (!consecutive_tick)
     {
         last_mouse_posF = mouse_posF;
     }
@@ -881,11 +884,13 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     const Collision::Ray mouse_ray = camera.getRay();
 
     const bool left_mbutton = MouseManager::left_button, right_mbutton = MouseManager::right_button;
-    const bool left_mbutton_is_clicked = left_mbutton && !last_left_mbutton, right_mbutton_is_clicked = right_mbutton && !last_right_mbutton;
+    const bool left_mbutton_is_clicked = consecutive_tick && left_mbutton && !last_left_mbutton,
+               right_mbutton_is_clicked = consecutive_tick && right_mbutton && !last_right_mbutton;
 
     // ---Keyboard input---
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
-    if(esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE)
+    const bool esc_clicked = consecutive_tick && esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE;
+    if(esc_clicked)
     {
         MainLoopStack& main_loop_stack = MainLoopStack::instance;
 
@@ -1061,7 +1066,12 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
 
             //fps calculating and rendering
             ++fps_calculation_counter;
-            if (frame_time >= last_fps_calculation_time + fps_calculation_interval)
+            if (!consecutive_tick)
+            {
+                fps_calculation_counter = 0;
+                last_fps_calculation_time = frame_time;
+            }
+            else if (frame_time >= last_fps_calculation_time + fps_calculation_interval)
             {
                 const double time_passed = frame_time - last_fps_calculation_time;
                 fps_calculated = static_cast<unsigned int>(static_cast<double>(fps_calculation_counter) / time_passed);
@@ -1521,6 +1531,7 @@ LoopRetVal GameMainLoop::loop(double frame_time, float frame_delta)
     last_left_mbutton = left_mbutton;
     last_right_mbutton = right_mbutton;
     last_esc_state = esc_state;
+    last_global_tick = global_tick;
     ++tick;
 
     return LoopRetVal::ok;
@@ -1652,6 +1663,7 @@ int GamePauseMainLoop::init()
     //Misc.
     clear_color = Color(0, 0, 0);
     tick = 0;
+    last_global_tick = 0;
     last_esc_state = GLFW_PRESS;
 
     return 0;
@@ -1662,12 +1674,14 @@ GamePauseMainLoop::~GamePauseMainLoop()
     // nothing for now
 }
 
-LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
+LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, float frame_delta)
 {
     GLFWwindow * const window = WindowManager::getWindow();
     const glm::vec2 win_size = WindowManager::getSizeF();
     SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
     assert(shared_gl_context.isInitialized());
+
+    const bool consecutive_tick = (last_global_tick + 1) == global_tick;
 
     // ---Mouse input---
     MouseManager::setCursorVisible();
@@ -1682,10 +1696,12 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
     {
         return LoopRetVal::exit;
     }
-    int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
-    if (esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE) // go back to the game on ESC
+
+    const int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    const bool esc_clicked = consecutive_tick && esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE;
+    if (esc_clicked) // go back to the game on ESC
     {
-        return LoopRetVal::popCurrent;
+        return LoopRetVal::popTop;
     }
 
     // ---UI---
@@ -1718,10 +1734,6 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
                                                 menu_size.x, menu_size.y),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
-            // nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
-            // nk_label(&ui.m_ctx, "Paused", NK_TEXT_CENTERED);
-            // nk_label(&ui.m_ctx, "ESC to unpause,", NK_TEXT_CENTERED);
-            // nk_label(&ui.m_ctx, "Q to quit.", NK_TEXT_CENTERED);
             ui.verticalGap(12.f);
 
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
@@ -1729,7 +1741,7 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
             {
                 nk_end(&ui.m_ctx);
                 nk_clear(&ui.m_ctx);
-                return LoopRetVal::popCurrent;
+                return LoopRetVal::popTop;
             }
 
             ui.verticalGap(12.f);
@@ -1737,7 +1749,33 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
             if(nk_button_label(&ui.m_ctx, "Options"))
             {
-                puts("Options not implemented yet");
+                MainLoopStack& main_loop_stack = MainLoopStack::instance;
+
+                LoopData* options_loop = main_loop_stack.pushFromTemplate<GameOptionsMainLoop>();
+                if (options_loop == NULL)
+                {
+                    fprintf(stderr, "Failed to open the options menu! Can't push options main loop on the stack.\n");
+                }
+                else
+                {
+                    GameOptionsMainLoop* game_options_main_loop = static_cast<GameOptionsMainLoop*>(options_loop->getData());
+                    assert(game_options_main_loop != NULL);
+
+                    //parameter passing
+                    game_options_main_loop->setParameters(ui_shader, tex_rect_shader, ui);
+
+                    //initialization
+                    int init_result = options_loop->init();
+                    if (init_result)
+                    {
+                        fprintf(stderr, "Failed to open the options menu! Initialization failed with return value: %d.\n", init_result);
+                    }
+                }
+
+                //return from this loop early
+                nk_end(&ui.m_ctx);
+                nk_clear(&ui.m_ctx);
+                return LoopRetVal::ok;
             }
 
             ui.verticalGap(20.f);
@@ -1836,6 +1874,211 @@ LoopRetVal GamePauseMainLoop::loop(double frame_time, float frame_delta)
     ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
 
     last_esc_state = esc_state;
+    last_global_tick = global_tick;
+    ++tick;
+
+    return LoopRetVal::ok;
+}
+
+void GameOptionsMainLoop::setParameters(Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui)
+{
+    ref_ui_shader = &ui_shader;
+    ref_tex_rect_shader = &tex_rect_shader;
+    ref_ui = &ui;
+}
+
+bool GameOptionsMainLoop::initUI()
+{
+    //TODO load stuff into textbuffer
+    memset(textbuffer, 0, sizeof(textbuffer));
+    textbuffer_len = 0;
+
+    return true;
+}
+
+void GameOptionsMainLoop::deinitUI()
+{
+    // nothing for now
+}
+
+int GameOptionsMainLoop::init()
+{
+    //Assert parameters
+    assert(ref_ui_shader != NULL);
+    assert(ref_tex_rect_shader != NULL);
+    assert(ref_ui != NULL);
+
+    if (!initUI())
+    {
+        return 1;
+    }
+
+    //Misc.
+    clear_color = Color(0, 0, 0);
+    tick = 0;
+    last_global_tick = 0;
+    last_esc_state = GLFW_PRESS;
+
+    return 0;
+}
+
+GameOptionsMainLoop::~GameOptionsMainLoop()
+{
+    // nothing for now
+}
+
+LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time, float frame_delta)
+{
+    GLFWwindow * const window = WindowManager::getWindow();
+    const glm::vec2 win_size = WindowManager::getSizeF();
+    SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
+
+    const bool consecutive_tick = (last_global_tick + 1) == global_tick;
+
+    // ---Mouse input---
+    MouseManager::setCursorVisible();
+
+    const glm::vec2 mouse_posF = MouseManager::mousePosF();
+
+    const bool left_mbutton = MouseManager::left_button, right_mbutton = MouseManager::right_button;
+    // const bool left_mbutton_is_clicked = left_mbutton && !last_left_mbutton, right_mbutton_is_clicked = right_mbutton && !last_right_mbutton;
+
+    // ---Keyboard input---
+    const int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    const bool esc_clicked = consecutive_tick && esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE;
+    if (esc_clicked) // go back to the Pause game menu on ESC
+    {
+        return LoopRetVal::popTop;
+    }
+
+    // ---UI---
+    UI::Context& ui = *ref_ui;
+    
+    //pump the input into UI
+    if (!ui.getInput(window, mouse_posF, left_mbutton, textbuffer, textbuffer_len))
+    {
+        fprintf(stderr, "[WARNING] Failed to update the input for UI!\n");
+    }
+
+    //GUI styling    
+    {
+        nk_color ui_background_color = nk_rgba(200, 200, 80, 200);
+        ui.m_ctx.style.window.background = ui_background_color;
+        ui.m_ctx.style.window.fixed_background = nk_style_item_color(ui_background_color);
+        ui.m_ctx.style.window.border_color = nk_rgb(100, 100, 80);
+        ui.m_ctx.style.window.border = 3;
+        ui.m_ctx.style.window.padding = nk_vec2(8, 4);
+        ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
+    }
+    //GUI definition+logic
+    {
+        //TODO change this probably
+        char ui_textbuff[256]{};
+        size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
+
+        const glm::vec2 menu_size(300, 250);
+        
+        //Menu
+        if (nk_begin(&ui.m_ctx, "Options", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
+                                                menu_size.x, menu_size.y),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
+        {
+            nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+            nk_label(&ui.m_ctx, "Options menu not implemented yet!", NK_TEXT_CENTERED);
+
+            ui.verticalGap(20.f);
+
+            nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
+            if(nk_button_label(&ui.m_ctx, "Back [ESC]"))
+            {
+                nk_end(&ui.m_ctx);
+                nk_clear(&ui.m_ctx);
+                return LoopRetVal::popTop;
+            }
+        }
+        nk_end(&ui.m_ctx);
+    }
+
+    // Credits 
+    {
+        ui.m_ctx.style.window.background = nk_rgba(0, 0, 0, 0);
+        ui.m_ctx.style.window.fixed_background = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+        ui.m_ctx.style.text.color = nk_rgba(0, 0, 0, 100);
+        ui.m_ctx.style.window.padding = nk_vec2(3, 3);
+    }
+    const glm::vec2 credits_size(156, 56);
+    if (nk_begin(&ui.m_ctx, "Credits", nk_rect(win_size.x - credits_size.x, win_size.y - credits_size.y,
+                                               credits_size.x, credits_size.y),
+        NK_WINDOW_NO_SCROLLBAR))
+    {
+        nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+        #ifdef VERSION_STRING
+            nk_label(&ui.m_ctx, VERSION_STRING, NK_TEXT_RIGHT);
+        #else
+            ui.verticalGap(25.f);
+        #endif
+        nk_label(&ui.m_ctx, "Ondrej Richtr, 2025", NK_TEXT_RIGHT);
+    }
+    nk_end(&ui.m_ctx);
+
+    // ---Drawing---
+    {
+        bool use_fbo = shared_gl_context.use_fbo3d;
+
+        //2D block
+        {
+            //TODO use correct win size + check whether some functions need it as parameter
+            const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
+            const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
+            // glm::vec2 window_middle = win_fbo_size / 2.f;
+
+            //TODO this might be wrong on some displays?
+            //set the viewport according to window size
+            glViewport(0, 0, win_fbo_size_i.x, win_fbo_size_i.y);
+
+            //bind the default framebuffer
+            glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
+            if (use_fbo)
+            {
+                Drawing::clear(clear_color);
+                //TODO maybe useless in 2D block?
+                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
+            }
+
+            glDepthMask(GL_FALSE);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_CULL_FACE);
+            glEnable(GL_BLEND); //TODO check this
+            glBlendEquation(GL_FUNC_ADD); //TODO check this
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+            
+            //render the 3D scene as a background from it's framebuffer
+            if (use_fbo)
+            {
+                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+                // Drawing::texturedRectangle2(*ref_tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(*ref_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            }
+
+            //UI drawing
+            glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
+            if (!ui.draw(win_fbo_size))
+            {
+                fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
+            }
+            glDisable(GL_SCISSOR_TEST);
+
+            glDisable(GL_BLEND);
+
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+        }
+    }
+    
+    ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
+
+    last_esc_state = esc_state;
+    last_global_tick = global_tick;
     ++tick;
 
     return LoopRetVal::ok;

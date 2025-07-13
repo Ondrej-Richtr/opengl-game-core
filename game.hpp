@@ -205,6 +205,7 @@ public:
 //mouse_manager.cpp
 class MouseManager
 {
+    //TODO save if mouse_pos was set atleast from within the callback
     static glm::vec2 mouse_pos;
 
 public:
@@ -1042,13 +1043,13 @@ namespace Game
 }
 
 //loop_data.cpp
-enum class LoopRetVal { exit, ok, popCurrent };
+enum class LoopRetVal { exit, ok, popTop };
 
 struct LoopData // vtable + pointer to data itself
 {
     typedef int         (InitFnPtr)         (void *data);
     typedef void        (DeinitFnPtr)       (void *data);
-    typedef LoopRetVal  (LoopCallbackFnPtr) (void *data, double frame_time, float frame_delta);
+    typedef LoopRetVal  (LoopCallbackFnPtr) (void *data, unsigned int global_tick, double frame_time, float frame_delta);
 
     std::unique_ptr<unsigned char[]> m_raw_data;
 
@@ -1066,7 +1067,7 @@ struct LoopData // vtable + pointer to data itself
     int init() const;
     void deinit() const;
     void deinitAndFree();
-    LoopRetVal loopCallback(double frame_time, float frame_delta) const;
+    LoopRetVal loopCallback(unsigned int global_tick, double frame_time, float frame_delta) const;
 
     template <typename T>
     static int init_template(void *data)
@@ -1083,9 +1084,9 @@ struct LoopData // vtable + pointer to data itself
     }
 
     template <typename T>
-    static LoopRetVal loop_template(void *data, double frame_time, float frame_delta)
+    static LoopRetVal loop_template(void *data, unsigned int global_tick, double frame_time, float frame_delta)
     {
-        return reinterpret_cast<T*>(data)->loop(frame_time, frame_delta);
+        return reinterpret_cast<T*>(data)->loop(global_tick, frame_time, frame_delta);
     }
 
     template <typename T>
@@ -1097,6 +1098,7 @@ struct LoopData // vtable + pointer to data itself
 
 class MainLoopStack
 {
+    //TODO add vector of bytes where unique_ptr stores data of each loopdata 
     std::vector<LoopData> m_stack;
 
     double m_last_frame_time = -1.f;
@@ -1269,7 +1271,7 @@ struct GameMainLoop
 
     //Misc.
     Color clear_color_3d, clear_color_2d;
-    unsigned int tick;
+    unsigned int tick, last_global_tick;
     double fps_calculation_interval, last_fps_calculation_time;
     unsigned int fps_calculation_counter, fps_calculated;
     glm::vec2 last_mouse_posF;
@@ -1279,7 +1281,7 @@ struct GameMainLoop
     int init();
     ~GameMainLoop();
 
-    LoopRetVal loop(double frame_time, float frame_delta);
+    LoopRetVal loop(unsigned int global_tick, double frame_time, float frame_delta);
 
 private:
     //partial init and their repsective deinits, they are only supposed to be called during main `init` method!
@@ -1323,17 +1325,47 @@ struct GamePauseMainLoop // also in main-game.cpp
 
     //Misc.
     Color clear_color;
-    unsigned int tick;
+    unsigned int tick, last_global_tick;
     int last_esc_state;
 
     int init();
     ~GamePauseMainLoop();
 
-    LoopRetVal loop(double frame_time, float frame_delta);
+    LoopRetVal loop(unsigned int global_tick, double frame_time, float frame_delta);
 
 private:
     bool initShaders();
     void deinitShaders();
+    bool initUI();
+    void deinitUI();
+};
+
+struct GameOptionsMainLoop // also in main-game.cpp
+{
+    //Parameters
+    Shaders::Program *ref_ui_shader;
+    Shaders::Program *ref_tex_rect_shader;
+    UI::Context *ref_ui;
+
+    //Shaders
+
+    //UI
+    unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
+    size_t textbuffer_len;
+
+    //Misc.
+    Color clear_color;
+    unsigned int tick, last_global_tick;
+    int last_esc_state;
+
+    void setParameters(Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui);
+
+    int init();
+    ~GameOptionsMainLoop();
+
+    LoopRetVal loop(unsigned int global_tick, double frame_time, float frame_delta);
+
+private:
     bool initUI();
     void deinitUI();
 };

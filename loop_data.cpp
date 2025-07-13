@@ -68,13 +68,13 @@ void LoopData::deinitAndFree()
     assert(!dataInitialized());
 }
 
-LoopRetVal LoopData::loopCallback(double frame_time, float frame_delta) const
+LoopRetVal LoopData::loopCallback(unsigned int global_tick, double frame_time, float frame_delta) const
 {
     assert(dataInitialized());
 
     if (m_loop_callback_fn != NULL)
     {
-        return m_loop_callback_fn(getData(), frame_time, frame_delta);
+        return m_loop_callback_fn(getData(), global_tick, frame_time, frame_delta);
     }
     
     return LoopRetVal::exit; //TODO other value instead?

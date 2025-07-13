@@ -27,3 +27,5 @@ X|0. 0. 0|15. 5. 2025|targets with size and position changing objects with their
  |0. 0. 0|22. 6. 2025|muzzle flash light source when shooting
 X|0. 0. 0|23. 6. 2025|make resize to 0x0 work (minimizing of the window)
  |0. 0. 0|29. 6. 2025|make another bind to go into pause menu + pause automatically when window not in focus
+ |0. 0. 0|13. 7. 2025|use MainLoopStack to manage memory of the loop data instead of naive heap allocating
+ |0. 0. 0|13. 7. 2025|fix crash when minimizing window when not in the menu
