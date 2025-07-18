@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.12)
 #keep this up to date with build.zig
 project(shooting_practice LANGUAGES C CXX)
 
+#generate compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #keep this up to date with build.zig
 set(version_string "v0.2")
 
