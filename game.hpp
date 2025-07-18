@@ -327,10 +327,6 @@ namespace Drawing
 
     void crosshair(const Shaders::Program& line_shader, const Meshes::VBO& line_vbo, glm::vec2 screen_res,
                    glm::vec2 size, glm::vec2 screen_pos, float thickness, ColorF color);
-    
-    void target(const Shaders::Program& shader, const Drawing::Camera3D& camera,
-                const std::vector<std::reference_wrapper<const Lighting::Light>>& lights, const Game::Target& target,
-                double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f));
 }
 
 //lighting.cpp
