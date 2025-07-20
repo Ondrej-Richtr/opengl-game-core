@@ -3,10 +3,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "glm/mat3x3.hpp"
-#include "glm/mat4x4.hpp"
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
+#include "glm/mat3x3.hpp" // IWYU pragma: keep
+#include "glm/mat4x4.hpp" // IWYU pragma: keep
+#include "glm/vec2.hpp" // IWYU pragma: keep
+#include "glm/vec3.hpp" // IWYU pragma: keep
 #include "glm/ext/scalar_constants.hpp" // glm::pi
 
 //nuklear
@@ -21,8 +21,8 @@
 
 #include <cstdio>
 #include <cassert>
-#include <cmath>
-#include <array>
+#include <cmath> // IWYU pragma: keep
+#include <array> // IWYU pragma: keep
 #include <vector>
 #include <memory>
 #include <functional>

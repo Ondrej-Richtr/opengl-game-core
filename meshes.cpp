@@ -1,7 +1,7 @@
 #include "game.hpp"
 #include "tinyobj_loader_c.h"
 
-#include "glm/gtc/matrix_transform.hpp" // translate, scale
+#include "glm/gtc/matrix_transform.hpp" // IWYU pragma: keep // translate, scale
 
 
 #ifdef USE_VAO

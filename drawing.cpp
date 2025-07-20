@@ -1,7 +1,7 @@
 #include "game.hpp"
 
 #include "glm/ext/matrix_transform.hpp" //glm::lookAt
-#include "glm/gtc/matrix_transform.hpp" //glm::perspective
+#include "glm/gtc/matrix_transform.hpp" // IWYU pragma: keep //glm::perspective
 #include "glm/gtx/matrix_transform_2d.hpp" //glm::translate and glm::scale
 
 
