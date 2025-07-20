@@ -892,8 +892,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     // ---Keyboard input---
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
-    const bool esc_clicked = consecutive_tick && esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE;
-    if(esc_clicked)
+    const bool esc_clicked = consecutive_tick && (esc_state == GLFW_PRESS) && (last_esc_state == GLFW_RELEASE);
+    const bool pause_pressed = consecutive_tick && (glfwGetKey(window, GLFW_KEY_PAUSE) == GLFW_PRESS); // not using last_pause_state currently
+    if(esc_clicked || pause_pressed)
     {
         MainLoopStack& main_loop_stack = MainLoopStack::instance;
 
