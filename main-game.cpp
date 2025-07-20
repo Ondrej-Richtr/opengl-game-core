@@ -854,7 +854,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     const bool consecutive_tick = (last_global_tick + 1) == global_tick;
 
     // ---Mouse input---
-    MouseManager::setCursorLocked();
+    if (!consecutive_tick) MouseManager::setCursorLocked();
 
     const glm::vec2 mouse_posF = MouseManager::mousePosF();
 
@@ -894,7 +894,16 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
     const bool esc_clicked = consecutive_tick && (esc_state == GLFW_PRESS) && (last_esc_state == GLFW_RELEASE);
     const bool pause_pressed = consecutive_tick && (glfwGetKey(window, GLFW_KEY_PAUSE) == GLFW_PRESS); // not using last_pause_state currently
-    if(esc_clicked || pause_pressed)
+    
+    #ifdef PLATFORM_WEB
+        // const bool cursor_not_captured = glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_CAPTURED;
+        const bool pause_the_game = esc_clicked || pause_pressed;
+    #else
+        const bool window_is_focused = glfwGetWindowAttrib(window, GLFW_FOCUSED) > 0;
+        const bool pause_the_game = esc_clicked || pause_pressed || !window_is_focused;
+    #endif /* PLATFORM_WEB */
+
+    if (pause_the_game)
     {
         MainLoopStack& main_loop_stack = MainLoopStack::instance;
 
@@ -913,8 +922,8 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
         }
     }
 
-    if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
-    if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
     glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
 
@@ -1688,7 +1697,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
     const bool consecutive_tick = (last_global_tick + 1) == global_tick;
 
     // ---Mouse input---
-    MouseManager::setCursorVisible();
+    if (!consecutive_tick) MouseManager::setCursorVisible();
 
     const glm::vec2 mouse_posF = MouseManager::mousePosF();
 
@@ -1941,7 +1950,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
     const bool consecutive_tick = (last_global_tick + 1) == global_tick;
 
     // ---Mouse input---
-    MouseManager::setCursorVisible();
+    if (!consecutive_tick) MouseManager::setCursorVisible();
 
     const glm::vec2 mouse_posF = MouseManager::mousePosF();
 

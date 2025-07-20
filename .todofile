@@ -26,5 +26,6 @@ X|0. 0. 0|25. 4. 2025|fix slow movement when looking up/down
 X|0. 0. 0|15. 5. 2025|targets with size and position changing objects with their respective interfaces
  |0. 0. 0|22. 6. 2025|muzzle flash light source when shooting
 X|0. 0. 0|23. 6. 2025|make resize to 0x0 work (minimizing of the window)
- |0. 0. 0|29. 6. 2025|make another bind to go into pause menu + pause automatically when window not in focus
+X|0. 0. 0|29. 6. 2025|make another bind to go into pause menu + pause automatically when window not in focus
 X|0. 0. 0|13. 7. 2025|fix crash when minimizing window when not in the menu
+ |0. 0. 0|20. 7. 2025|when in pause menu grey out the background to indicate that it is not active
