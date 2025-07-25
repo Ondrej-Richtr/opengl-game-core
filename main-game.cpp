@@ -424,7 +424,7 @@ void GameMainLoop::initLighting()
 {
     using LightProps = Lighting::LightProps;
     using DirLight = Lighting::DirLight;
-    // using PointLight = Lighting::PointLight;
+    using PointLight = Lighting::PointLight;
     using SpotLight = Lighting::SpotLight;
     
     light_src_size = 0.2;
@@ -437,16 +437,23 @@ void GameMainLoop::initLighting()
     const Color3F flashlight_color = Color3F(1.f, 1.f, 1.f);
     const LightProps flashlight_light_props(flashlight_color, 0.f);
 
-    new (&flashlight) SpotLight(flashlight_light_props, glm::vec3(0.f), glm::vec3(0.f), //throwaway values for position and direction
+    new (&flashlight) SpotLight(flashlight_light_props, glm::vec3(0.f), glm::vec3(0.f), // throwaway values for position and direction
                                 40.f, 50.f);
     flashlight.setAttenuation(1.f, 0.09f, 0.032f);
     show_flashlight = false;
+
+    //muzzle flash
+    new (&muzzle_flash) PointLight(LightProps{muzzle_flash_color, 0.f}, glm::vec3{0.f}); // throwaway values for lightprops and position
+    muzzle_flash.setAttenuation(1.f, 0.22f, 0.2f); //TODO maybe make attenuation even bigger?
+
+    muzzle_flash_begin = 0.f;
 }
 
 void GameMainLoop::deinitLighting()
 {
     sun.~DirLight();
     flashlight.~SpotLight();
+    muzzle_flash.~PointLight();
 }
 
 void GameMainLoop::initMaterials()
@@ -723,6 +730,35 @@ void GameMainLoop::handleTargetHit(double current_frame_time)
     }
 }
 
+bool GameMainLoop::updateMuzzleFlashLightProps(double current_frame_time)
+{
+    if (muzzle_flash_begin == 0.f) // value was never set
+    {
+        return false;
+    }
+
+    const double end_time = muzzle_flash_begin + static_cast<double>(muzzle_flash_duration);
+    if (current_frame_time > end_time && !FLOAT_EQUALS(current_frame_time, end_time)) // muzzle flash already ended
+    {
+        return false;
+    }
+
+    assert(muzzle_flash_begin <= current_frame_time);
+
+    // if duration is zero this means we make the effect in full power (t == 1), but only for 1 frame in total
+    const float t = CLOSE_TO_0(muzzle_flash_duration) ? 1.f
+                                                      : static_cast<float>((current_frame_time - muzzle_flash_begin)
+                                                                           / static_cast<double>(muzzle_flash_duration));
+
+    const float x = 1.f - t;
+
+    muzzle_flash.m_props.m_ambient = muzzle_flash_color.scalarMult(x * muzzle_flash_diffuse_coef);
+    muzzle_flash.m_props.m_diffuse = muzzle_flash_color.scalarMult(x * muzzle_flash_diffuse_coef);
+    muzzle_flash.m_props.m_specular = muzzle_flash_specular_color.scalarMult(x * muzzle_flash_specular_coef);
+    
+    return true;
+}
+
 int GameMainLoop::init()
 {
     puts("GameMainLoop init begin");
@@ -958,6 +994,8 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 handleTargetHit(frame_time);
             }
         }
+
+        muzzle_flash_begin = frame_time; // start the muzzle flash effect
     }
 
     // ---Target spawning---
@@ -1040,6 +1078,15 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
         flashlight.m_dir = camera.getDirection();
 
         lights.push_back(flashlight);
+    }
+
+    //muzzle flash
+    if (updateMuzzleFlashLightProps(frame_time))
+    {
+        //additionally update the muzzle flash position
+        muzzle_flash.m_pos = camera.m_pos;
+
+        lights.push_back(muzzle_flash);
     }
 
     // ---UI---

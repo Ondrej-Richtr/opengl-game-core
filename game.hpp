@@ -106,7 +106,7 @@ struct Color3F
     GLfloat r = 0.f, g = 0.f, b = 0.f;
 
     Color3F() = default;
-    Color3F(GLfloat r, GLfloat g, GLfloat b)
+    constexpr Color3F(GLfloat r, GLfloat g, GLfloat b)
             : r(r), g(g), b(b) {}
     Color3F(GLfloat val)
             : r(val), g(val), b(val) {}
@@ -118,6 +118,8 @@ struct Color3F
     glm::vec3 toVec() const { return glm::vec3(r, g, b); }
 
     Color3F mult(const Color3F other) const { return toVec() * other.toVec(); }
+
+    Color3F scalarMult(GLfloat scalar) const { return scalar * toVec(); }
 };
 
 struct Color
@@ -357,6 +359,9 @@ namespace Lighting
     {
         Color3F m_ambient, m_diffuse, m_specular;
 
+        LightProps(Color3F ambient, Color3F diffuse, Color3F specular)
+                    : m_ambient(ambient), m_diffuse(diffuse), m_specular(specular) {}
+
         LightProps(Color3F color, float ambient_intensity)
                     : m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
         {
@@ -431,7 +436,7 @@ namespace Lighting
 
         bool bindToShader(const char *uniform_name, const Shaders::Program& shader, int idx = -1) const override;
 
-        void setAttenuation(GLfloat const, GLfloat linear, GLfloat quadratic);
+        void setAttenuation(GLfloat constant, GLfloat linear, GLfloat quadratic);
     };
 }
 
@@ -1094,7 +1099,6 @@ struct LoopData // vtable + pointer to data itself
 
 class MainLoopStack
 {
-    //TODO add vector of bytes where unique_ptr stores data of each loopdata 
     std::vector<LoopData> m_stack;
 
     double m_last_frame_time = -1.f;
@@ -1238,6 +1242,12 @@ struct GameMainLoop
     Lighting::DirLight sun;
     Lighting::SpotLight flashlight;
     bool show_flashlight;
+    static constexpr Color3F muzzle_flash_color{244.f/255.f, 208.f/255.f, 61.f/255.f};
+    static constexpr Color3F muzzle_flash_specular_color{250.f/255.f, 240.f/255.f, 180.f/255.f};
+    static constexpr float muzzle_flash_diffuse_coef = 0.13f, muzzle_flash_specular_coef = 0.5f;
+    Lighting::PointLight muzzle_flash;
+    static constexpr float muzzle_flash_duration = 0.06f; // in seconds
+    double muzzle_flash_begin; 
 
     //Materials and MaterialProps
     Lighting::MaterialProps default_material_props;
@@ -1306,6 +1316,7 @@ private:
     //other utility methods
     unsigned int getTargetsAlive() const;
     void handleTargetHit(double current_frame_time);
+    bool updateMuzzleFlashLightProps(double current_frame_time);
 };
 
 struct GamePauseMainLoop // also in main-game.cpp
