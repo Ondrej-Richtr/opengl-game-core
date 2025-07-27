@@ -1881,14 +1881,11 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 
     // ---Drawing---
     {
-        bool use_fbo = shared_gl_context.use_fbo3d;
-
         //2D block
         {
             //TODO use correct win size + check whether some functions need it as parameter
             const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
             const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
-            // glm::vec2 window_middle = win_fbo_size / 2.f;
 
             //TODO this might be wrong on some displays?
             //set the viewport according to window size
@@ -1896,12 +1893,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
-            if (use_fbo)
-            {
-                Drawing::clear(clear_color);
-                //TODO maybe useless in 2D block?
-                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
-            }
+            Drawing::clear(clear_color);
 
             glDepthMask(GL_FALSE);
             glDisable(GL_DEPTH_TEST);
@@ -1910,13 +1902,10 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a gray background from it's framebuffer
-            if (use_fbo)
-            {
-                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
-                // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-                Drawing::texturedRectangle(gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
-            }
+            //render the 3D scene as a gray background from game loop's framebuffer
+            const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+            // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+            Drawing::texturedRectangle(gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,
@@ -1930,8 +1919,6 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
                 fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
             }
             glDisable(GL_SCISSOR_TEST);
-
-            glDisable(GL_BLEND);
 
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
@@ -2090,14 +2077,11 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
 
     // ---Drawing---
     {
-        bool use_fbo = shared_gl_context.use_fbo3d;
-
         //2D block
         {
             //TODO use correct win size + check whether some functions need it as parameter
             const glm::vec2 win_fbo_size = WindowManager::getFBOSizeF();
             const glm::ivec2 win_fbo_size_i = WindowManager::getFBOSize();
-            // glm::vec2 window_middle = win_fbo_size / 2.f;
 
             //TODO this might be wrong on some displays?
             //set the viewport according to window size
@@ -2105,12 +2089,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
-            if (use_fbo)
-            {
-                Drawing::clear(clear_color);
-                //TODO maybe useless in 2D block?
-                glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
-            }
+            Drawing::clear(clear_color);
 
             glDepthMask(GL_FALSE);
             glDisable(GL_DEPTH_TEST);
@@ -2119,13 +2098,10 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a gray background from it's framebuffer
-            if (use_fbo)
-            {
-                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
-                // Drawing::texturedRectangle2(*ref_tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-                Drawing::texturedRectangle(*ref_gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
-            }
+            //render the 3D scene as a gray background from game loop's framebuffer
+            const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+            // Drawing::texturedRectangle2(*ref_tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+            Drawing::texturedRectangle(*ref_gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
 
             //UI drawing
             glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
@@ -2134,8 +2110,6 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
                 fprintf(stderr, "[WARNING] Failed to draw the UI!\n");
             }
             glDisable(GL_SCISSOR_TEST);
-
-            glDisable(GL_BLEND);
 
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
