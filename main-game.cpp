@@ -1600,14 +1600,17 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 bool GamePauseMainLoop::initShaders()
 {
     //shader partials
+    using ShaderInclude = Shaders::ShaderInclude;
+    using IncludeDefine = Shaders::IncludeDefine;
+
     // used only during this init method, thus loaded as local unique_ptr, so we dont have to call delete/destructor
-    // const char *postprocess_fs_partial_path = SHADERS_PARTIALS_DIR_PATH "postprocess.fspart";
-    // std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path, NULL); //TODO check for NULL
-    // if (!postprocess_fs_partial)
-    // {
-    //     fprintf(stderr, "Failed to load postprocessing fragment shader partial file: '%s'!\n", postprocess_fs_partial_path);
-    //     return false;
-    // }
+    const char *postprocess_fs_partial_path = SHADERS_PARTIALS_DIR_PATH "postprocess.fspart";
+    std::unique_ptr<char[]> postprocess_fs_partial = Utils::getTextFileAsString(postprocess_fs_partial_path, NULL);
+    if (!postprocess_fs_partial)
+    {
+        fprintf(stderr, "Failed to load postprocessing fragment shader partial file: '%s'!\n", postprocess_fs_partial_path);
+        return false;
+    }
 
     using ShaderP = Shaders::Program;
 
@@ -1632,8 +1635,8 @@ bool GamePauseMainLoop::initShaders()
     //ui shader
     const char *ui_vs_path = SHADERS_DIR_PATH "ui.vs",
                *ui_fs_path = SHADERS_DIR_PATH "ui.fs";
-    std::vector<Shaders::ShaderInclude> ui_vs_includes = {},
-                                        ui_fs_includes = {};
+    std::vector<ShaderInclude> ui_vs_includes = {},
+                               ui_fs_includes = {};
     
     new (&ui_shader) ShaderP(ui_vs_path, ui_fs_path, ui_vs_includes, ui_fs_includes);
     if (ui_shader.m_id == empty_id)
@@ -1646,18 +1649,21 @@ bool GamePauseMainLoop::initShaders()
 
     //textured rectangle shader
     const char *tex_rect_fs_path = SHADERS_DIR_PATH "tex-rect.fs";
-    std::vector<Shaders::ShaderInclude> tex_rect_vs_includes{},
-                                        tex_rect_fs_includes = {
-                                                                // Shaders::ShaderInclude(postprocess_fs_partial.get()),
-                                                               };
+    std::vector<ShaderInclude> gray_tex_rect_vs_includes{},
+                               gray_tex_rect_fs_includes = {
+                                                            ShaderInclude(IncludeDefine("DITHER_ON_COLOR",  "(vec4(0.4, 0.4, 0.4, 1.0))")), // set the dither "on" color to darker gray
+                                                            ShaderInclude(IncludeDefine("DITHER_OFF_COLOR", "(vec4(0.0, 0.0, 0.0, 1.0))")), // rest of dither is black
+                                                            ShaderInclude(IncludeDefine("POSTPROCESS(tex, tpos)", "(_postproc_dither_gray_mix((tex), (tpos)))")),
+                                                            ShaderInclude(postprocess_fs_partial.get()),
+                                                           };
 
-    new (&tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, tex_rect_vs_includes, tex_rect_fs_includes);
-    if (tex_rect_shader.m_id == empty_id)
+    new (&gray_tex_rect_shader) ShaderP(transform_vs_path, tex_rect_fs_path, gray_tex_rect_vs_includes, gray_tex_rect_fs_includes);
+    if (gray_tex_rect_shader.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create textured rectangle shader program!\n");
         screen_line_shader.~Program();
         ui_shader.~Program();
-        tex_rect_shader.~Program();
+        gray_tex_rect_shader.~Program();
         return false;
     }
 
@@ -1668,7 +1674,7 @@ void GamePauseMainLoop::deinitShaders()
 {
     screen_line_shader.~Program();
     ui_shader.~Program();
-    tex_rect_shader.~Program();
+    gray_tex_rect_shader.~Program();
 }
 
 bool GamePauseMainLoop::initUI()
@@ -1822,7 +1828,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
                     assert(game_options_main_loop != NULL);
 
                     //parameter passing
-                    game_options_main_loop->setParameters(ui_shader, tex_rect_shader, ui);
+                    game_options_main_loop->setParameters(ui_shader, gray_tex_rect_shader, ui);
 
                     //initialization
                     int init_result = options_loop->init();
@@ -1904,12 +1910,12 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a background from it's framebuffer
+            //render the 3D scene as a gray background from it's framebuffer
             if (use_fbo)
             {
                 const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
                 // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             }
             
             //line test
@@ -1943,7 +1949,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 void GameOptionsMainLoop::setParameters(Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui)
 {
     ref_ui_shader = &ui_shader;
-    ref_tex_rect_shader = &tex_rect_shader;
+    ref_gray_tex_rect_shader = &tex_rect_shader;
     ref_ui = &ui;
 }
 
@@ -1965,7 +1971,7 @@ int GameOptionsMainLoop::init()
 {
     //Assert parameters
     assert(ref_ui_shader != NULL);
-    assert(ref_tex_rect_shader != NULL);
+    assert(ref_gray_tex_rect_shader != NULL);
     assert(ref_ui != NULL);
 
     if (!initUI())
@@ -2113,12 +2119,12 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a background from it's framebuffer
+            //render the 3D scene as a gray background from it's framebuffer
             if (use_fbo)
             {
                 const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
                 // Drawing::texturedRectangle2(*ref_tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-                Drawing::texturedRectangle(*ref_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(*ref_gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             }
 
             //UI drawing

@@ -13,7 +13,7 @@ uniform vec2 rectSize;
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tpos) (vec4(0.0, 1.0, 1.0, 1.0))
     #define POSTPROCESS(tpos) (_postproc((tpos)))
-    // #define POSTPROCESS(tpos) (_postproc_greyscale((tpos)))
+    // #define POSTPROCESS(tpos) (_postproc_grayscale((tpos)))
     // #define POSTPROCESS(tpos) (texture(inputTextureBG, (tpos)))
 #endif
 
@@ -39,7 +39,7 @@ int _levelFromAverage(float avg)
     return int(avg / 0.2f);
 }
 
-vec4 _postproc_greyscale(vec2 tpos)
+vec4 _postproc_grayscale(vec2 tpos)
 {
     vec4 sampled = texture(inputTexture, tpos);
     float average = 0.2126 * sampled.r + 0.7152 * sampled.g + 0.0722 * sampled.b;

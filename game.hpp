@@ -1322,7 +1322,7 @@ private:
 struct GamePauseMainLoop // also in main-game.cpp
 {
     //Shaders
-    Shaders::Program screen_line_shader, ui_shader, tex_rect_shader;
+    Shaders::Program screen_line_shader, ui_shader, gray_tex_rect_shader;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
@@ -1351,7 +1351,7 @@ struct GameOptionsMainLoop // also in main-game.cpp
 {
     //Parameters
     Shaders::Program *ref_ui_shader;
-    Shaders::Program *ref_tex_rect_shader;
+    Shaders::Program *ref_gray_tex_rect_shader;
     UI::Context *ref_ui;
 
     //Shaders

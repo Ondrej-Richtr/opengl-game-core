@@ -31,7 +31,7 @@ int _levelFromAverage(float avg)
     return int(avg / 0.2);
 }
 
-vec4 _postproc_greyscale(sampler2D _inputTexture, vec2 tpos)
+vec4 _postproc_grayscale(sampler2D _inputTexture, vec2 tpos)
 {
     vec4 sampled = TEXTURE2D(_inputTexture, tpos);
     float average = 0.2126 * sampled.r + 0.7152 * sampled.g + 0.0722 * sampled.b;
@@ -57,11 +57,19 @@ vec4 _postproc_dither(sampler2D _inputTexture, vec2 tpos)
     averageVal += _calculateAverage(_inputTexture, rectPosDR) / 4.0;
 
     int level = _levelFromAverage(averageVal);
+    // vec4 on_color = vec4(0.8, 0.8, 0.8, 1.0), off_color = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 on_color = vec4(0.8, 0.8, 0.5, 1.0), off_color = vec4(0.0, 0.0, 0.0, 1.0);
     // vec4 on_color = vec4(105.0/255.0, 18.0/255.0, 168.0/255.0, 1.0), off_color = vec4(17.0/255.0, 45.0/255.0, 94.0/255.0, 1.0);
     // float rel_level = float(level) / 4.0;
     // vec4 off_color_min = vec4(0.1f, 0.1f, 0.1f, 1.0), off_color_max = vec4(0.6f, 0.6f, 0.6f, 1.0);
     // vec4 on_color = TEXTURE2D(_inputTexture, tpos), off_color = mix(off_color_min, off_color_max, rel_level);
+
+    #ifdef DITHER_ON_COLOR
+        on_color = DITHER_ON_COLOR;
+    #endif
+    #ifdef DITHER_OFF_COLOR
+        off_color = DITHER_OFF_COLOR;
+    #endif
 
     if (rectPosUL == rectPos) return level >= 1 ? on_color : off_color;
     if (rectPosUR == rectPos) return level >= 4 ? on_color : off_color;
@@ -71,26 +79,27 @@ vec4 _postproc_dither(sampler2D _inputTexture, vec2 tpos)
     // return vec4(vec3(1.0) - (c).rgb, (c).a);
 }
 
-vec4 _postproc(sampler2D _inputTexture, vec2 tpos)
+vec4 _postproc_dither_gray_mix(sampler2D _inputTexture, vec2 tpos)
 {
-    vec4 sampled = TEXTURE2D(_inputTexture, tpos);
-    vec4 grayscale = _postproc_dither(_inputTexture, tpos);
+    // vec4 sampled = TEXTURE2D(_inputTexture, tpos);
+    vec4 dither = _postproc_dither(_inputTexture, tpos);
+    vec4 grayscale = _postproc_grayscale(_inputTexture, tpos);
 
     vec2 rectPos = vec2(_uvToCoord(tpos));
     float distToMiddle = length(rectPos - (_rectSize / 2.0));
     float relDist = (2.0 * distToMiddle) / _rectSize.x;
-    float cutoffMin = 0.72, cutoffMax = 0.95;
+    float cutoffMin = 0.5, cutoffMax = 0.9;
     float mixCoef = clamp((relDist - cutoffMin) / (cutoffMax - cutoffMin), 0.0, 1.0);
 
-    return mix(sampled, grayscale, mixCoef);
+    return mix(grayscale, dither, mixCoef);
 }
 
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tex, tpos) (vec4(0.0, 1.0, 1.0, 1.0))
     // #define POSTPROCESS(tex, tpos) (TEXTURE2D((tex), (tpos)))
     #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
-    // #define POSTPROCESS(tex, tpos) (_postproc_greyscale((tex), (tpos)))
-    // #define POSTPROCESS(tex, tpos) (_postproc((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc_grayscale((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc_dither_gray_mix((tex), (tpos)))
 #endif
 
 #ifndef SETUP
