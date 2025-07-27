@@ -619,6 +619,8 @@ namespace Textures
                            GLenum component_type = GL_RGBA, const void *new_data = NULL);
         void changeTextureToPixel(Color3 color);
 
+        bool copyContentsFrom(const Drawing::FrameBuffer& fbo_src, unsigned int width, unsigned int height, GLenum format = GL_RGBA);
+
         Drawing::FrameBuffer::Attachment asFrameBufferAttachment() const;
     };
 }
@@ -1321,6 +1323,9 @@ private:
 
 struct GamePauseMainLoop // also in main-game.cpp
 {
+    //Textures
+    Textures::Texture2D background_tex;
+
     //Shaders
     Shaders::Program screen_line_shader, ui_shader, gray_tex_rect_shader;
 
@@ -1341,6 +1346,8 @@ struct GamePauseMainLoop // also in main-game.cpp
     LoopRetVal loop(unsigned int global_tick, double frame_time, float frame_delta);
 
 private:
+    bool initTextures();
+    void deinitTextures();
     bool initShaders();
     void deinitShaders();
     bool initUI();
@@ -1350,6 +1357,7 @@ private:
 struct GameOptionsMainLoop // also in main-game.cpp
 {
     //Parameters
+    Textures::Texture2D *ref_background_tex;
     Shaders::Program *ref_ui_shader;
     Shaders::Program *ref_gray_tex_rect_shader;
     UI::Context *ref_ui;
@@ -1365,7 +1373,7 @@ struct GameOptionsMainLoop // also in main-game.cpp
     unsigned int tick, last_global_tick;
     int last_esc_state;
 
-    void setParameters(Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui);
+    void setParameters(Textures::Texture2D& background_tex, Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui);
 
     int init();
     ~GameOptionsMainLoop();

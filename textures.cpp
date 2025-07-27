@@ -21,7 +21,6 @@ Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum c
     glTexImage2D(GL_TEXTURE_2D, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, NULL);
 
     // set the min and max filtering
-    //TODO maybe pointless here?
     constexpr GLint min_filtering = Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filtering);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
@@ -185,6 +184,25 @@ void Textures::Texture2D::changeTextureToPixel(Color3 color)
 
     // unbind the texture just in case
     glBindTexture(GL_TEXTURE_2D, empty_id);
+}
+
+bool Textures::Texture2D::copyContentsFrom(const Drawing::FrameBuffer& fbo_src, unsigned int width, unsigned int height, GLenum format)
+{
+    if (m_id == empty_id || !fbo_src.isComplete())
+    {
+        return false;
+    }
+
+    fbo_src.bind();
+    bind();
+
+    glCopyTexImage2D(GL_TEXTURE_2D, 0, format, 0, 0, width, height, 0);
+
+    // fbo_src.unbind();
+
+    m_width = width;
+    m_height = height;
+    return true;
 }
 
 Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const

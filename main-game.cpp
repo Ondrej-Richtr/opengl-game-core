@@ -1597,6 +1597,36 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     return LoopRetVal::ok;
 }
 
+bool GamePauseMainLoop::initTextures()
+{
+    const SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    const Drawing::FrameBuffer& fbo3d = shared_gl_context.getFbo3D();
+    const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+
+    //Background texture from fbo3d
+    new (&background_tex) Textures::Texture2D(fbo3d_tex.m_width, fbo3d_tex.m_height, GL_RGB);
+    if (background_tex.m_id == empty_id)
+    {
+        fprintf(stderr, "[WARNING] Failed to initialize Texture for background of pause menu!\n");
+        background_tex.~Texture2D();
+        // No return!!! We can cope with uninitialized background texture.
+    }
+    // copy contents of `fbo3d_tex` into `background_tex`
+    else if (!background_tex.copyContentsFrom(fbo3d, background_tex.m_width, background_tex.m_height, GL_RGB))
+    {
+        fprintf(stderr, "[WARNING] Failed to copy data of FrameBuffer into pause menu background Texture!\n");
+        background_tex.~Texture2D();
+        // No return!!! We can cope with uninitialized background texture.
+    }
+
+    return true;
+}
+
+void GamePauseMainLoop::deinitTextures()
+{
+    background_tex.~Texture2D();
+}
+
 bool GamePauseMainLoop::initShaders()
 {
     //shader partials
@@ -1713,17 +1743,25 @@ void GamePauseMainLoop::deinitUI()
 
 int GamePauseMainLoop::init()
 {
+    //Textures
+    if (!initTextures())
+    {
+        return 1;
+    }
+
     //Shaders
     if (!initShaders())
     {
-        return 1;
+        deinitTextures();
+        return 2;
     }
 
     //UI
     if (!initUI())
     {
+        deinitTextures();
         deinitShaders();
-        return 2;
+        return 3;
     }
 
     //Misc.
@@ -1828,7 +1866,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
                     assert(game_options_main_loop != NULL);
 
                     //parameter passing
-                    game_options_main_loop->setParameters(ui_shader, gray_tex_rect_shader, ui);
+                    game_options_main_loop->setParameters(background_tex, ui_shader, gray_tex_rect_shader, ui);
 
                     //initialization
                     int init_result = options_loop->init();
@@ -1902,10 +1940,8 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a gray background from game loop's framebuffer
-            const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
-            // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-            Drawing::texturedRectangle(gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            //render the background texture with gray postprocessing (should be last fbo3d render)
+            Drawing::texturedRectangle(gray_tex_rect_shader, background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             
             //line test
             // Drawing::screenLine(screen_line_shader, line_vbo, win_size,
@@ -1933,8 +1969,10 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
     return LoopRetVal::ok;
 }
 
-void GameOptionsMainLoop::setParameters(Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui)
+void GameOptionsMainLoop::setParameters(Textures::Texture2D& background_tex, Shaders::Program& ui_shader,
+                                        Shaders::Program& tex_rect_shader, UI::Context& ui)
 {
+    ref_background_tex = &background_tex;
     ref_ui_shader = &ui_shader;
     ref_gray_tex_rect_shader = &tex_rect_shader;
     ref_ui = &ui;
@@ -2098,10 +2136,8 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
             
-            //render the 3D scene as a gray background from game loop's framebuffer
-            const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
-            // Drawing::texturedRectangle2(*ref_tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-            Drawing::texturedRectangle(*ref_gray_tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+            //render the background texture with gray postprocessing (should be last fbo3d render)
+            Drawing::texturedRectangle(*ref_gray_tex_rect_shader, *ref_background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
 
             //UI drawing
             glEnable(GL_SCISSOR_TEST); // enable scissor for UI drawing only
