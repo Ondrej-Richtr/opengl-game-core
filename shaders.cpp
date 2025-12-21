@@ -155,6 +155,12 @@ void Shaders::Program::bindTexture(const char *sampler2d_name, const Textures::T
     set(sampler2d_name, static_cast<GLint>(unit));
 }
 
+void Shaders::Program::bindCubemap(const char *samplerCube_name, const Textures::Cubemap& cubemap, unsigned int unit) const
+{
+    cubemap.bind(unit);
+    set(samplerCube_name, static_cast<GLint>(unit));
+}
+
 void Shaders::Program::bindDiffuseMap(const Textures::Texture2D& diffuse_map, int map_bind_offset) const
 {
     bindTexture(UNIFORM_MATERIAL_NAME "." UNIFORM_MATERIAL_DIFFUSE_MAP, diffuse_map,

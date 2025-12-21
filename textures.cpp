@@ -54,6 +54,7 @@ Textures::Texture2D::Texture2D(const char *image_path, bool generate_mipmaps)
         fprintf(stderr, "Can't initialize texture - failed to load image data from '%s' with forced %d channels!\n",
                         image_path, wanted_channels);
 
+        stbi_image_free(data); // in case the data was loaded
         return;
     }
 
@@ -208,4 +209,143 @@ bool Textures::Texture2D::copyContentsFrom(const Drawing::FrameBuffer& fbo_src, 
 Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const
 {
     return Drawing::FrameBuffer::Attachment{ m_id, Drawing::FrameBuffer::AttachmentType::texture };
+}
+
+Textures::Cubemap::~Cubemap()
+{
+    glDeleteTextures(1, &m_id);
+}
+
+void Textures::Cubemap::bind(unsigned int unit) const
+{
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+}
+
+void Textures::Cubemap::createEmpty(unsigned int width_height, GLenum component_type, bool generate_mipmaps)
+{
+    // release the old cubemap data
+    if (m_id != empty_id)
+    {
+        glDeleteTextures(1, &m_id);
+        m_id = empty_id;
+    }
+    m_size_per_face = { 0, 0, 0, 0, 0, 0 };
+
+    // create new cubemap handle
+    glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL handle for cubemap texture!\n");
+        return;
+    }
+
+    m_size_per_face = { width_height, width_height, width_height, width_height, width_height, width_height };
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+
+    // create face textures
+    for (int i = 0; i < 6; ++i)
+    {
+        GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
+        unsigned int size = m_size_per_face[i];
+        glTexImage2D(face, 0, component_type, size, size, 0, component_type, GL_UNSIGNED_BYTE, NULL);
+    }
+
+    // set cubemap filtering to default values, remove mipmaps if not needed
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, cubemap_default_wrapping);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, cubemap_default_wrapping);
+    #ifdef BUILD_OPENGL_330_CORE
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, cubemap_default_wrapping);
+    #endif /* BUILD_OPENGL_330_CORE */
+    GLint min_filtering = generate_mipmaps ? cubemap_default_min_filtering
+                                           : Utils::filteringEnumWithoutMipmap(cubemap_default_min_filtering);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, cubemap_default_max_filtering);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, min_filtering);
+
+    if (generate_mipmaps)
+    {
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+        assert(!Utils::checkForGLErrorsAndPrintThem()); //TODO make this an actual check + error
+    }
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, empty_id); // unbind the cubemap just in case
+}
+
+void Textures::Cubemap::createFrom6Images(const std::array<const char*, 6>& image_paths, bool generate_mipmaps)
+{
+    // release the old cubemap data
+    if (m_id != empty_id)
+    {
+        glDeleteTextures(1, &m_id);
+        m_id = empty_id;
+    }
+    m_size_per_face = { 0, 0, 0, 0, 0, 0 };
+
+    // create new cubemap handle
+    glGenTextures(1, &m_id);
+    if (m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create OpenGL handle for cubemap texture!\n");
+        return;
+    }
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+
+    // create face textures from image paths
+    bool load_error = false;
+    int wanted_channels = 3, // skybox does not need alpha channel
+        loaded_width, loaded_height, actual_channels;
+
+    for (size_t i = 0; i < image_paths.size() && !load_error; ++i)
+    {
+        // load the image data using stbi
+        unsigned char *data = stbi_load(image_paths[i], &loaded_width, &loaded_height, &actual_channels, wanted_channels);
+        if (!data || loaded_width <= 0 || loaded_height <= 0)
+        {
+            fprintf(stderr, "Can't create cubemap from image paths - failed to load image data from '%s'!\n", image_paths[i]);
+
+            load_error = true;
+        }
+        else if (loaded_width != loaded_height)
+        {
+            fprintf(stderr, "Can't create cubemap from iamge paths - image at '%s' has non-square dimensions %dx%d!\n",
+                    image_paths[i], loaded_width, loaded_height);
+            
+            load_error = true;
+        }
+        else
+        {
+            m_size_per_face[i] = loaded_width;
+            GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
+            glTexImage2D(face, 0, GL_RGB, m_size_per_face[i], m_size_per_face[i], 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            //TODO check for opengl errors?
+        }
+
+        stbi_image_free(data);
+    }
+
+    // set cubemap filtering to default values, remove mipmaps if not needed
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, cubemap_default_wrapping);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, cubemap_default_wrapping);
+    #ifdef BUILD_OPENGL_330_CORE
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, cubemap_default_wrapping);
+    #endif /* BUILD_OPENGL_330_CORE */
+    GLint min_filtering = generate_mipmaps ? cubemap_default_min_filtering
+                                           : Utils::filteringEnumWithoutMipmap(cubemap_default_min_filtering);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, cubemap_default_max_filtering);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, min_filtering);
+
+    if (load_error)
+    {
+        glDeleteTextures(1, &m_id);
+        m_id = empty_id;
+    }
+    else if (generate_mipmaps)
+    {
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+        assert(!Utils::checkForGLErrorsAndPrintThem()); //TODO make this an actual check + error
+    }
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, empty_id); // unbind the cubemap just in case
 }

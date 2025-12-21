@@ -150,6 +150,7 @@ void GameMainLoop::deinitVBOsAndMeshes()
 bool GameMainLoop::initTextures()
 {
     using Texture = Textures::Texture2D;
+    using Cubemap = Textures::Cubemap;
 
     //Bricks
     const char *bricks_path = "assets/bricks2_512.png";
@@ -253,6 +254,30 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Skybox cubemap
+    std::array<const char*, 6> skybox_face_paths { "assets/skybox/right.jpg",
+                                                   "assets/skybox/left.jpg",
+                                                   "assets/skybox/bottom.jpg",
+                                                   "assets/skybox/top.jpg",
+                                                   "assets/skybox/front.jpg",
+                                                   "assets/skybox/back.jpg" };
+
+    new (&skybox_cubemap) Cubemap();
+    skybox_cubemap.createFrom6Images(skybox_face_paths, true);
+    if (skybox_cubemap.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create skybox cubemap!\n");
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        ball_texture.~Texture2D();
+        water_specular_map.~Texture2D();
+        skybox_cubemap.~Cubemap();
+        return false;
+    }
+
     return true;
 }
 
@@ -265,6 +290,7 @@ void GameMainLoop::deinitTextures()
     turret_texture.~Texture2D();
     ball_texture.~Texture2D();
     water_specular_map.~Texture2D();
+    skybox_cubemap.~Cubemap();
 }
 
 /*bool GameMainLoop::initRenderBuffers()
@@ -408,6 +434,25 @@ bool GameMainLoop::initShaders()
         return false;
     }
 
+    //skybox shader
+    const char *skybox_vs_path = SHADERS_DIR_PATH "skybox.vs";
+    const char *skybox_fs_path = SHADERS_DIR_PATH "skybox.fs";
+    std::vector<Shaders::ShaderInclude> skybox_vs_includes{},
+                                        skybox_fs_includes{};
+
+    new (&skybox_shader) ShaderP(skybox_vs_path, skybox_fs_path, skybox_vs_includes, skybox_fs_includes);
+    if (skybox_shader.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create skybox shader program!\n");
+        screen_line_shader.~Program();
+        ui_shader.~Program();
+        tex_rect_shader.~Program();
+        light_src_shader.~Program();
+        light_shader.~Program();
+        skybox_shader.~Program();
+        return false;
+    }
+
     return true;
 }
 
@@ -418,6 +463,7 @@ void GameMainLoop::deinitShaders()
     tex_rect_shader.~Program();
     light_src_shader.~Program();
     light_shader.~Program();
+    skybox_shader.~Program();
 }
 
 void GameMainLoop::initLighting()
@@ -1520,6 +1566,26 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             {
                 ball_targets[i].draw(Game::TargetType::ball, camera, lights, frame_time);
             }
+
+            //skybox
+            glDepthMask(GL_FALSE); // I guess this is not strictly necessary
+            glDepthFunc(GL_LEQUAL);
+
+            skybox_shader.use();
+            {
+                glm::mat3 view_mat_stripped = Utils::stripTranslationFromMatrix(view_mat);
+
+                //vs
+                skybox_shader.set("view_stripped", view_mat_stripped);
+                skybox_shader.set("projection", proj_mat);
+
+                //fs
+                skybox_shader.bindCubemap("skybox", skybox_cubemap);
+            }
+
+            cube_vbo.bind();
+                glDrawArrays(GL_TRIANGLES, 0, cube_vbo.vertexCount());
+            cube_vbo.unbind();
 
             if (use_fbo) fbo3d.unbind();
 

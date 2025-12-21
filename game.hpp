@@ -166,6 +166,7 @@ namespace Shaders
 namespace Textures
 {
     struct Texture2D;
+    struct Cubemap;
 };
 
 namespace Meshes
@@ -480,6 +481,8 @@ namespace Utils
         return filtering; // otherwise leave the value as it is
     }
 
+    glm::mat3 stripTranslationFromMatrix(const glm::mat4& mat);
+    
     glm::mat3 modelMatrixToNormalMatrix(const glm::mat4& model_mat);
 
     bool checkForGLError();
@@ -506,11 +509,11 @@ namespace Shaders
     #ifdef USE_VER100_SHADERS
         #define SHADER_VER_LINE "#version 100\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR attribute\n#define OUT_ATTR varying\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n#define TEXTURE2D(s,c) (texture2D((s), (c)))\n#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n#define TEXTURE2D(s,c) (texture2D((s), (c)))\n#define TEXTURECUBE(s,c) (textureCube((s), (c)))\n#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"
     #else
         #define SHADER_VER_LINE "#version 330 core\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR in\n#define OUT_ATTR out\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\n#define TEXTURE2D(s,c) (texture((s), (c)))\nout vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\n#define TEXTURE2D(s,c) (texture((s), (c)))\n#define TEXTURECUBE(s,c) (texture((s), (c)))\nout vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"
     #endif
 
     #define SHADER_VER_INCLUDE_LINES_VS SHADER_VER_LINE SHADER_ATTR_DEFINES_VS
@@ -568,6 +571,7 @@ namespace Shaders
         void set(const char *uniform_name, const glm::mat4& matrix) const;
 
         void bindTexture(const char *sampler2d_name, const Textures::Texture2D& texture, unsigned int unit = 0) const;
+        void bindCubemap(const char *samplerCube_name, const Textures::Cubemap& cubemap, unsigned int unit = 0) const;
         void bindDiffuseMap(const Textures::Texture2D& diffuse_map, int map_bind_offset = 0) const;
         void bindSpecularMap(const Textures::Texture2D& specular_map, int map_bind_offset = 0) const;
 
@@ -622,6 +626,27 @@ namespace Textures
         bool copyContentsFrom(const Drawing::FrameBuffer& fbo_src, unsigned int width, unsigned int height, GLenum format = GL_RGBA);
 
         Drawing::FrameBuffer::Attachment asFrameBufferAttachment() const;
+    };
+
+    // some default values for cubemap initialization,
+    // currently there are no overrides for this as they are not needed yet
+    static constexpr GLint cubemap_default_wrapping = GL_CLAMP_TO_EDGE;
+    static constexpr GLint cubemap_default_min_filtering = GL_LINEAR_MIPMAP_LINEAR;
+    static constexpr GLint cubemap_default_max_filtering = GL_LINEAR;
+
+    struct Cubemap
+    {
+        unsigned int m_id = empty_id; // OpenGL texture id
+        std::array<unsigned int, 6> m_size_per_face = { 0, 0, 0, 0, 0, 0 };
+
+        Cubemap() = default;
+        ~Cubemap();
+        
+        void bind(unsigned int unit = 0) const;
+
+        void createEmpty(unsigned int width_height, GLenum component_type, bool generate_mipmaps);
+
+        void createFrom6Images(const std::array<const char*, 6>& image_paths, bool generate_mipmaps);
     };
 }
 
@@ -761,7 +786,7 @@ namespace Meshes
         void draw() const;
     };
 
-    Meshes::Mesh generateCubicMesh(glm::vec3 mesh_scale,  glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
+    Meshes::Mesh generateCubicMesh(glm::vec3 mesh_scale, glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
     
     Meshes::Mesh generateQuadMesh(glm::vec2 mesh_scale, glm::vec2 texture_world_size, Meshes::TexcoordStyle style);
 
@@ -1233,11 +1258,14 @@ struct GameMainLoop
     static constexpr glm::vec2 target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio should be kept
     static constexpr float target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
 
+    //Cubemap
+    Textures::Cubemap skybox_cubemap;
+
     //RenderBuffers
     // GLuint fbo3d_rbo_depth, fbo3d_rbo_stencil;
 
     //Shaders
-    Shaders::Program screen_line_shader, ui_shader, tex_rect_shader, light_src_shader, light_shader;
+    Shaders::Program screen_line_shader, ui_shader, tex_rect_shader, light_src_shader, light_shader, skybox_shader;
 
     //Lighting
     float light_src_size;

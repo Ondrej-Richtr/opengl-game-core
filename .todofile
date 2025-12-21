@@ -9,7 +9,7 @@ X|0. 0. 0|13. 3. 2025|stacking of main loops
  |0. 0. 0|13. 3. 2025|maybe for glfw use https://github.com/lpstankus/zig-glfw (pass options to it with https://ziggit.dev/t/pass-build-option-to-a-dependency/4196/14)
 X|0. 0. 0|13. 3. 2025|include system for shaders
 X|0. 0. 0|16. 3. 2025|shaders ver100 instead of ver300 es?
- |0. 0. 0|16. 3. 2025|add cubemaps + prebaked lighting and stuff?
+ |0. 0. 0|21. 12. 2025|use cubemaps - prebaked lighting
 X|0. 0. 0|19. 3. 2025|check with GL_FRAGMENT_PRECISION_HIGH macro if highp precision is allowed
 X|0. 0. 0|19. 3. 2025|check using uniform arrays in shaders - might not be supported in fragment shaders
 X|0. 0. 0|26. 3. 2025|make web build work
@@ -30,3 +30,4 @@ X|0. 0. 0|29. 6. 2025|make another bind to go into pause menu + pause automatica
 X|0. 0. 0|13. 7. 2025|fix crash when minimizing window when not in the menu
 X|0. 0. 0|20. 7. 2025|when in pause menu gray out the background to indicate that it is not active
  |0. 0. 0|27. 7. 2025|fix global/local frame time for each main loop body instance
+ |0. 0. 0|21. 12. 2025|implement depth pre-pass

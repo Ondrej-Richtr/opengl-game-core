@@ -153,10 +153,15 @@ std::unique_ptr<char[]> Utils::getTextFileAsString(const char *path, size_t *res
     return filtering; // otherwise leave the value as it is
 }*/
 
+glm::mat3 Utils::stripTranslationFromMatrix(const glm::mat4& mat)
+{
+    return glm::mat3(mat);
+}
+
 glm::mat3 Utils::modelMatrixToNormalMatrix(const glm::mat4& model_mat)
 {
-    glm::mat3 result(model_mat);
-    return glm::transpose(glm::inverse(result));
+    glm::mat3 stripped = stripTranslationFromMatrix(model_mat);
+    return glm::transpose(glm::inverse(stripped));
 }
 
 bool Utils::checkForGLError()
