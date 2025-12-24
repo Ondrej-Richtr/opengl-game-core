@@ -1249,16 +1249,14 @@ struct GameMainLoop
 
     //VBOs and Meshes
     Meshes::VBO cube_vbo, line_vbo;
-    Meshes::Mesh turret_mesh, ball_mesh;
+    Meshes::Mesh turret_mesh, ball_mesh, rock_mesh;
 
-    //Textures
+    //Textures and Cubemaps
     Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture,
-                        turret_texture, ball_texture, water_specular_map;
+                        turret_texture, ball_texture, water_specular_map, rock_texture;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size;
     static constexpr glm::vec2 target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio should be kept
     static constexpr float target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
-
-    //Cubemap
     Textures::Cubemap skybox_cubemap;
 
     //RenderBuffers
@@ -1277,11 +1275,11 @@ struct GameMainLoop
     static constexpr float muzzle_flash_diffuse_coef = 0.13f, muzzle_flash_specular_coef = 0.5f;
     Lighting::PointLight muzzle_flash;
     static constexpr float muzzle_flash_duration = 0.06f; // in seconds
-    double muzzle_flash_begin; 
+    double muzzle_flash_begin;
 
     //Materials and MaterialProps
     Lighting::MaterialProps default_material_props;
-    Lighting::Material default_material, ball_material, target_material;
+    Lighting::Material default_material, ball_material, target_material, rock_material;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
@@ -1298,7 +1296,7 @@ struct GameMainLoop
     glm::vec3 wall_size, wall_pos, wall_center;
     Meshes::VBO wall_vbo;
     Meshes::Mesh target_mesh;
-    Meshes::Model target_model, ball_model;
+    Meshes::Model target_model, ball_model, rock_model;
     std::vector<Game::Target> targets, ball_targets;
     Utils::RNG target_rng_width, target_rng_height, target_rng_dir;
     Game::LevelManager level_manager;

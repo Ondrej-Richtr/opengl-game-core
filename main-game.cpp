@@ -128,11 +128,27 @@ bool GameMainLoop::initVBOsAndMeshes()
     int ball_mesh_ret = ball_mesh.loadFromObj(ball_mesh_path);
     if (ball_mesh_ret != 0 || !ball_mesh.isUploaded())
     {
-        fprintf(stderr, "Failed to create Bord Alternative mesh! Returned error value: %d\n", ball_mesh_ret);
+        fprintf(stderr, "Failed to create Ball mesh! Returned error value: %d\n", ball_mesh_ret);
         cube_vbo.~VBO();
         line_vbo.~VBO();
         turret_mesh.~Mesh();
         ball_mesh.~Mesh();
+        return false;
+    }
+
+    //Rock mesh
+    const char *rock_mesh_path = "assets/rock/rock.obj";
+
+    new (&rock_mesh) Meshes::Mesh();
+    int rock_mesh_ret = rock_mesh.loadFromObj(rock_mesh_path);
+    if (rock_mesh_ret != 0 || !rock_mesh.isUploaded())
+    {
+        fprintf(stderr, "Failed to create Rock mesh! Returned error value: %d\n", rock_mesh_ret);
+        cube_vbo.~VBO();
+        line_vbo.~VBO();
+        turret_mesh.~Mesh();
+        ball_mesh.~Mesh();
+        rock_mesh.~Mesh();
         return false;
     }
 
@@ -145,6 +161,7 @@ void GameMainLoop::deinitVBOsAndMeshes()
     line_vbo.~VBO();
     turret_mesh.~Mesh();
     ball_mesh.~Mesh();
+    rock_mesh.~Mesh();
 }
 
 bool GameMainLoop::initTextures()
@@ -254,16 +271,40 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Rock
+    const char *rock_tex_path = "assets/rock/rock.png";
+
+    new (&rock_texture) Texture(rock_tex_path);
+    if (rock_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create rock texture!\n");
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        ball_texture.~Texture2D();
+        water_specular_map.~Texture2D();
+        rock_texture.~Texture2D();
+        return false;
+    }
+
     //Skybox cubemap
-    std::array<const char*, 6> skybox_face_paths { "assets/skybox/right.jpg",
-                                                   "assets/skybox/left.jpg",
-                                                   "assets/skybox/bottom.jpg",
-                                                   "assets/skybox/top.jpg",
-                                                   "assets/skybox/front.jpg",
-                                                   "assets/skybox/back.jpg" };
+    // std::array<const char*, 6> skybox_water_face_paths { "assets/skybox/with-water/right.jpg",
+    //                                                      "assets/skybox/with-water/left.jpg",
+    //                                                      "assets/skybox/with-water/bottom.jpg",
+    //                                                      "assets/skybox/with-water/top.jpg",
+    //                                                      "assets/skybox/with-water/front.jpg",
+    //                                                      "assets/skybox/with-water/back.jpg" };
+    std::array<const char*, 6> skybox_sky18_face_paths { "assets/skybox/sky_18_cubemap_2k/px.png",
+                                                         "assets/skybox/sky_18_cubemap_2k/nx.png",
+                                                         "assets/skybox/sky_18_cubemap_2k/ny.png",
+                                                         "assets/skybox/sky_18_cubemap_2k/py.png",
+                                                         "assets/skybox/sky_18_cubemap_2k/pz.png",
+                                                         "assets/skybox/sky_18_cubemap_2k/nz.png" };
 
     new (&skybox_cubemap) Cubemap();
-    skybox_cubemap.createFrom6Images(skybox_face_paths, true);
+    skybox_cubemap.createFrom6Images(skybox_sky18_face_paths, true);
     if (skybox_cubemap.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create skybox cubemap!\n");
@@ -274,6 +315,7 @@ bool GameMainLoop::initTextures()
         turret_texture.~Texture2D();
         ball_texture.~Texture2D();
         water_specular_map.~Texture2D();
+        rock_texture.~Texture2D();
         skybox_cubemap.~Cubemap();
         return false;
     }
@@ -290,6 +332,7 @@ void GameMainLoop::deinitTextures()
     turret_texture.~Texture2D();
     ball_texture.~Texture2D();
     water_specular_map.~Texture2D();
+    rock_texture.~Texture2D();
     skybox_cubemap.~Cubemap();
 }
 
@@ -546,6 +589,29 @@ void GameMainLoop::initMaterials()
     //Target material
     const MaterialProps target_material_props{Color3F{1.f}, Color3F{1.f}, Color3F{0.f}, 1.f};
     new (&target_material) Material(target_material_props, target_texture, white_pixel);
+
+    //Rock material
+    const char *rock_mtl_path = "assets/rock/rock.mtl";
+
+    MaterialProps rock_material_props = default_material_props;
+    std::vector<MaterialProps> rock_loaded_mats{};
+    if (Meshes::loadMtl(rock_mtl_path, rock_loaded_mats) || rock_loaded_mats.size() == 0)
+    {
+        fprintf(stderr, "[WARNING] Failed to load material for rock mesh, default material will be used.\n");
+    }
+    else
+    {
+        if (rock_loaded_mats.size() > 1) fprintf(stderr, "[WARNING] Multiple materials loaded for ball mesh, using the first one.\n");
+        rock_material_props = rock_loaded_mats[0];
+        rock_material_props.m_ambient = default_material_props.m_ambient;
+    }
+    //DEBUG
+    // printf("rock material - ambient: %f|%f|%f, diffuse: %f|%f|%f, specular: %f|%f|%f, shinines: %f\n",
+    //        rock_material_props.m_ambient.r, rock_material_props.m_ambient.g, rock_material_props.m_ambient.b,
+    //        rock_material_props.m_diffuse.r, rock_material_props.m_diffuse.g, rock_material_props.m_diffuse.b,
+    //        rock_material_props.m_specular.r, rock_material_props.m_specular.g, rock_material_props.m_specular.b, rock_material_props.m_shininess);
+    
+    new (&rock_material) Material(rock_material_props, rock_texture, white_pixel);
 }
 
 void GameMainLoop::deinitMaterials()
@@ -555,6 +621,7 @@ void GameMainLoop::deinitMaterials()
     default_material.~Material();
     ball_material.~Material();
     target_material.~Material();
+    rock_material.~Material();
 }
 
 bool GameMainLoop::initUI()
@@ -644,6 +711,10 @@ bool GameMainLoop::initGameStuff()
         wall_vbo.~VBO();
         return false;
     }
+
+    //Rock (is here just for testing)
+    new (&rock_model) Meshes::Model(light_shader, rock_mesh, rock_material);
+    rock_model.m_scale = glm::vec3(0.4f);
 
     //Targets
     using Target = Game::Target;
@@ -735,6 +806,7 @@ bool GameMainLoop::initGameStuff()
 void GameMainLoop::deinitGameStuff()
 {
     wall_vbo.~VBO();
+    rock_model.~Model();
     target_mesh.~Mesh();
     target_model.~Model();
     ball_model.~Model();
@@ -1515,6 +1587,12 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             }
 
             ball_mesh.draw();
+
+            //rock
+            {
+                glm::vec3 pos = glm::vec3(-5.5f, 0.35f, 0.f);
+                rock_model.draw(camera, lights, pos);
+            }
 
             //wall
             light_shader.use();
