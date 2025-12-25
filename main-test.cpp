@@ -295,7 +295,6 @@ int TestMainLoop::init()
     clear_color_2d = Color(0, 0, 0);
 
     tick = 0;
-    last_frame_time = glfwGetTime();
     last_mouse_x = 0.f;
     last_mouse_y = 0.f;
 
@@ -310,17 +309,13 @@ TestMainLoop::~TestMainLoop()
     glDeleteRenderbuffers(1, &fbo3d_rbo_stencil);
 }
 
-LoopRetVal TestMainLoop::loop()
+LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float frame_delta)
 {
     GLFWwindow * const window = WindowManager::getWindow();
+    SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
+    assert(shared_gl_context.isInitialized());
 
     using LightProps = Lighting::LightProps;
-
-    //calculating correct frame delta time
-    //TODO this will be wrong when stacking of game loops gets implemented
-    double current_frame_time = glfwGetTime();
-    double frame_delta = current_frame_time - last_frame_time;
-    last_frame_time = current_frame_time;
 
     // ---Mouse input---
     double mouse_x = 0.f, mouse_y = 0.f;
@@ -377,12 +372,10 @@ LoopRetVal TestMainLoop::loop()
     // ---Camera movement---
     const float move_per_sec = 4.f;
     const float move_magnitude = move_per_sec * frame_delta;
-    glm::vec3 move_rel = move_magnitude * move_dir; // move vector relative to the camera (view coords)
     
-    if (!Utils::isZero(move_rel))
+    if (!Utils::isZero(move_dir))
     {
-        glm::vec3 move_abs = camera.dirCoordsViewToWorld(move_rel); // absolute move vector (world coords)
-        // printf("move_rel: %f|%f|%f\n", move_rel.x, move_rel.y, move_rel.z);
+        glm::vec3 move_abs = move_magnitude * camera.dirCoordsViewToWorld(move_dir); // move in world coords
         // printf("move_abs: %f|%f|%f\n", move_abs.x, move_abs.y, move_abs.z);
         camera.move(move_abs);
     }
@@ -426,6 +419,8 @@ LoopRetVal TestMainLoop::loop()
 
     // ---Drawing---
     {
+        bool use_msaa = shared_gl_context.use_msaa;
+
         //3D block
         {
             //set the viewport according to wanted framebuffer
@@ -442,6 +437,12 @@ LoopRetVal TestMainLoop::loop()
             const glm::mat4& proj_mat = camera.getProjectionMatrix();
 
             glEnable(GL_DEPTH_TEST);
+
+            // enable multisampling (only for OpenGL 3.3, as OpenGL ES 2.0 and WebGL1 does not support it)
+            #ifdef BUILD_OPENGL_330_CORE
+                if (use_msaa) glEnable(GL_MULTISAMPLE);
+                else          glDisable(GL_MULTISAMPLE);
+            #endif
 
             //test point light source cube
             light_src_shader.use();

@@ -3,7 +3,7 @@
 
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
-SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height)
+SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, bool use_msaa)
                     : unit_quad_pos_only(), white_pixel_tex(Color3{ 255, 255, 255 }),
                       fbo3d_tex(init_width, init_height, GL_RGB),
                       #ifdef USE_COMBINED_FBO_BUFFERS
@@ -12,7 +12,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
                         fbo3d_rbo_depth(empty_id),
                         fbo3d_rbo_stencil(empty_id),
                       #endif
-                      fbo3d(), use_fbo3d(use_fbo3d)
+                      fbo3d(), use_fbo3d(use_fbo3d), use_msaa(use_msaa)
 {
     //checking the constructors
     assert(!Utils::checkForGLError());

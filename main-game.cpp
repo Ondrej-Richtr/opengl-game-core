@@ -1369,6 +1369,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     // ---Drawing---
     {
         bool use_fbo = shared_gl_context.use_fbo3d;
+        bool use_msaa = shared_gl_context.use_msaa;
 
         //3D block
         {
@@ -1404,6 +1405,12 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             glDisable(GL_STENCIL_TEST);
             glStencilMask(0x00);
             glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+            
+            // enable multisampling (only for OpenGL 3.3, as OpenGL ES 2.0 and WebGL1 does not support it)
+            #ifdef BUILD_OPENGL_330_CORE
+                if (use_msaa) glEnable(GL_MULTISAMPLE);
+                else          glDisable(GL_MULTISAMPLE);
+            #endif
 
             //Enable backface culling
             glCullFace(GL_BACK);
@@ -1696,6 +1703,12 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             glEnable(GL_BLEND); //TODO check this
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+
+            // enable multisampling (only for OpenGL 3.3, as OpenGL ES 2.0 and WebGL1 does not support it)
+            #ifdef BUILD_OPENGL_330_CORE
+                if (use_msaa) glEnable(GL_MULTISAMPLE);
+                else          glDisable(GL_MULTISAMPLE);
+            #endif
             
             //render the 3D scene as a background from it's framebuffer
             if (use_fbo)
@@ -2063,6 +2076,8 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 
     // ---Drawing---
     {
+        bool use_msaa = shared_gl_context.use_msaa;
+
         //2D block
         {
             //TODO use correct win size + check whether some functions need it as parameter
@@ -2083,6 +2098,12 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             glEnable(GL_BLEND); //TODO check this
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+
+            // enable multisampling (only for OpenGL 3.3, as OpenGL ES 2.0 and WebGL1 does not support it)
+            #ifdef BUILD_OPENGL_330_CORE
+                if (use_msaa) glEnable(GL_MULTISAMPLE);
+                else          glDisable(GL_MULTISAMPLE);
+            #endif
             
             //render the background texture with gray postprocessing (should be last fbo3d render)
             Drawing::texturedRectangle(gray_tex_rect_shader, background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
@@ -2259,6 +2280,8 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
 
     // ---Drawing---
     {
+        bool use_msaa = shared_gl_context.use_msaa;
+        
         //2D block
         {
             //TODO use correct win size + check whether some functions need it as parameter
@@ -2279,6 +2302,12 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             glEnable(GL_BLEND); //TODO check this
             glBlendEquation(GL_FUNC_ADD); //TODO check this
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO check this
+
+            // enable multisampling (only for OpenGL 3.3, as OpenGL ES 2.0 and WebGL1 does not support it)
+            #ifdef BUILD_OPENGL_330_CORE
+                if (use_msaa) glEnable(GL_MULTISAMPLE);
+                else          glDisable(GL_MULTISAMPLE);
+            #endif
             
             //render the background texture with gray postprocessing (should be last fbo3d render)
             Drawing::texturedRectangle(*ref_gray_tex_rect_shader, *ref_background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);

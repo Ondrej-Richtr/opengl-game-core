@@ -1168,9 +1168,9 @@ private:
     #endif
     Drawing::FrameBuffer fbo3d;
 public:
-    bool use_fbo3d;
+    bool use_fbo3d, use_msaa;
 
-    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height);
+    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, bool use_msaa);
     ~SharedGLContext();
 
     bool isInitialized() const;
@@ -1231,13 +1231,12 @@ struct TestMainLoop //TODO proper deinit of objects
     //Misc.
     Color clear_color_3d, clear_color_2d;
     unsigned int tick;
-    double last_frame_time;
     double last_mouse_x, last_mouse_y;
 
     int init();
     ~TestMainLoop();
 
-    LoopRetVal loop();
+    LoopRetVal loop(unsigned int global_tick, double frame_time, float frame_delta);
 };
 
 //main-game.cpp

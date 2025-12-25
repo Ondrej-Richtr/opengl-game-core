@@ -37,6 +37,13 @@ static int init(void)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     #endif
 
+    //set sample count
+    #ifdef BUILD_OPENGL_330_CORE
+        glfwWindowHint(GLFW_SAMPLES, 4);
+    #else
+        glfwWindowHint(GLFW_SAMPLES, 1); // WebGL1 does not support multi sampling
+    #endif
+
     //initializing the window
     const char window_title[] = "Target Practie OpenGL Game";
     // GLFWwindow* window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, (char*)window_title, glfwGetPrimaryMonitor(), NULL);
@@ -85,9 +92,13 @@ static int init(void)
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
     //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
     bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
+    bool use_msaa = false;
+    #ifdef BUILD_OPENGL_330_CORE
+        use_msaa = true;
+    #endif
 
     assert(!SharedGLContext::instance.has_value());
-    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y);
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y, use_msaa);
     if (!sharedGLContext.isInitialized())
     {
         fprintf(stderr, "Failed to initialize shared GL context!\n");
@@ -121,6 +132,7 @@ int desktop_main(void)
     MainLoopStack& main_loop_stack = MainLoopStack::instance;
     {
         LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<GameMainLoop>();
+        // LoopData *pushed_loop_data = main_loop_stack.pushFromTemplate<TestMainLoop>(); //DEBUG
         if (pushed_loop_data == NULL)
         {
             fprintf(stderr, "Failed to create wanted LoopData! Most likely out of memory.\n");
