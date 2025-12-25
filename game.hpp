@@ -281,7 +281,7 @@ namespace Drawing
 
     struct FrameBuffer
     {
-        enum class AttachmentType { none, render, texture };
+        enum class AttachmentType { none, render, texture, textureMultiSample };
         struct Attachment
         {
             GLuint id;
@@ -608,16 +608,20 @@ namespace Textures
     {
         unsigned int m_id = empty_id; // OpenGL texture id
         unsigned int m_width = 0, m_height = 0;
+        unsigned int m_samples = 0;
 
         Texture2D() = default;
-        Texture2D(unsigned int width, unsigned int height, GLenum component_type);
+        Texture2D(unsigned int width, unsigned int height, GLenum component_type, unsigned int samples = 1);
         Texture2D(const char *image_path, bool generate_mipmaps = default_generate_mipmaps);
         Texture2D(const void *img_data, unsigned int width, unsigned int height,
                   bool generate_mipmaps = default_generate_mipmaps);
         Texture2D(Color3 color);
         ~Texture2D();
 
+        GLenum getBindType() const;
         void bind(unsigned int unit = 0) const;
+
+        bool isMultiSampled() const;
 
         void changeTexture(unsigned int new_width, unsigned int new_height,
                            GLenum component_type = GL_RGBA, const void *new_data = NULL);

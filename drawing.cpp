@@ -158,6 +158,10 @@ void Drawing::FrameBuffer::attachColorBuffer(Drawing::FrameBuffer::Attachment at
         assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, attachment.id, 0);
         break;
+    case Drawing::FrameBuffer::AttachmentType::textureMultiSample:
+        assert(attachment.id != empty_id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, attachment.id, 0);
+        break;
     case Drawing::FrameBuffer::AttachmentType::render:
         assert(attachment.id != empty_id);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, attachment.id);
@@ -180,6 +184,10 @@ void Drawing::FrameBuffer::attachDepthBuffer(Drawing::FrameBuffer::Attachment at
     case Drawing::FrameBuffer::AttachmentType::texture:
         assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
+        break;
+    case Drawing::FrameBuffer::AttachmentType::textureMultiSample:
+        assert(attachment.id != empty_id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
         assert(attachment.id != empty_id);
@@ -204,6 +212,10 @@ void Drawing::FrameBuffer::attachDepthStencilBuffer(Drawing::FrameBuffer::Attach
     case Drawing::FrameBuffer::AttachmentType::texture:
         assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
+        break;
+    case Drawing::FrameBuffer::AttachmentType::textureMultiSample:
+        assert(attachment.id != empty_id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
         assert(attachment.id != empty_id);
@@ -235,6 +247,10 @@ void Drawing::FrameBuffer::attachStencilBuffer(Drawing::FrameBuffer::Attachment 
     case Drawing::FrameBuffer::AttachmentType::texture:
         assert(attachment.id != empty_id);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, attachment.id, 0);
+        break;
+    case Drawing::FrameBuffer::AttachmentType::textureMultiSample:
+        assert(attachment.id != empty_id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, attachment.id, 0);
         break;
     case Drawing::FrameBuffer::AttachmentType::render:
         assert(attachment.id != empty_id);
@@ -269,7 +285,7 @@ bool Drawing::FrameBuffer::isComplete() const
 
     const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     // printf("framebuffer status: 0x%x\n", status);
-    return status == GL_FRAMEBUFFER_COMPLETE;
+    return (status == GL_FRAMEBUFFER_COMPLETE);
 }
 
 Color3F Drawing::blendScreen(Color3F a, Color3F b)
