@@ -1373,13 +1373,13 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
         //3D block
         {
-            const Drawing::FrameBuffer& fbo3d = shared_gl_context.getFbo3D();
+            const Drawing::FrameBuffer& fbo3d = shared_gl_context.getFbo3D(false);
 
             //set the viewport according to wanted framebuffer
             if (use_fbo)
             {
-                const glm::ivec2 fbo3d_size = shared_gl_context.getFbo3DSize();
-                glViewport(0, 0, fbo3d_size.x, fbo3d_size.y);
+                const glm::ivec2 fbo3d_unconv_size = shared_gl_context.getFbo3DSize(false);
+                glViewport(0, 0, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
             }
             else
             {
@@ -1677,6 +1677,24 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
 
+        //Convert FBO 3D scene
+        if (use_fbo) // scene got rendered into shared 3D Framebuffer
+        {
+            bool converted = shared_gl_context.convertFbo3D();
+            if (!converted)
+            {
+                fprintf(stderr, "[WARNING] Failed to convert Framebuffer for 3D scene!\n");
+            }
+
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+        }
+        else // scene got rendered into default Framebuffer, save it into shared one
+        {
+            shared_gl_context.saveToFbo3DFromExternal(empty_id);
+            
+            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+        }
+
         //2D block
         {
             //TODO use correct win size + check whether some functions need it as parameter
@@ -1713,9 +1731,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             //render the 3D scene as a background from it's framebuffer
             if (use_fbo)
             {
-                const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
-                // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
-                Drawing::texturedRectangle(tex_rect_shader, fbo3d_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
+                const Textures::Texture2D& fbo3d_conv_tex = shared_gl_context.getFbo3DTexture(true);
+                // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_conv_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
+                Drawing::texturedRectangle(tex_rect_shader, fbo3d_conv_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             }
             
             //line test
@@ -1757,19 +1775,19 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 bool GamePauseMainLoop::initTextures()
 {
     const SharedGLContext& shared_gl_context = SharedGLContext::instance.value();
-    const Drawing::FrameBuffer& fbo3d = shared_gl_context.getFbo3D();
-    const Textures::Texture2D& fbo3d_tex = shared_gl_context.getFbo3DTexture();
+    const Drawing::FrameBuffer& fbo3d_conv = shared_gl_context.getFbo3D(true);
+    const glm::ivec2 fbo3d_conv_size = shared_gl_context.getFbo3DSize(true);
 
     //Background texture from fbo3d
-    new (&background_tex) Textures::Texture2D(fbo3d_tex.m_width, fbo3d_tex.m_height, GL_RGB);
+    new (&background_tex) Textures::Texture2D(fbo3d_conv_size.x, fbo3d_conv_size.y, GL_RGB);
     if (background_tex.m_id == empty_id)
     {
         fprintf(stderr, "[WARNING] Failed to initialize Texture for background of pause menu!\n");
         background_tex.~Texture2D();
         // No return!!! We can cope with uninitialized background texture.
     }
-    // copy contents of `fbo3d_tex` into `background_tex`
-    else if (!background_tex.copyContentsFrom(fbo3d, background_tex.m_width, background_tex.m_height, GL_RGB))
+    // copy contents of `fbo3d_conv_tex` into `background_tex`
+    else if (!background_tex.copyContentsFrom(fbo3d_conv, background_tex.m_width, background_tex.m_height, GL_RGB))
     {
         fprintf(stderr, "[WARNING] Failed to copy data of FrameBuffer into pause menu background Texture!\n");
         background_tex.~Texture2D();

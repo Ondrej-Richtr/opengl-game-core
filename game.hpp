@@ -1163,28 +1163,31 @@ struct SharedGLContext
 
     //3D Framebuffer
 private:
-    Textures::Texture2D fbo3d_tex;
+    Textures::Texture2D fbo3d_unconv_tex, fbo3d_conv_tex;
     #ifdef USE_COMBINED_FBO_BUFFERS
         GLuint fbo3d_rbo_depth_stencil;
     #else
         GLuint fbo3d_rbo_depth; 
         GLuint fbo3d_rbo_stencil;
     #endif
-    Drawing::FrameBuffer fbo3d;
+    Drawing::FrameBuffer fbo3d_unconv, fbo3d_conv;
 public:
     bool use_fbo3d, use_msaa;
 
-    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, bool use_msaa);
+    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa);
     ~SharedGLContext();
 
     bool isInitialized() const;
 
-    glm::ivec2 getFbo3DSize() const;
+    glm::ivec2 getFbo3DSize(bool converted) const;
 
     void changeFbo3DSize(unsigned int new_width, unsigned int new_height);
 
-    const Textures::Texture2D& getFbo3DTexture() const;
-    const Drawing::FrameBuffer& getFbo3D() const;
+    bool convertFbo3D() const; // resolves fbo3d_conv from unconverted internal fbo3d
+    void saveToFbo3DFromExternal(GLuint external_fbo_id); // saves data into fbo3d_conv from external fbo
+
+    const Textures::Texture2D& getFbo3DTexture(bool converted) const;
+    const Drawing::FrameBuffer& getFbo3D(bool converted) const;
 
     static std::optional<SharedGLContext> instance;
 };

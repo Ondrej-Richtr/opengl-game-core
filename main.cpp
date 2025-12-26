@@ -38,11 +38,8 @@ static int init(void)
     #endif
 
     //set sample count
-    #ifdef BUILD_OPENGL_330_CORE
-        glfwWindowHint(GLFW_SAMPLES, 4);
-    #else
-        glfwWindowHint(GLFW_SAMPLES, 1); // WebGL1 does not support multi sampling
-    #endif
+    const unsigned int glfw_samples = 4;
+    glfwWindowHint(GLFW_SAMPLES, glfw_samples);
 
     //initializing the window
     const char window_title[] = "Target Practie OpenGL Game";
@@ -90,15 +87,18 @@ static int init(void)
 
     //initializing shared gl context
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
-    //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution
+    //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution (maybe dont use extarnal FBO ever?)
     bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
-    bool use_msaa = false;
+    bool use_msaa = true;
+
+    // glfw sample hint == 4, fbo samples == 1, enabled MSAA, disabled FBO => anti-aliasing works on every setup
+    unsigned int fbo_samples = 1;
     #ifdef BUILD_OPENGL_330_CORE
-        use_msaa = true;
+        fbo_samples = glfw_samples;
     #endif
 
     assert(!SharedGLContext::instance.has_value());
-    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y, use_msaa);
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y, fbo_samples, use_msaa);
     if (!sharedGLContext.isInitialized())
     {
         fprintf(stderr, "Failed to initialize shared GL context!\n");

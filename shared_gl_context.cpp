@@ -3,18 +3,20 @@
 
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
-SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, bool use_msaa)
+SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa)
                     : unit_quad_pos_only(), white_pixel_tex(Color3{ 255, 255, 255 }),
-                      fbo3d_tex(init_width, init_height, GL_RGB),
+                      fbo3d_unconv_tex(init_width, init_height, GL_RGB, fbo3d_samples), //TODO cant this be a renderbuffer?
+                      fbo3d_conv_tex(init_width, init_height, GL_RGB),
                       #ifdef USE_COMBINED_FBO_BUFFERS
                         fbo3d_rbo_depth_stencil(empty_id),
                       #else
                         fbo3d_rbo_depth(empty_id),
                         fbo3d_rbo_stencil(empty_id),
                       #endif
-                      fbo3d(), use_fbo3d(use_fbo3d), use_msaa(use_msaa)
+                      fbo3d_unconv(), fbo3d_conv(), use_fbo3d(use_fbo3d), use_msaa(use_msaa)
 {
     //checking the constructors
+    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
     assert(!Utils::checkForGLError());
 
     if (white_pixel_tex.m_id == empty_id)
@@ -23,9 +25,15 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
         return;
     }
 
-    if (fbo3d_tex.m_id == empty_id)
+    if (fbo3d_unconv_tex.m_id == empty_id)
     {
         fprintf(stderr, "Failed to create FrameBuffer color texture for 3D rendering!\n");
+        return;
+    }
+
+    if (fbo3d_conv_tex.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create FrameBuffer color texture for 3D scene conversion!\n");
         return;
     }
 
@@ -64,20 +72,43 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
         #endif
     }
 
+    bool fbo3d_multisampled = (fbo3d_samples > 1);
+    assert(fbo3d_multisampled == fbo3d_unconv_tex.isMultiSampled());
+
     #ifdef USE_COMBINED_FBO_BUFFERS
         //depth-stencil combined renderbuffer allocation
         glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth_stencil);
-        //TODO GL_DEPTH_STENCIL or GL_DEPTH24_STENCIL8?
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, fbo3d_tex.m_width, fbo3d_tex.m_height);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, GL_DEPTH_STENCIL, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
+        else
+        {
+            //TODO GL_DEPTH_STENCIL or GL_DEPTH24_STENCIL8?
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
     #else
         //depth renderbuffer allocation
         glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, fbo3d_tex.m_width, fbo3d_tex.m_height);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, GL_DEPTH_COMPONENT16, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
+        else
+        {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
 
         //stencil renderbuffer allocation
-        //TODO allow OpenGL 3.3 on dekstops to make stencil buffers work even on nvidia cards
         glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_tex.m_width, fbo3d_tex.m_height);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, GL_STENCIL_INDEX8, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
+        else
+        {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height);
+        }
     #endif
 
     glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
@@ -85,27 +116,46 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
     //framebuffer 3D
     using FrameBuffer = Drawing::FrameBuffer;
 
-    fbo3d.init();
-    if (fbo3d.m_id == empty_id)
+    fbo3d_unconv.init();
+    if (fbo3d_unconv.m_id == empty_id)
     {
         fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene!\n");
         return;
     }
 
     #ifdef USE_COMBINED_FBO_BUFFERS
-        fbo3d.attachAllCombined(fbo3d_tex.asFrameBufferAttachment(),
+        fbo3d_unconv.attachAllCombined(fbo3d_unconv_tex.asFrameBufferAttachment(),
                                 FrameBuffer::Attachment{ fbo3d_rbo_depth_stencil, FrameBuffer::AttachmentType::render });
     #else
-        fbo3d.attachAllSeparated(fbo3d_tex.asFrameBufferAttachment(),
-                                 FrameBuffer::Attachment{ fbo3d_rbo_depth, FrameBuffer::AttachmentType::render },
-                                 // FrameBuffer::Attachment{ fbo3d_rbo_stencil, FrameBuffer::AttachmentType::render }
-                                 FrameBuffer::Attachment{ 0, FrameBuffer::AttachmentType::none } //TODO fix stencil buffer not working on nvidia
-                                 );
+        fbo3d_unconv.attachAllSeparated(fbo3d_unconv_tex.asFrameBufferAttachment(),
+                                        FrameBuffer::Attachment{ fbo3d_rbo_depth, FrameBuffer::AttachmentType::render },
+                                        // FrameBuffer::Attachment{ fbo3d_rbo_stencil, FrameBuffer::AttachmentType::render }
+                                        FrameBuffer::Attachment{ 0, FrameBuffer::AttachmentType::none } //TODO fix stencil buffer not working on nvidia
+                                       );
     #endif
-    if (!fbo3d.isComplete())
+    if (!fbo3d_unconv.isComplete())
     {
         fprintf(stderr, "FrameBuffer for 3D scene is not complete!\n");
-        fbo3d.deinit();
+        fbo3d_unconv.deinit();
+        return;
+    }
+
+    //framebuffer 3D converted
+    fbo3d_conv.init();
+    if (fbo3d_conv.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to initialize FrameBuffer for 3D scene conversion!\n");
+        fbo3d_unconv.deinit();
+        return;
+    }
+
+    fbo3d_conv.attachColorBuffer(fbo3d_conv_tex.asFrameBufferAttachment());
+
+    if (!fbo3d_conv.isComplete())
+    {
+        fprintf(stderr, "FrameBuffer for 3D scene conversion is not complete!\n");
+        fbo3d_unconv.deinit();
+        fbo3d_conv.deinit();
         return;
     }
 
@@ -126,19 +176,23 @@ bool SharedGLContext::isInitialized() const
 {
     return unit_quad_pos_only.m_id != empty_id &&
            white_pixel_tex.m_id != empty_id &&
-           fbo3d.m_id != empty_id;
+           fbo3d_unconv.m_id != empty_id &&
+           fbo3d_conv.m_id != empty_id;
 }
 
-glm::ivec2 SharedGLContext::getFbo3DSize() const
+glm::ivec2 SharedGLContext::getFbo3DSize(bool converted) const
 {
-    return glm::ivec2(fbo3d_tex.m_width, fbo3d_tex.m_height);
+    return converted ? glm::ivec2(fbo3d_unconv_tex.m_width, fbo3d_unconv_tex.m_height)
+                     : glm::ivec2(fbo3d_conv_tex.m_width, fbo3d_conv_tex.m_height);
 }
 
 void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_height)
 {
-    if (new_width == fbo3d_tex.m_width && new_height == fbo3d_tex.m_height)
+    const glm::ivec2 current_size = getFbo3DSize(true);
+
+    if (new_width == current_size.x && new_height == current_size.y)
     {
-        printf("Requested change of size, but FBO 3D size alredy is: %dx%d\n", new_width, new_height);
+        printf("Requested change of size, but FBO 3D size already is: %dx%d\n", new_width, new_height);
         return;
     }
     
@@ -148,35 +202,115 @@ void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_h
     assert(!Utils::checkForGLError());
 
     // resize the fbo texture
-    fbo3d_tex.changeTexture(new_width, new_height, GL_RGB);
+    fbo3d_unconv_tex.changeTexture(new_width, new_height, GL_RGB);
     assert(!Utils::checkForGLErrorsAndPrintThem());
+    bool fbo3d_multisampled = fbo3d_unconv_tex.isMultiSampled();
 
     // resize the fbo renderbuffers
     #ifdef USE_COMBINED_FBO_BUFFERS
+        //combined resize
         glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth_stencil);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, new_width, new_height);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_unconv_tex.m_samples, GL_DEPTH_STENCIL, new_width, new_height);
+        }
+        else
+        {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, new_width, new_height);
+        }
         assert(!Utils::checkForGLErrorsAndPrintThem());
     #else
+        //depth resize
         glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_depth);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, new_width, new_height);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_unconv_tex.m_samples, GL_DEPTH_COMPONENT16, new_width, new_height);
+        }
+        else
+        {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, new_width, new_height);
+        }
         assert(!Utils::checkForGLErrorsAndPrintThem());
 
-        // glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
-        // glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, new_width, new_height);
-        // assert(!Utils::checkForGLErrorsAndPrintThem());
+        //stencil resize
+        glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_stencil);
+        if (fbo3d_multisampled)
+        {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_unconv_tex.m_samples, GL_STENCIL_INDEX8, new_width, new_height);
+        }
+        else
+        {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, new_width, new_height);
+        }
+        assert(!Utils::checkForGLErrorsAndPrintThem());
     #endif
+
+    // resize the fbo converted texture
+    fbo3d_conv_tex.changeTexture(new_width, new_height, GL_RGB);
+    assert(!Utils::checkForGLErrorsAndPrintThem());
 
     glBindRenderbuffer(GL_RENDERBUFFER, empty_id);
 
-    assert(fbo3d.isComplete());
+    assert(fbo3d_unconv.isComplete());
+    assert(fbo3d_conv.isComplete());
 }
 
-const Textures::Texture2D& SharedGLContext::getFbo3DTexture() const
+bool SharedGLContext::convertFbo3D() const
 {
-    return fbo3d_tex;
+    if (!fbo3d_unconv.isComplete() || !fbo3d_conv.isComplete()) return false;
+
+    const glm::ivec2 fbo_dst_size = getFbo3DSize(true);
+    bool fbo3d_multisampled = fbo3d_unconv_tex.isMultiSampled();
+
+    if (!fbo3d_multisampled)
+    {
+        fbo3d_unconv.bind();
+        fbo3d_conv_tex.bind();
+
+        glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, fbo_dst_size.x, fbo_dst_size.y, 0);
+
+        fbo3d_unconv.unbind();
+    }
+    #ifdef BUILD_OPENGL_330_CORE
+    else
+    {
+        const glm::ivec2 fbo_src_size = getFbo3DSize(false);
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo3d_unconv.m_id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo3d_conv.m_id);
+
+        glBlitFramebuffer(0, 0, fbo_src_size.x, fbo_src_size.y, 0, 0, fbo_dst_size.x, fbo_dst_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, empty_id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, empty_id);
+    }
+    #else
+    else
+    {
+        return false;
+    }
+    #endif
+
+    return true;
 }
 
-const Drawing::FrameBuffer& SharedGLContext::getFbo3D() const
+void SharedGLContext::saveToFbo3DFromExternal(GLuint external_fbo_id)
 {
-    return fbo3d;
+    glBindFramebuffer(GL_FRAMEBUFFER, external_fbo_id);
+    fbo3d_conv_tex.bind();
+
+    const glm::ivec2 dst_size = getFbo3DSize(true); // not sure if this size is the correct one
+    glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, dst_size.x, dst_size.y, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
+}
+
+const Textures::Texture2D& SharedGLContext::getFbo3DTexture(bool converted) const
+{
+    return converted ? fbo3d_conv_tex : fbo3d_unconv_tex;
+}
+
+const Drawing::FrameBuffer& SharedGLContext::getFbo3D(bool converted) const
+{
+    return converted ? fbo3d_conv : fbo3d_unconv;
 }

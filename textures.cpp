@@ -29,14 +29,17 @@ Textures::Texture2D::Texture2D(unsigned int width, unsigned int height, GLenum c
         glTexImage2D(bind_type, 0, component_type, m_width, m_height, 0, component_type, GL_UNSIGNED_BYTE, NULL);
     }
 
-    // set the min and max filtering
-    constexpr GLint min_filtering = Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
-    glTexParameteri(bind_type, GL_TEXTURE_MIN_FILTER, min_filtering);
-    glTexParameteri(bind_type, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
-    glTexParameteri(bind_type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(bind_type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(bind_type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // glTexParameteri(bind_type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // set the default filtering, but only for single-sampled textures
+    if (bind_type == GL_TEXTURE_2D)
+    {
+        constexpr GLint min_filtering = Utils::filteringEnumWithoutMipmap(Textures::default_min_filtering);
+        glTexParameteri(bind_type, GL_TEXTURE_MIN_FILTER, min_filtering);
+        glTexParameteri(bind_type, GL_TEXTURE_MAG_FILTER, Textures::default_max_filtering); // max filtering should be already without mipmaps!
+        glTexParameteri(bind_type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(bind_type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // glTexParameteri(bind_type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        // glTexParameteri(bind_type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
 
     // unbind the texture just in case
     glBindTexture(bind_type, empty_id);
@@ -239,7 +242,6 @@ bool Textures::Texture2D::copyContentsFrom(const Drawing::FrameBuffer& fbo_src, 
     fbo_src.bind();
     bind();
 
-    //FIXME blit for opengl 3.3
     glCopyTexImage2D(GL_TEXTURE_2D, 0, format, 0, 0, width, height, 0);
 
     // fbo_src.unbind();
@@ -248,11 +250,6 @@ bool Textures::Texture2D::copyContentsFrom(const Drawing::FrameBuffer& fbo_src, 
     m_height = height;
     return true;
 }
-
-//FIXME implement or remove this
-// bool Textures::Texture2D::blitFromFBO(const Drawing::FrameBuffer& fbo_src, unsigned int width, unsigned int height, GLenum format)
-// {
-// }
 
 Drawing::FrameBuffer::Attachment Textures::Texture2D::asFrameBufferAttachment() const
 {
