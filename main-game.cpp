@@ -1691,7 +1691,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
         else // scene got rendered into default Framebuffer, save it into shared one
         {
             shared_gl_context.saveToFbo3DFromExternal(empty_id);
-            
+
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
 
@@ -1731,7 +1731,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             //render the 3D scene as a background from it's framebuffer
             if (use_fbo)
             {
-                const Textures::Texture2D& fbo3d_conv_tex = shared_gl_context.getFbo3DTexture(true);
+                const Textures::Texture2D& fbo3d_conv_tex = shared_gl_context.getFbo3DTexture();
                 // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_conv_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
                 Drawing::texturedRectangle(tex_rect_shader, fbo3d_conv_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
             }

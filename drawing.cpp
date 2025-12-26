@@ -284,8 +284,10 @@ bool Drawing::FrameBuffer::isComplete() const
     bind();
 
     const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    // printf("framebuffer status: 0x%x\n", status);
-    return (status == GL_FRAMEBUFFER_COMPLETE);
+    const bool completed = (status == GL_FRAMEBUFFER_COMPLETE);
+
+    if (!completed) printf("Framebuffer is not complete, status: 0x%x\n", status);
+    return completed;
 }
 
 Color3F Drawing::blendScreen(Color3F a, Color3F b)

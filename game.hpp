@@ -1163,7 +1163,8 @@ struct SharedGLContext
 
     //3D Framebuffer
 private:
-    Textures::Texture2D fbo3d_unconv_tex, fbo3d_conv_tex;
+    Textures::Texture2D fbo3d_conv_tex;
+    GLuint fbo3d_rbo_color;
     #ifdef USE_COMBINED_FBO_BUFFERS
         GLuint fbo3d_rbo_depth_stencil;
     #else
@@ -1171,6 +1172,8 @@ private:
         GLuint fbo3d_rbo_stencil;
     #endif
     Drawing::FrameBuffer fbo3d_unconv, fbo3d_conv;
+    unsigned int fbo3d_samples;
+    glm::ivec2 fbo3d_unconv_size;
 public:
     bool use_fbo3d, use_msaa;
 
@@ -1186,7 +1189,7 @@ public:
     bool convertFbo3D() const; // resolves fbo3d_conv from unconverted internal fbo3d
     void saveToFbo3DFromExternal(GLuint external_fbo_id); // saves data into fbo3d_conv from external fbo
 
-    const Textures::Texture2D& getFbo3DTexture(bool converted) const;
+    const Textures::Texture2D& getFbo3DTexture() const;
     const Drawing::FrameBuffer& getFbo3D(bool converted) const;
 
     static std::optional<SharedGLContext> instance;
