@@ -194,8 +194,8 @@ bool SharedGLContext::isInitialized() const
 
 glm::ivec2 SharedGLContext::getFbo3DSize(bool converted) const
 {
-    return converted ? fbo3d_unconv_size
-                     : glm::ivec2(fbo3d_conv_tex.m_width, fbo3d_conv_tex.m_height);
+    return converted ? glm::ivec2(fbo3d_conv_tex.m_width, fbo3d_conv_tex.m_height)
+                     : fbo3d_unconv_size;
 }
 
 void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_height)
