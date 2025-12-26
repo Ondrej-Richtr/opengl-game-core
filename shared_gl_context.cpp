@@ -281,7 +281,7 @@ bool SharedGLContext::convertFbo3D() const
 {
     if (!fbo3d_unconv.isComplete() || !fbo3d_conv.isComplete()) return false;
 
-    const glm::ivec2 fbo_dst_size = getFbo3DSize(true);
+    const glm::ivec2 fbo_src_size = getFbo3DSize(false);
     bool fbo3d_multisampled = (fbo3d_samples > 1);
 
     if (!fbo3d_multisampled)
@@ -289,14 +289,14 @@ bool SharedGLContext::convertFbo3D() const
         fbo3d_unconv.bind();
         fbo3d_conv_tex.bind();
 
-        glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, fbo_dst_size.x, fbo_dst_size.y, 0);
+        glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, fbo_src_size.x, fbo_src_size.y, 0);
 
         fbo3d_unconv.unbind();
     }
     #ifdef BUILD_OPENGL_330_CORE
     else
     {
-        const glm::ivec2 fbo_src_size = getFbo3DSize(false);
+        const glm::ivec2 fbo_dst_size = getFbo3DSize(true);
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo3d_unconv.m_id);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo3d_conv.m_id);
@@ -321,8 +321,8 @@ void SharedGLContext::saveToFbo3DFromExternal(GLuint external_fbo_id)
     glBindFramebuffer(GL_FRAMEBUFFER, external_fbo_id);
     fbo3d_conv_tex.bind();
 
-    const glm::ivec2 dst_size = getFbo3DSize(true); // not sure if this size is the correct one
-    glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, dst_size.x, dst_size.y, 0);
+    const glm::ivec2 src_size = getFbo3DSize(false);
+    glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, src_size.x, src_size.y, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 }
