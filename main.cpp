@@ -90,6 +90,7 @@ static int init(void)
     //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution (maybe dont use extarnal FBO ever?)
     bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
     bool use_msaa = true;
+    bool enable_gamma_correction = true;
 
     // glfw sample hint == 4, fbo samples == 1, enabled MSAA, disabled FBO => anti-aliasing works on every setup
     unsigned int fbo_samples = 1;
@@ -98,7 +99,8 @@ static int init(void)
     #endif
 
     assert(!SharedGLContext::instance.has_value());
-    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y, fbo_samples, use_msaa);
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y,
+                                                                         fbo_samples, use_msaa, enable_gamma_correction);
     if (!sharedGLContext.isInitialized())
     {
         fprintf(stderr, "Failed to initialize shared GL context!\n");

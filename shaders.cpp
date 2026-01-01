@@ -129,6 +129,10 @@ void Shaders::Program::set(const char *uniform_name, GLfloat value) const
 {
     // USE THIS ONLY IF THIS SHADER PROGRAM IS ALREADY IN USE (e.g. use method was called beforehand)
     int location = glGetUniformLocation(m_id, uniform_name);
+    if (location < 0)
+    {
+        fprintf(stderr, "[WARNING] Failed to find shared program location for uniform: '%s'!\n", uniform_name);
+    }
     assert(location >= 0); // wrong uniform name (or type)!
     glUniform1f(location, value);
 }

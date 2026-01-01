@@ -557,6 +557,12 @@ void GameMainLoop::initMaterials()
     //Default props
     new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
+    //Default material
+    new (&default_material) Material(default_material_props, white_pixel, white_pixel);
+
+    //Turret material
+    new (&turret_material) Material(default_material_props, turret_texture, white_pixel);
+
     //Ball props
     // const char *ball_mtl_path = "assets/ball/dirty_football.mtl";
 
@@ -579,9 +585,6 @@ void GameMainLoop::initMaterials()
 
     // ball_material_props = default_material_props;
     const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.2f}, 1.f};
-
-    //Default material
-    new (&default_material) Material(default_material_props, white_pixel, white_pixel);
 
     //Ball material
     new (&ball_material) Material(ball_material_props, ball_texture, white_pixel);
@@ -619,6 +622,7 @@ void GameMainLoop::deinitMaterials()
     default_material_props.~MaterialProps(); //TODO useless now as there is no destructor yet
 
     default_material.~Material();
+    turret_material.~Material();
     ball_material.~Material();
     target_material.~Material();
     rock_material.~Material();
@@ -987,6 +991,8 @@ int GameMainLoop::init()
     last_left_mbutton = false;
     last_right_mbutton = false;
     last_esc_state = GLFW_PRESS;
+    last_c_state = GLFW_PRESS;
+    gamma_coef = 2.2f;
 
     puts("GameMainLoop init end");
     return 0;
@@ -1046,7 +1052,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     // ---Keyboard input---
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    int c_state = glfwGetKey(window, GLFW_KEY_C);
     const bool esc_clicked = consecutive_tick && (esc_state == GLFW_PRESS) && (last_esc_state == GLFW_RELEASE);
+    const bool c_clicked = consecutive_tick && (c_state == GLFW_PRESS) && (last_c_state == GLFW_RELEASE);
     const bool pause_pressed = consecutive_tick && (glfwGetKey(window, GLFW_KEY_PAUSE) == GLFW_PRESS); // not using last_pause_state currently
     
     #ifdef PLATFORM_WEB
@@ -1078,6 +1086,11 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
+
+    if (c_clicked)
+    {
+        shared_gl_context.enable_gamma_correction = !shared_gl_context.enable_gamma_correction;
+    }
 
     glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
 
@@ -1260,6 +1273,10 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
             nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
 
+            //DEBUG
+            // const char *gamma_correction_str = shared_gl_context.enable_gamma_correction ? "Gamma - Enabled" : "Gamma - Disabled";
+            // nk_label(&ui.m_ctx, gamma_correction_str, NK_TEXT_LEFT);
+
             //level counter
             nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
             {
@@ -1370,6 +1387,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     {
         bool use_fbo = shared_gl_context.use_fbo3d;
         bool use_msaa = shared_gl_context.use_msaa;
+        bool enable_gamma_correction = shared_gl_context.enable_gamma_correction;
+        bool post_process = enable_gamma_correction || use_fbo;
+        float gamma = enable_gamma_correction ? gamma_coef : 0.f;
 
         //3D block
         {
@@ -1439,6 +1459,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.bindDiffuseMap(brick_texture);
                 light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
             }
 
             cube_vbo.bind();
@@ -1466,10 +1487,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                 //fs
                 light_shader.set("cameraPos", camera.m_pos);
-                light_shader.setMaterialProps(default_material_props);
-                light_shader.bindDiffuseMap(turret_texture);
-                light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
+                light_shader.setMaterial(turret_material);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
             }
             
             turret_mesh.draw();
@@ -1496,6 +1516,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.set("cameraPos", camera.m_pos);
                 light_shader.setMaterial(ball_material);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
             }
             
             ball_mesh.draw();
@@ -1531,14 +1552,21 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                     light_shader.set("cameraPos", camera.m_pos);
                     light_shader.setMaterial(ball_material);
                     light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                    light_shader.set("gammaCoef", gamma);
                 }
                 ball_mesh.draw();
 
-                //drawing the outline - attempt it only with OpenGL 3.3 or WebGL
-                //TODO delete this condition after implementing stencil buffer everywhere
+                //drawing the outline
                 #if defined(BUILD_OPENGL_330_CORE) || defined(PLATFORM_WEB)
+                    // always safe with OpenGL 3.3 or WebGL
+                    const bool render_ball_outline = true;
+                #else
+                    // on OpenGLES 2.0 we have no way to use stencil buffer in custom FBO
+                    const bool render_ball_outline = !use_fbo;
+                #endif
+                if (render_ball_outline)
+                {
                     light_src_shader.use();
-                    ball_texture.bind();
                     {
                         //vs
                         glm::mat4 model_mat(1.f);
@@ -1555,10 +1583,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                     }
 
                     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                    // glDisable(GL_DEPTH_TEST); //TODO this also?
                     glStencilMask(0x00); // disable writing to the stencil buffer
                     ball_mesh.draw();
-                #endif
+                }
             }
             glEnable(GL_DEPTH_TEST);
             glDepthMask(GL_TRUE);
@@ -1591,6 +1618,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.bindDiffuseMap(ball_texture);
                 light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
             }
 
             ball_mesh.draw();
@@ -1598,7 +1626,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             //rock
             {
                 glm::vec3 pos = glm::vec3(-5.5f, 0.35f, 0.f);
-                rock_model.draw(camera, lights, pos);
+                rock_model.draw(camera, lights, gamma, pos);
             }
 
             //wall
@@ -1621,6 +1649,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.bindDiffuseMap(brick_alt_texture);
                 light_shader.bindSpecularMap(shared_gl_context.white_pixel_tex);
                 light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
             }
 
             wall_vbo.bind();
@@ -1637,7 +1666,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             for (size_t i = 0; i < tagets_amount; ++i)
             {
                 const glm::vec3 pos_offset = glm::vec3(0.f, 0.f, FLOAT_TOLERANCE);
-                targets[i].draw(Game::TargetType::target, camera, lights, frame_time, pos_offset);
+                targets[i].draw(Game::TargetType::target, camera, lights, gamma, frame_time, pos_offset);
             }
 
             //ball targets
@@ -1649,7 +1678,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             const size_t ball_targets_amount = ball_targets.size();
             for (size_t i = 0; i < ball_targets_amount; ++i)
             {
-                ball_targets[i].draw(Game::TargetType::ball, camera, lights, frame_time);
+                ball_targets[i].draw(Game::TargetType::ball, camera, lights, gamma, frame_time);
             }
 
             //skybox
@@ -1677,20 +1706,14 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
 
-        //Convert FBO 3D scene
-        if (use_fbo) // scene got rendered into shared 3D Framebuffer
+        //Stage FBO 3D scene
         {
-            bool converted = shared_gl_context.convertFbo3D();
-            if (!converted)
+            const std::optional<GLuint> extenral_fbo_id = use_fbo ? std::optional<GLuint>() : std::optional<GLuint>(empty_id);
+            const bool staged = shared_gl_context.stageFbo3D(extenral_fbo_id);
+            if (!staged)
             {
-                fprintf(stderr, "[WARNING] Failed to convert Framebuffer for 3D scene!\n");
+                fprintf(stderr, "[WARNING] Failed to stage Framebuffer for 3D scene!\n");
             }
-
-            assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
-        }
-        else // scene got rendered into default Framebuffer, save it into shared one
-        {
-            shared_gl_context.saveToFbo3DFromExternal(empty_id);
 
             assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
         }
@@ -1708,10 +1731,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
             //bind the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
-            if (use_fbo)
+            if (post_process)
             {
                 Drawing::clear(clear_color_2d);
-                //TODO maybe useless in 2D block?
                 glClear(GL_DEPTH_BUFFER_BIT); //TODO make this nicer - probably move into Drawing
             }
 
@@ -1729,7 +1751,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             #endif
             
             //render the 3D scene as a background from it's framebuffer
-            if (use_fbo)
+            if (post_process)
             {
                 const Textures::Texture2D& fbo3d_conv_tex = shared_gl_context.getFbo3DTexture();
                 // Drawing::texturedRectangle2(tex_rect_shader, fbo3d_conv_tex, orb_texture, brick_texture, glm::vec2(0.f), win_fbo_size);
@@ -1766,6 +1788,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     last_left_mbutton = left_mbutton;
     last_right_mbutton = right_mbutton;
     last_esc_state = esc_state;
+    last_c_state = c_state;
     last_global_tick = global_tick;
     ++tick;
 

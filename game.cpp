@@ -142,7 +142,7 @@ glm::vec3 Game::Target::getPos() const
 
 void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
                         const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                        double current_frame_time, glm::vec3 pos_offset) const
+                        float gamma, double current_frame_time, glm::vec3 pos_offset) const
 {
     const float scale = getScale(current_frame_time);
     const glm::vec3 pos = getPos();
@@ -151,12 +151,12 @@ void Game::Target::draw(Game::TargetType type, const Drawing::Camera3D& camera,
     {
     case Game::TargetType::target:
         {
-            m_model.drawWithColorTint(camera, lights, pos + pos_offset, m_color_tint, glm::vec3(scale, scale, 1.f));
+            m_model.drawWithColorTint(camera, lights, gamma, pos + pos_offset, m_color_tint, glm::vec3(scale, scale, 1.f));
             return;
         }
     case Game::TargetType::ball:
         {
-            m_model.drawWithColorTint(camera, lights, pos + pos_offset, m_color_tint, glm::vec3(scale));
+            m_model.drawWithColorTint(camera, lights, gamma, pos + pos_offset, m_color_tint, glm::vec3(scale));
             return;
         }
     }

@@ -3,7 +3,7 @@
 
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
-SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa)
+SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa, bool enable_gamma_correction)
                     : unit_quad_pos_only(), white_pixel_tex(Color3{ 255, 255, 255 }),
                       fbo3d_conv_tex(init_width, init_height, GL_RGB),
                       fbo3d_rbo_color(empty_id),
@@ -14,7 +14,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
                         fbo3d_rbo_stencil(empty_id),
                       #endif
                       fbo3d_unconv(), fbo3d_conv(), fbo3d_samples(fbo3d_samples), fbo3d_unconv_size(init_width, init_height),
-                      use_fbo3d(use_fbo3d), use_msaa(use_msaa)
+                      use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction)
 {
     //checking the constructors
     assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
@@ -75,11 +75,11 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
     glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_color);
     if (fbo3d_multisampled)
     {
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, GL_RGBA4, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, fbo3d_rbo_color_internalformat, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
     }
     else
     {
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA4, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
+        glRenderbufferStorage(GL_RENDERBUFFER, fbo3d_rbo_color_internalformat, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
     }
 
     #ifdef USE_COMBINED_FBO_BUFFERS
@@ -221,11 +221,11 @@ void SharedGLContext::changeFbo3DSize(unsigned int new_width, unsigned int new_h
     glBindRenderbuffer(GL_RENDERBUFFER, fbo3d_rbo_color);
     if (fbo3d_multisampled)
     {
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, GL_RGBA4, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, fbo3d_samples, fbo3d_rbo_color_internalformat, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
     }
     else
     {
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA4, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
+        glRenderbufferStorage(GL_RENDERBUFFER, fbo3d_rbo_color_internalformat, fbo3d_unconv_size.x, fbo3d_unconv_size.y);
     }
     assert(!Utils::checkForGLErrorsAndPrintThem());
 
@@ -325,6 +325,19 @@ void SharedGLContext::saveToFbo3DFromExternal(GLuint external_fbo_id)
     glCopyTexImage2D(fbo3d_conv_tex.getBindType(), 0, GL_RGB, 0, 0, src_size.x, src_size.y, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
+}
+
+bool SharedGLContext::stageFbo3D(std::optional<GLuint> external_fbo_id_used)
+{
+    if (external_fbo_id_used.has_value()) // scene got rendered into external Framebuffer, save it into shared one
+    {
+        saveToFbo3DFromExternal(external_fbo_id_used.value());
+        return true; // can't fail
+    }
+    else
+    {
+        return convertFbo3D();
+    }
 }
 
 const Textures::Texture2D& SharedGLContext::getFbo3DTexture() const

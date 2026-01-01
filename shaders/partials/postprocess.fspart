@@ -96,8 +96,8 @@ vec4 _postproc_dither_gray_mix(sampler2D _inputTexture, vec2 tpos)
 
 #ifndef POSTPROCESS
     // #define POSTPROCESS(tex, tpos) (vec4(0.0, 1.0, 1.0, 1.0))
-    // #define POSTPROCESS(tex, tpos) (TEXTURE2D((tex), (tpos)))
-    #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
+    #define POSTPROCESS(tex, tpos) (TEXTURE2D((tex), (tpos)))
+    // #define POSTPROCESS(tex, tpos) (_postproc_dither((tex), (tpos)))
     // #define POSTPROCESS(tex, tpos) (_postproc_grayscale((tex), (tpos)))
     // #define POSTPROCESS(tex, tpos) (_postproc_dither_gray_mix((tex), (tpos)))
 #endif

@@ -10,7 +10,7 @@ struct Material
 {
     vec3 ambient;
     vec3 diffuse;
-    sampler2D diffuseMap; // basically the inputTexture
+    sampler2D diffuseMap;
     vec3 specular;
     sampler2D specularMap;
     float shininess;
@@ -41,11 +41,11 @@ IN_ATTR vec3 FragPos;            //position in world space
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec3 Normal;
 
-// uniform sampler2D inputTexture;
 uniform vec3 cameraPos;     //position in world space
 uniform Material material;
 uniform Light lights[LIGHTS_MAX_AMOUNT]; //TODO this might not work everywhere!
 uniform int lightsCount;
+uniform float gammaCoef;
 
 vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
 {
@@ -118,7 +118,7 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, vec3 lightDir, vec3 lightPos,
 
 void main()
 {
-    vec4 diffuse_sample = TEXTURE2D(material.diffuseMap, TexCoord);
+    vec4 diffuse_sample = TEXTURE2DGAMMA(material.diffuseMap, TexCoord);
     // discard the fragments with too small alpha values
     //TODO aplha blending
     if (diffuse_sample.a < ALPHA_MIN_THRESHOLD) discard;
@@ -156,5 +156,6 @@ void main()
     }
 
     //result
-    OUTPUT_COLOR(vec4(color, diffuse_sample.a));
+    vec4 result = vec4(color, diffuse_sample.a);
+    OUTPUT_COLOR_GAMMA_CORRECTED(result);
 }

@@ -509,11 +509,19 @@ namespace Shaders
     #ifdef USE_VER100_SHADERS
         #define SHADER_VER_LINE "#version 100\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR attribute\n#define OUT_ATTR varying\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n#define TEXTURE2D(s,c) (texture2D((s), (c)))\n#define TEXTURECUBE(s,c) (textureCube((s), (c)))\n#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR varying\n"\
+                                       "#define TEXTURE2D(s,c) (texture2D((s), (c)))\n#define TEXTURECUBE(s,c) (textureCube((s), (c)))\n"\
+                                       "#define GAMMA(c,g) ((g) == 0.0 ? (c) : vec4(pow((c).rgb, vec3(g)), (c).a))\n#define TEXTURE2DGAMMA(s,c) GAMMA(TEXTURE2D(s,c), (gammaCoef))\n#define TEXTURECUBEGAMMA(s,c) GAMMA(TEXTURECUBE(s,c), (gammaCoef))\n"\
+                                       "#define OUTPUT_COLOR(c) (gl_FragColor = (c))\n"\
+                                       "#define GAMMACORRECTION(c,g) ((g) == 0.0 ? (c) : vec4(pow((c).rgb, vec3(1.0/(g))), (c).a))\n#define OUTPUT_COLOR_GAMMA_CORRECTED(c) OUTPUT_COLOR(GAMMACORRECTION(c, (gammaCoef)))\n"
     #else
         #define SHADER_VER_LINE "#version 330 core\n"
         #define SHADER_ATTR_DEFINES_VS "#define IN_ATTR in\n#define OUT_ATTR out\n"
-        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\n#define TEXTURE2D(s,c) (texture((s), (c)))\n#define TEXTURECUBE(s,c) (texture((s), (c)))\nout vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"
+        #define SHADER_ATTR_DEFINES_FS "#define IN_ATTR in\n"\
+                                       "#define TEXTURE2D(s,c) (texture((s), (c)))\n#define TEXTURECUBE(s,c) (texture((s), (c)))\n"\
+                                       "#define GAMMA(c,g) ((g) == 0.0 ? (c) : vec4(pow((c).rgb, vec3(g)), (c).a))\n#define TEXTURE2DGAMMA(s,c) GAMMA(TEXTURE2D(s,c), (gammaCoef))\n#define TEXTURECUBEGAMMA(s,c) GAMMA(TEXTURECUBE(s,c), (gammaCoef))\n"\
+                                       "out vec4 FragColor;\n#define OUTPUT_COLOR(c) (FragColor = (c))\n"\
+                                       "#define GAMMACORRECTION(c,g) ((g) == 0.0 ? (c) : vec4(pow((c).rgb, vec3(1.0/(g))), (c).a))\n#define OUTPUT_COLOR_GAMMA_CORRECTED(c) OUTPUT_COLOR(GAMMACORRECTION(c, (gammaCoef)))\n"
     #endif
 
     #define SHADER_VER_INCLUDE_LINES_VS SHADER_VER_LINE SHADER_ATTR_DEFINES_VS
@@ -809,11 +817,11 @@ namespace Meshes
 
         //TODO add rotation as a parameter too
         void draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                  glm::vec3 pos, glm::vec3 scale = glm::vec3(1.f)) const;
+                  float gamma, glm::vec3 pos, glm::vec3 scale = glm::vec3(1.f)) const;
         
         void drawWithColorTint(const Drawing::Camera3D& camera,
                                const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                               glm::vec3 pos, const Color3F color_tint, glm::vec3 scale = glm::vec3(1.f)) const;
+                               float gamma, glm::vec3 pos, const Color3F color_tint, glm::vec3 scale = glm::vec3(1.f)) const;
     };
 
     int loadObj(const char *obj_file_path, unsigned int *out_vert_count, unsigned int *out_triangle_count,
@@ -1002,7 +1010,7 @@ namespace Game
 
         void draw(Game::TargetType type, const Drawing::Camera3D& camera,
                   const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                  double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
+                  float gamma, double current_frame_time, glm::vec3 pos_offset = glm::vec3(0.f)) const;
     };
 
     struct LevelPart
@@ -1163,6 +1171,7 @@ struct SharedGLContext
 
     //3D Framebuffer
 private:
+    static constexpr GLenum fbo3d_rbo_color_internalformat = GL_RGB565;
     Textures::Texture2D fbo3d_conv_tex;
     GLuint fbo3d_rbo_color;
     #ifdef USE_COMBINED_FBO_BUFFERS
@@ -1175,9 +1184,9 @@ private:
     unsigned int fbo3d_samples;
     glm::ivec2 fbo3d_unconv_size;
 public:
-    bool use_fbo3d, use_msaa;
+    bool use_fbo3d, use_msaa, enable_gamma_correction;
 
-    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa);
+    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa, bool enable_gamma_correction);
     ~SharedGLContext();
 
     bool isInitialized() const;
@@ -1188,6 +1197,8 @@ public:
 
     bool convertFbo3D() const; // resolves fbo3d_conv from unconverted internal fbo3d
     void saveToFbo3DFromExternal(GLuint external_fbo_id); // saves data into fbo3d_conv from external fbo
+    // this calls either `convertFbo3D` or `saveToFbo3DFromExternal` based on given parameters
+    bool stageFbo3D(std::optional<GLuint> external_fbo_id_used);
 
     const Textures::Texture2D& getFbo3DTexture() const;
     const Drawing::FrameBuffer& getFbo3D(bool converted) const;
@@ -1288,7 +1299,7 @@ struct GameMainLoop
 
     //Materials and MaterialProps
     Lighting::MaterialProps default_material_props;
-    Lighting::Material default_material, ball_material, target_material, rock_material;
+    Lighting::Material default_material, turret_material, ball_material, target_material, rock_material;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
@@ -1319,7 +1330,8 @@ struct GameMainLoop
     unsigned int fps_calculation_counter, fps_calculated;
     glm::vec2 last_mouse_posF;
     bool last_left_mbutton, last_right_mbutton;
-    int last_esc_state;
+    int last_esc_state, last_c_state;
+    float gamma_coef; //TODO add into global settings
 
     int init();
     ~GameMainLoop();
@@ -1408,7 +1420,8 @@ struct GameOptionsMainLoop // also in main-game.cpp
     unsigned int tick, last_global_tick;
     int last_esc_state;
 
-    void setParameters(Textures::Texture2D& background_tex, Shaders::Program& ui_shader, Shaders::Program& tex_rect_shader, UI::Context& ui);
+    void setParameters(Textures::Texture2D& background_tex, Shaders::Program& ui_shader,
+                       Shaders::Program& tex_rect_shader, UI::Context& ui);
 
     int init();
     ~GameOptionsMainLoop();

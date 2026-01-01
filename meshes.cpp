@@ -725,7 +725,7 @@ Meshes::Model::Model(const Shaders::Program& shader, const Meshes::Mesh& mesh, L
                   m_origin_offset(0.f), m_translate(0.f), m_scale(1.f) {}
 
 void Meshes::Model::draw(const Drawing::Camera3D& camera, const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                         glm::vec3 pos, glm::vec3 scale) const
+                         float gamma, glm::vec3 pos, glm::vec3 scale) const
 {
     m_shader.use();
 
@@ -754,13 +754,15 @@ void Meshes::Model::draw(const Drawing::Camera3D& camera, const std::vector<std:
         fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %zu, set amount: %d\n.",
                 lights.size(), lights_set);
     }
+    
+    m_shader.set("gammaCoef", gamma);
 
     m_mesh.draw();
 }
 
 void Meshes::Model::drawWithColorTint(const Drawing::Camera3D& camera,
                                       const std::vector<std::reference_wrapper<const Lighting::Light>>& lights,
-                                      glm::vec3 pos, const Color3F color_tint, glm::vec3 scale) const
+                                      float gamma, glm::vec3 pos, const Color3F color_tint, glm::vec3 scale) const
 {
     m_shader.use();
 
@@ -795,6 +797,8 @@ void Meshes::Model::drawWithColorTint(const Drawing::Camera3D& camera,
         fprintf(stderr, "[WARNING] Not all lights were attached to the shader! Wanted amount: %zu, set amount: %d\n.",
                 lights.size(), lights_set);
     }
+
+    m_shader.set("gammaCoef", gamma);
 
     m_mesh.draw();
 }
@@ -1007,10 +1011,10 @@ int Meshes::loadMtl(const char *mtl_file_path, std::vector<Lighting::MaterialPro
     }
 
     //DEBUG
-    /*printf("Materials: %zu\n", num_materials);
-    for (size_t i = 0; i < num_materials; ++i) printf("Material name: %s, illum: %d, textures - ambient: %s, diffuse: %s, specular: %s, specular_highlight: %s\n",
-                                                      materials[i].name, materials[i].illum, materials[i].ambient_texname, materials[i].diffuse_texname,
-                                                      materials[i].specular_texname, materials[i].specular_highlight_texname);*/
+    // printf("Materials for '%s', material count: %zu\n", mtl_file_path, num_materials);
+    // for (size_t i = 0; i < num_materials; ++i) printf("Material name: %s, illum: %d, textures - ambient: %s, diffuse: %s, specular: %s, specular_highlight: %s, bump: %s\n",
+    //                                                   materials[i].name, materials[i].illum, materials[i].ambient_texname, materials[i].diffuse_texname,
+    //                                                   materials[i].specular_texname, materials[i].specular_highlight_texname, materials[i].bump_texname);
 
     for (size_t i = 0; i < num_materials; ++i)
     {

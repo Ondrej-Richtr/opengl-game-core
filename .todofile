@@ -31,3 +31,5 @@ X|0. 0. 0|13. 7. 2025|fix crash when minimizing window when not in the menu
 X|0. 0. 0|20. 7. 2025|when in pause menu gray out the background to indicate that it is not active
  |0. 0. 0|27. 7. 2025|fix global/local frame time for each main loop body instance
  |0. 0. 0|21. 12. 2025|implement depth pre-pass
+ |0. 0. 0|27. 12. 2025|support for bump textures
+X|0. 0. 0|27. 12. 2025|support for gamma correction
