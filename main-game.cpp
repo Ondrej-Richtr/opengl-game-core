@@ -516,24 +516,28 @@ void GameMainLoop::initLighting()
     using PointLight = Lighting::PointLight;
     using SpotLight = Lighting::SpotLight;
     
-    light_src_size = 0.2;
-
     //sun
-    const LightProps sun_light_props(Color3F(0.9f, 0.8f, 0.7f), 0.4f);
-    new (&sun) DirLight(sun_light_props, glm::vec3(1.f, -1.f, -0.5f));
+    const Color3F sun_light_color = Color3F{ 0.88f, 0.78f, 0.44f }; // #e0c870
+    const LightProps sun_light_props{ sun_light_color, 0.15f };
+    // const glm::vec3 sun_light_dir{ -1.f, -1.f, -0.5f };
+    const glm::vec3 sun_light_dir{ -0.172f, -0.895f, -0.411f }; // 0.172213|0.895090|0.411287 - sun direction of sky_18_cubemap_2k skybox
+
+    new (&sun) DirLight(sun_light_props, sun_light_dir);
 
     //flashlight
-    const Color3F flashlight_color = Color3F(1.f, 1.f, 1.f);
-    const LightProps flashlight_light_props(flashlight_color, 0.f);
+    const Color3F flashlight_color = Color3F{ 1.f, 1.f, 1.f };
+    const LightProps flashlight_light_props{ flashlight_color, 0.f };
 
-    new (&flashlight) SpotLight(flashlight_light_props, glm::vec3(0.f), glm::vec3(0.f), // throwaway values for position and direction
+    new (&flashlight) SpotLight(flashlight_light_props, glm::vec3{ 0.f }, glm::vec3{ 0.f }, // throwaway values for position and direction
                                 40.f, 50.f);
-    flashlight.setAttenuation(1.f, 0.09f, 0.032f);
+    flashlight.setAttenuation(1.f, 0.09f, 0.07f);
     show_flashlight = false;
 
     //muzzle flash
-    new (&muzzle_flash) PointLight(LightProps{muzzle_flash_color, 0.f}, glm::vec3{0.f}); // throwaway values for lightprops and position
-    muzzle_flash.setAttenuation(1.f, 0.22f, 0.2f); //TODO maybe make attenuation even bigger?
+    const LightProps muzzle_flash_light_props{ muzzle_flash_color, 0.f };
+
+    new (&muzzle_flash) PointLight(muzzle_flash_light_props, glm::vec3{ 0.f }); // throwaway values for lightprops and position
+    muzzle_flash.setAttenuation(1.f, 0.28f, 0.3f);
 
     muzzle_flash_begin = 0.f;
 }
@@ -555,7 +559,7 @@ void GameMainLoop::initMaterials()
     using Material = Lighting::Material;
 
     //Default props
-    new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
+    new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 16.f);
 
     //Default material
     new (&default_material) Material(default_material_props, white_pixel, white_pixel);
@@ -584,7 +588,7 @@ void GameMainLoop::initMaterials()
     //        ball_material.m_specular.r, ball_material.m_specular.g, ball_material.m_specular.b, ball_material.m_shininess);
 
     // ball_material_props = default_material_props;
-    const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.2f}, 1.f};
+    const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.05f}, 1.f};
 
     //Ball material
     new (&ball_material) Material(ball_material_props, ball_texture, white_pixel);

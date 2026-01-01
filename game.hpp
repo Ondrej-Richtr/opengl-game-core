@@ -364,7 +364,7 @@ namespace Lighting
                     : m_ambient(ambient), m_diffuse(diffuse), m_specular(specular) {}
 
         LightProps(Color3F color, float ambient_intensity)
-                    : m_ambient(), m_diffuse(color), m_specular(1.f, 1.f, 1.f)
+                    : m_ambient(), m_diffuse(color), m_specular(0.5f, 0.5f, 0.5f)
         {
             assert(ambient_intensity >= 0.f && ambient_intensity <= 1.f);
             m_ambient = Color3F(ambient_intensity * color.r, ambient_intensity * color.g, ambient_intensity * color.b);
@@ -373,6 +373,7 @@ namespace Lighting
 
     // Lights - directional (dir vec), point (pos vec), spot (dir vec, pos vec, inner/outer cone cutoff angle)
     constexpr size_t lights_max_amount = 10; //TODO make this synchronized with light shader includes!
+    constexpr float light_src_size = 0.2f;
 
     class Light //abstract class representing singular light source (directional/point/spot light)
     {
@@ -1235,7 +1236,6 @@ struct TestMainLoop //TODO proper deinit of objects
     Drawing::FrameBuffer fbo3d;
 
     //Lighting
-    float light_src_size;
     Lighting::DirLight sun;
     Color3F pointl_color, pointl_spec_color;
     float pointl_ambient_intensity;
@@ -1286,7 +1286,6 @@ struct GameMainLoop
     Shaders::Program screen_line_shader, ui_shader, tex_rect_shader, light_src_shader, light_shader, skybox_shader;
 
     //Lighting
-    float light_src_size;
     Lighting::DirLight sun;
     Lighting::SpotLight flashlight;
     bool show_flashlight;

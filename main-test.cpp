@@ -231,7 +231,6 @@ int TestMainLoop::init()
         return 10;
     }
 
-    light_src_size = 0.2;
     using LightProps = Lighting::LightProps;
     using DirLight = Lighting::DirLight;
     using PointLight = Lighting::PointLight;
@@ -451,7 +450,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                 glm::mat4 model_mat(1.f);
                 model_mat = glm::translate(model_mat, pointl.m_pos);
-                model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
+                model_mat = glm::scale(model_mat, glm::vec3(Lighting::light_src_size));
 
                 light_src_shader.set("model", model_mat);
                 light_src_shader.set("view", view_mat);
@@ -469,7 +468,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                 glm::mat4 model_mat(1.f);
                 model_mat = glm::translate(model_mat, movingl.m_pos);
-                model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
+                model_mat = glm::scale(model_mat, glm::vec3(Lighting::light_src_size));
 
                 light_src_shader.set("model", model_mat);
                 light_src_shader.set("view", view_mat);
@@ -943,7 +942,6 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
         return 9;
     }
 
-    const float light_src_size = 0.2;
     using LightProps = Lighting::LightProps;
     using DirLight = Lighting::DirLight;
     using PointLight = Lighting::PointLight;
@@ -1237,7 +1235,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, pointl.m_pos);
-                    model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
+                    model_mat = glm::scale(model_mat, glm::vec3(Lighting::light_src_size));
 
                     light_src_shader.set("model", model_mat);
                     light_src_shader.set("view", view_mat);
@@ -1261,7 +1259,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                     glm::mat4 model_mat(1.f);
                     model_mat = glm::translate(model_mat, movingl.m_pos);
-                    model_mat = glm::scale(model_mat, glm::vec3(light_src_size));
+                    model_mat = glm::scale(model_mat, glm::vec3(Lighting::light_src_size));
 
                     light_src_shader.set("model", model_mat);
                     light_src_shader.set("view", view_mat);
