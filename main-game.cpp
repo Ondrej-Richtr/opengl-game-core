@@ -1091,6 +1091,18 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
+    // Gamma coef. setting
+    {
+        float new_gamma_coef = gamma_coef;
+        if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) new_gamma_coef -= 0.01f;
+        if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) new_gamma_coef += 0.01f;
+        if (new_gamma_coef != gamma_coef)
+        {
+            // printf("Gamma coeficient changed to: %f\n", new_gamma_coef);
+            gamma_coef = new_gamma_coef;
+        }
+    }
+
     if (c_clicked)
     {
         shared_gl_context.enable_gamma_correction = !shared_gl_context.enable_gamma_correction;

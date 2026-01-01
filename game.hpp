@@ -1245,6 +1245,7 @@ struct TestMainLoop //TODO proper deinit of objects
     Lighting::PointLight movingl;
     Lighting::SpotLight flashlight;
     bool show_pointl, show_flashlight, movingl_pos_move;
+    float gamma_coef; //TODO add into global settings
 
     //Materials
     Lighting::MaterialProps default_material, materials[16];
