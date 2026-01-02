@@ -308,7 +308,7 @@ bool GameMainLoop::initTextures()
     }
 
     //Wood
-    const char *wood_tex_path = "assets/wood.png";
+    const char *wood_tex_path = "assets/wood_512.png";
 
     new (&wood_texture) Texture(wood_tex_path);
     if (wood_texture.m_id == empty_id)
