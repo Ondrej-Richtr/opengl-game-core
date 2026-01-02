@@ -152,6 +152,23 @@ bool GameMainLoop::initVBOsAndMeshes()
         return false;
     }
 
+    //Floor mesh
+    floor_size = glm::vec2{ 15.f, 10.f };
+
+    new (&floor_mesh) Meshes::Mesh();
+    floor_mesh = std::move(Meshes::generateQuadMesh(floor_size, wood_texture_world_size, Meshes::TexcoordStyle::repeat));
+    if (!floor_mesh.isUploaded())
+    {
+        fprintf(stderr, "Failed to create Floor mesh!\n");
+        cube_vbo.~VBO();
+        line_vbo.~VBO();
+        turret_mesh.~Mesh();
+        ball_mesh.~Mesh();
+        rock_mesh.~Mesh();
+        floor_mesh.~Mesh();
+        return false;
+    }
+
     return true;
 }
 
@@ -162,6 +179,7 @@ void GameMainLoop::deinitVBOsAndMeshes()
     turret_mesh.~Mesh();
     ball_mesh.~Mesh();
     rock_mesh.~Mesh();
+    floor_mesh.~Mesh();
 }
 
 bool GameMainLoop::initTextures()
@@ -289,6 +307,25 @@ bool GameMainLoop::initTextures()
         return false;
     }
 
+    //Wood
+    const char *wood_tex_path = "assets/wood.png";
+
+    new (&wood_texture) Texture(wood_tex_path);
+    if (wood_texture.m_id == empty_id)
+    {
+        fprintf(stderr, "Failed to create wood texture!\n");
+        brick_texture.~Texture2D();
+        brick_alt_texture.~Texture2D();
+        orb_texture.~Texture2D();
+        target_texture.~Texture2D();
+        turret_texture.~Texture2D();
+        ball_texture.~Texture2D();
+        water_specular_map.~Texture2D();
+        rock_texture.~Texture2D();
+        wood_texture.~Texture2D();
+        return false;
+    }
+
     //Skybox cubemap
     // std::array<const char*, 6> skybox_water_face_paths { "assets/skybox/with-water/right.jpg",
     //                                                      "assets/skybox/with-water/left.jpg",
@@ -316,6 +353,7 @@ bool GameMainLoop::initTextures()
         ball_texture.~Texture2D();
         water_specular_map.~Texture2D();
         rock_texture.~Texture2D();
+        wood_texture.~Texture2D();
         skybox_cubemap.~Cubemap();
         return false;
     }
@@ -333,6 +371,7 @@ void GameMainLoop::deinitTextures()
     ball_texture.~Texture2D();
     water_specular_map.~Texture2D();
     rock_texture.~Texture2D();
+    wood_texture.~Texture2D();
     skybox_cubemap.~Cubemap();
 }
 
@@ -619,6 +658,11 @@ void GameMainLoop::initMaterials()
     //        rock_material_props.m_specular.r, rock_material_props.m_specular.g, rock_material_props.m_specular.b, rock_material_props.m_shininess);
     
     new (&rock_material) Material(rock_material_props, rock_texture, white_pixel);
+
+    //Floor material
+    const MaterialProps floor_material_props{Color3F{1.f}, Color3F{1.f}, Color3F{0.15f}, 8.f};
+
+    new (&floor_material) Material(floor_material_props, wood_texture, white_pixel);
 }
 
 void GameMainLoop::deinitMaterials()
@@ -630,6 +674,7 @@ void GameMainLoop::deinitMaterials()
     ball_material.~Material();
     target_material.~Material();
     rock_material.~Material();
+    floor_material.~Material();
 }
 
 bool GameMainLoop::initUI()
@@ -1644,6 +1689,32 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 glm::vec3 pos = glm::vec3(-5.5f, 0.35f, 0.f);
                 rock_model.draw(camera, lights, gamma, pos);
             }
+
+            //floor
+            light_shader.use();
+            {
+                glm::vec3 pos{ 0.f };
+
+                //vs
+                glm::mat4 model_mat(1.f);
+                model_mat = glm::translate(model_mat, pos);
+                model_mat = glm::rotate(model_mat, glm::radians(-90.f), glm::vec3{ 1.f, 0.f, 0.f });
+
+                glm::mat3 normal_mat = Utils::modelMatrixToNormalMatrix(model_mat);
+
+                light_shader.set("model", model_mat);
+                light_shader.set("normalMat", normal_mat);
+                light_shader.set("view", view_mat);
+                light_shader.set("projection", proj_mat);
+
+                //fs
+                light_shader.set("cameraPos", camera.m_pos);
+                light_shader.setMaterial(floor_material);
+                light_shader.setLights(UNIFORM_LIGHT_NAME, UNIFORM_LIGHT_COUNT_NAME, lights); // return value ignored here
+                light_shader.set("gammaCoef", gamma);
+            }
+
+            floor_mesh.draw();
 
             //wall
             light_shader.use();

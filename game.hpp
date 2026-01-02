@@ -1270,14 +1270,16 @@ struct GameMainLoop
 
     //VBOs and Meshes
     Meshes::VBO cube_vbo, line_vbo;
-    Meshes::Mesh turret_mesh, ball_mesh, rock_mesh;
+    Meshes::Mesh turret_mesh, ball_mesh, rock_mesh, floor_mesh;
+    glm::vec2 floor_size;
 
     //Textures and Cubemaps
     Textures::Texture2D brick_texture, brick_alt_texture, orb_texture, target_texture,
-                        turret_texture, ball_texture, water_specular_map, rock_texture;
+                        turret_texture, ball_texture, water_specular_map, rock_texture, wood_texture;
     glm::vec2 brick_texture_world_size, brick_alt_texture_world_size, orb_texture_world_size;
     static constexpr glm::vec2 target_texture_world_size = glm::vec2(1.f, 1.f); // 1:1 aspect ratio should be kept
     static constexpr float target_texture_dish_radius = 0.915f / 2.f; // radius of the target dish compared to the size of the full image (1.0x1.0)
+    static constexpr glm::vec2 wood_texture_world_size = glm::vec2(1.75f); // 1:1 aspect ratio should be kept
     Textures::Cubemap skybox_cubemap;
 
     //RenderBuffers
@@ -1299,7 +1301,8 @@ struct GameMainLoop
 
     //Materials and MaterialProps
     Lighting::MaterialProps default_material_props;
-    Lighting::Material default_material, turret_material, ball_material, target_material, rock_material;
+    Lighting::Material default_material, turret_material, ball_material, target_material,
+                       rock_material, floor_material;
 
     //UI
     unsigned int textbuffer[UNICODE_TEXTBUFFER_LEN];
