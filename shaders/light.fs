@@ -48,6 +48,8 @@ uniform float gammaCoef;
 
 const bool use_blinn = true; // use blinn variant of Phong shading model
 const float diff_cutoff_for_spec = 0.05;
+//TODO make a uniform to enable/disable this setting
+const bool use_reinhard = true; // use reinhard tone mapping
 
 vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
 {
@@ -154,6 +156,12 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, vec3 lightDir, vec3 lightPos,
     return vec3(amb, diff, spec) * attenuation;
 }
 
+vec3 tone_mapping(vec3 c)
+{
+    // optional reinhard tone mapping
+    return use_reinhard ? c / (c + vec3(1.0)) : c;
+}
+
 void main()
 {
     vec4 diffuse_sample = TEXTURE2DGAMMA(material.diffuseMap, TexCoord);
@@ -194,6 +202,7 @@ void main()
     }
 
     //result
-    vec4 result = vec4(color, diffuse_sample.a);
+    vec3 mapped = tone_mapping(color);
+    vec4 result = vec4(mapped, diffuse_sample.a);
     OUTPUT_COLOR_GAMMA_CORRECTED(result);
 }
