@@ -557,7 +557,10 @@ void GameMainLoop::initLighting()
     
     //sun
     const Color3F sun_light_color = Color3F{ 0.88f, 0.78f, 0.44f }; // #e0c870
-    const LightProps sun_light_props{ sun_light_color, 0.15f };
+    const float sun_ambient_factor = 0.15f, sun_diffuse_factor = 1.5f, sun_specular_factor = 1.f;
+    LightProps sun_light_props{ sun_light_color.scalarMult(sun_ambient_factor),
+                                sun_light_color.scalarMult(sun_diffuse_factor),
+                                sun_light_color.scalarMult(sun_specular_factor) };
     // const glm::vec3 sun_light_dir{ -1.f, -1.f, -0.5f };
     const glm::vec3 sun_light_dir{ -0.172f, -0.895f, -0.411f }; // 0.172213|0.895090|0.411287 - sun direction of sky_18_cubemap_2k skybox
 
