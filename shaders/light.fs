@@ -46,6 +46,8 @@ uniform Light lights[LIGHTS_MAX_AMOUNT]; //TODO this might not work everywhere!
 uniform int lightsCount;
 uniform float gammaCoef;
 
+const float Pi = 3.14159265;
+
 const bool use_blinn = true; // use blinn variant of Phong shading model
 const float diff_cutoff_for_spec = 0.05;
 //TODO make a uniform to enable/disable this setting
@@ -68,13 +70,17 @@ vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
         if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
         {
             vec3 halfwayDir = normalize(lightDir + cameraDir);
-            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+            // energy conservation equations from:
+            // https://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
+            float energy_conserv_factor = (material.shininess + 8.0) / (8.0 * Pi);
+            spec = energy_conserv_factor * pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
         }
     }
     else
     {
         vec3 reflectDir = reflect(-lightDir, norm);
-        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+        float energy_conserv_factor = (material.shininess + 2.0) / (2.0 * Pi);
+        spec = energy_conserv_factor * pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
     }
 
     return vec3(amb, diff, spec);
@@ -96,13 +102,15 @@ vec3 calc_point_light(vec3 norm, vec3 cameraDir, vec3 lightPos, vec3 atten_coefs
         if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
         {
             vec3 halfwayDir = normalize(dirToLight + cameraDir);
-            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+            float energy_conserv_factor = (material.shininess + 8.0) / (8.0 * Pi);
+            spec = energy_conserv_factor * pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
         }
     }
     else
     {
         vec3 reflectDir = reflect(-dirToLight, norm);
-        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+        float energy_conserv_factor = (material.shininess + 2.0) / (2.0 * Pi);
+        spec = energy_conserv_factor * pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
     }
 
     //attenuation
@@ -137,13 +145,15 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, vec3 lightDir, vec3 lightPos,
         if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
         {
             vec3 halfwayDir = normalize(dirToLight + cameraDir);
-            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess) * intensity;  // intensity applied
+            float energy_conserv_factor = (material.shininess + 8.0) / (8.0 * Pi);
+            spec = energy_conserv_factor * pow(max(dot(norm, halfwayDir), 0.0), material.shininess) * intensity;  // intensity applied
         }
     }
     else
     {
         vec3 reflectDir = reflect(-dirToLight, norm);
-        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess) * intensity; // intensity applied
+        float energy_conserv_factor = (material.shininess + 2.0) / (2.0 * Pi);
+        spec = energy_conserv_factor * pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess) * intensity; // intensity applied
     }
 
     //attenuation
