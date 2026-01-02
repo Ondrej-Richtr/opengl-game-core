@@ -36,8 +36,7 @@ struct Light
     float cosOuterCutoff;   // only for spot lights
 };
 
-//in vec4 gl_FragCoord;
-IN_ATTR vec3 FragPos;            //position in world space
+IN_ATTR vec3 FragPos;       //position in world space
 IN_ATTR vec2 TexCoord;
 IN_ATTR vec3 Normal;
 
@@ -46,6 +45,9 @@ uniform Material material;
 uniform Light lights[LIGHTS_MAX_AMOUNT]; //TODO this might not work everywhere!
 uniform int lightsCount;
 uniform float gammaCoef;
+
+const bool use_blinn = true; // use blinn variant of Phong shading model
+const float diff_cutoff_for_spec = 0.05;
 
 vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
 {
@@ -58,8 +60,20 @@ vec3 calc_dir_light(vec3 norm, vec3 cameraDir, vec3 dir)
     float diff = max(dot(norm, lightDir), 0.0);
 
     //specular
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+    float spec = 0.0;
+    if (use_blinn)
+    {
+        if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
+        {
+            vec3 halfwayDir = normalize(lightDir + cameraDir);
+            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+        }
+    }
+    else
+    {
+        vec3 reflectDir = reflect(-lightDir, norm);
+        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+    }
 
     return vec3(amb, diff, spec);
 }
@@ -74,8 +88,20 @@ vec3 calc_point_light(vec3 norm, vec3 cameraDir, vec3 lightPos, vec3 atten_coefs
     float diff = max(dot(norm, dirToLight), 0.0);
 
     //specular
-    vec3 reflectDir = reflect(-dirToLight, norm);
-    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+    float spec = 0.0;
+    if (use_blinn)
+    {
+        if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
+        {
+            vec3 halfwayDir = normalize(dirToLight + cameraDir);
+            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+        }
+    }
+    else
+    {
+        vec3 reflectDir = reflect(-dirToLight, norm);
+        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
+    }
 
     //attenuation
     float distance = length(lightPos - FragPos);
@@ -103,8 +129,20 @@ vec3 calc_spot_light(vec3 norm, vec3 cameraDir, vec3 lightDir, vec3 lightPos,
     float diff = max(dot(norm, dirToLight), 0.0) * intensity; // intensity applied
 
     //specular
-    vec3 reflectDir = reflect(-dirToLight, norm);
-    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess) * intensity; // intensity applied
+    float spec = 0.0;
+    if (use_blinn)
+    {
+        if (diff > diff_cutoff_for_spec) //TODO probably remove this after shadows gets implemented (causes ball to look weird)
+        {
+            vec3 halfwayDir = normalize(dirToLight + cameraDir);
+            spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess) * intensity;  // intensity applied
+        }
+    }
+    else
+    {
+        vec3 reflectDir = reflect(-dirToLight, norm);
+        spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess) * intensity; // intensity applied
+    }
 
     //attenuation
     float distance = length(lightPos - FragPos);

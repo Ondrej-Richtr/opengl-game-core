@@ -559,7 +559,7 @@ void GameMainLoop::initMaterials()
     using Material = Lighting::Material;
 
     //Default props
-    new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 16.f);
+    new (&default_material_props) MaterialProps(Color3F(1.0f, 1.0f, 1.0f), 32.f);
 
     //Default material
     new (&default_material) Material(default_material_props, white_pixel, white_pixel);
@@ -588,7 +588,7 @@ void GameMainLoop::initMaterials()
     //        ball_material.m_specular.r, ball_material.m_specular.g, ball_material.m_specular.b, ball_material.m_shininess);
 
     // ball_material_props = default_material_props;
-    const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.05f}, 1.f};
+    const MaterialProps ball_material_props = MaterialProps{Color3F{1.f}, Color3F{1.f}, Color3F{0.1f, 0.f, 0.f}, 1.f};
 
     //Ball material
     new (&ball_material) Material(ball_material_props, ball_texture, white_pixel);
