@@ -1371,7 +1371,8 @@ private:
     bool updateMuzzleFlashLightProps(double current_frame_time);
 };
 
-struct GamePauseMainLoop // also in main-game.cpp
+//main-menu.cpp
+struct GamePauseMainLoop
 {
     //Textures
     Textures::Texture2D background_tex;
@@ -1404,7 +1405,7 @@ private:
     void deinitUI();
 };
 
-struct GameOptionsMainLoop // also in main-game.cpp
+struct GameOptionsMainLoop // also in main-menu.cpp
 {
     //Parameters
     Textures::Texture2D *ref_background_tex;

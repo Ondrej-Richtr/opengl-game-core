@@ -7,7 +7,7 @@ const String = [:0]const u8;
 pub const project_name = "shooting_practice";
 pub const version_string = "v0.2";
 
-pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "loop_data.cpp", "main-game.cpp",
+pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "loop_data.cpp", "main-game.cpp", "main-menu.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "mouse_manager.cpp", "movement.cpp", "shaders.cpp",
                                  "shared_gl_context.cpp", "textures.cpp", "ui.cpp", "utils.cpp", "window_manager.cpp" };
 pub const c_files = [_]String{ "cgltf.c", "glad.c", "nuklear.c", "stb_image.c", "tinyobj_loader_c.c" };
