@@ -265,8 +265,6 @@ int TestMainLoop::init()
     movingl.setAttenuation(1.f, 0.22f, 0.2f);
     movingl_pos_move = true;
 
-    gamma_coef = 2.2f;
-
     //flashlight
     const Color3F flashlight_color = Color3F(1.f, 1.f, 1.f);
     const LightProps flashlight_light_props(flashlight_color, 0.f);
@@ -347,13 +345,13 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) show_flashlight = true;
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) show_flashlight = false;
 
-    float new_gamma_coef = gamma_coef;
+    float new_gamma_coef = shared_gl_context.gamma_coef;
     if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) new_gamma_coef -= 0.01f;
     if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) new_gamma_coef += 0.01f;
-    if (new_gamma_coef != gamma_coef)
+    if (new_gamma_coef != shared_gl_context.gamma_coef)
     {
-        printf("Gamma coeficient changed to: %f\n", new_gamma_coef);
-        gamma_coef = new_gamma_coef;
+        // printf("Gamma coeficient changed to: %f\n", new_gamma_coef);
+        shared_gl_context.gamma_coef = new_gamma_coef;
     }
 
     /*if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
@@ -430,6 +428,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
     // ---Drawing---
     {
         bool use_msaa = shared_gl_context.use_msaa;
+        float gamma = shared_gl_context.enable_gamma_correction ? shared_gl_context.gamma_coef : 0.f;
 
         //3D block
         {
@@ -505,7 +504,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.setLight(UNIFORM_LIGHT_NAME, movingl, 2);
                 if (show_flashlight) light_shader.setLight(UNIFORM_LIGHT_NAME, flashlight, 3);
                 light_shader.set(UNIFORM_LIGHT_COUNT_NAME, show_flashlight ? 4 : 3);
-                light_shader.set("gammaCoef", gamma_coef);
+                light_shader.set("gammaCoef", gamma);
             }
 
             glm::vec3 mat_cubes_pos(-8.f * 0.8f, -0.4f, 2.f);
@@ -528,7 +527,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
 
                 //fs
                 light_shader.setMaterialProps(materials[i]);
-                light_shader.set("gammaCoef", gamma_coef);
+                light_shader.set("gammaCoef", gamma);
 
                 cube_vbo.bind();
                 // glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
@@ -569,7 +568,7 @@ LoopRetVal TestMainLoop::loop(unsigned int global_tick, double frame_time, float
                 light_shader.setLight(UNIFORM_LIGHT_NAME, movingl, 2);
                 if (show_flashlight) light_shader.setLight(UNIFORM_LIGHT_NAME, flashlight, 3);
                 light_shader.set(UNIFORM_LIGHT_COUNT_NAME, show_flashlight ? 4 : 3);
-                light_shader.set("gammaCoef", gamma_coef);
+                light_shader.set("gammaCoef", gamma);
             }
 
             cube_vbo.bind();

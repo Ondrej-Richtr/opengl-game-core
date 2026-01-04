@@ -1186,6 +1186,8 @@ private:
     glm::ivec2 fbo3d_unconv_size;
 public:
     bool use_fbo3d, use_msaa, enable_gamma_correction;
+    static constexpr float default_gamma_coef = 2.2f;
+    float gamma_coef;
 
     SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa, bool enable_gamma_correction);
     ~SharedGLContext();
@@ -1245,7 +1247,6 @@ struct TestMainLoop //TODO proper deinit of objects
     Lighting::PointLight movingl;
     Lighting::SpotLight flashlight;
     bool show_pointl, show_flashlight, movingl_pos_move;
-    float gamma_coef; //TODO add into global settings
 
     //Materials
     Lighting::MaterialProps default_material, materials[16];
@@ -1334,7 +1335,6 @@ struct GameMainLoop
     glm::vec2 last_mouse_posF;
     bool last_left_mbutton, last_right_mbutton;
     int last_esc_state, last_c_state;
-    float gamma_coef; //TODO add into global settings
 
     int init();
     ~GameMainLoop();

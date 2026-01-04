@@ -476,6 +476,16 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
         ui.m_ctx.style.window.border = 3;
         ui.m_ctx.style.window.padding = nk_vec2(8, 4);
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
+
+        ui.m_ctx.style.option.text_normal = nk_rgb(0, 0, 0);
+        ui.m_ctx.style.option.text_active = nk_rgb(0, 0, 0);
+        ui.m_ctx.style.option.text_hover = nk_rgb(25, 25, 25);
+
+        ui.m_ctx.style.checkbox.text_normal = nk_rgb(0, 0, 0);
+        ui.m_ctx.style.checkbox.text_active = nk_rgb(0, 0, 0);
+        ui.m_ctx.style.checkbox.text_hover = nk_rgb(25, 25, 25);
+
+        ui.m_ctx.style.option.disabled_factor = 1.f;
     }
     //GUI definition+logic
     {
@@ -483,17 +493,105 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
 
-        const glm::vec2 menu_size(300, 250);
+        const glm::vec2 menu_size(300, 450);
         
         //Menu
         if (nk_begin(&ui.m_ctx, "Options", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
-                                                menu_size.x, menu_size.y),
+                                                   menu_size.x, menu_size.y),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
-            nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
-            nk_label(&ui.m_ctx, "Options menu not implemented yet!", NK_TEXT_CENTERED);
+            nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
+            nk_label_wrap(&ui.m_ctx, "Note that the effect of these changes is visible ingame only");
 
-            ui.verticalGap(20.f);
+            ui.verticalGap(5.f);
+
+            //FBO usage
+            nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
+            nk_label(&ui.m_ctx, "3D", NK_TEXT_LEFT);
+
+            nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
+            if (nk_option_label(&ui.m_ctx, "Implicit framebuffer", !shared_gl_context.use_fbo3d))
+            {
+                shared_gl_context.use_fbo3d = false;
+            }
+            if (nk_option_label(&ui.m_ctx, "Custom framebuffer", shared_gl_context.use_fbo3d))
+            {
+                shared_gl_context.use_fbo3d = true;
+            }
+
+            ui.verticalGap(12.f);
+
+            //Anti-aliasing
+            nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
+            nk_label(&ui.m_ctx, "Anti-aliasing", NK_TEXT_LEFT);
+
+            bool antialiasing_enabled = false;
+            #ifdef BUILD_OPENGL_330_CORE
+                antialiasing_enabled = true;
+            #endif
+
+            if (antialiasing_enabled)
+            {
+                nk_layout_row_dynamic(&ui.m_ctx, 25.f, 1);
+
+                if (nk_option_label(&ui.m_ctx, "None", !shared_gl_context.use_msaa))
+                {
+                    shared_gl_context.use_msaa = false;
+                }
+                if (nk_option_label(&ui.m_ctx, "MSAA", shared_gl_context.use_msaa))
+                {
+                    shared_gl_context.use_msaa = true;
+                }
+
+                ui.verticalGap(12.f);
+            }
+            else
+            {
+                nk_layout_row_dynamic(&ui.m_ctx, 70.f, 1);
+                nk_label_colored_wrap(&ui.m_ctx, "This option is available only for desktop!"
+                                                 " However the 'Implicit framebuffer' usually uses MSAA 4x by default.",
+                                      nk_rgb(200, 50, 50));
+
+                ui.verticalGap(3.f);
+            }
+
+            //Gamma
+            nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
+
+            nk_bool gamma_enabled = shared_gl_context.enable_gamma_correction ? nk_true : nk_false;
+            if (nk_checkbox_label_align(&ui.m_ctx, "Gamma correction", &gamma_enabled, NK_WIDGET_RIGHT, NK_TEXT_LEFT))
+            {
+                shared_gl_context.enable_gamma_correction = !shared_gl_context.enable_gamma_correction;
+            }
+
+            if (shared_gl_context.enable_gamma_correction)
+            {
+                const float gamma_label_max_size = 30.f;
+
+                nk_layout_row_begin(&ui.m_ctx, NK_STATIC, 25.f, 2);
+
+                nk_layout_row_push(&ui.m_ctx, gamma_label_max_size);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%.2f", shared_gl_context.gamma_coef);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
+
+                //TODO add small buttons to change gamma value by small steps (nk_button_image)
+
+                nk_layout_row_push(&ui.m_ctx, menu_size.x - gamma_label_max_size - 24.f);
+                const float min_gamma_coef = 0.05f, max_gamma_coef = 10.f, gamma_coef_step = 0.01f;
+                float new_gamma_coef = std::max(std::min(shared_gl_context.gamma_coef, max_gamma_coef), min_gamma_coef);
+                if (nk_slider_float(&ui.m_ctx, min_gamma_coef, &new_gamma_coef, max_gamma_coef, gamma_coef_step))
+                {
+                    // dont change the value unless the slider was interacted with
+                    if (new_gamma_coef != shared_gl_context.gamma_coef)
+                    {
+                        shared_gl_context.gamma_coef = new_gamma_coef;
+                    }
+                }
+
+                nk_layout_row_end(&ui.m_ctx);
+            }
+
+            ui.verticalGap(28.f);
 
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
             if(nk_button_label(&ui.m_ctx, "Back [ESC]"))

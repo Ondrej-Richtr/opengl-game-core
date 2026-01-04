@@ -87,9 +87,12 @@ static int init(void)
 
     //initializing shared gl context
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
-    //TODO consider not using fbo with OpenGLES 2.0, as it forces very limited depth resolution (maybe dont use extarnal FBO ever?)
-    bool use_fbo = true; //TODO add settings option for this (probably when postprocessing is off?)
-    bool use_msaa = true;
+    bool use_fbo = false;
+    bool use_msaa = false;
+    #ifdef BUILD_OPENGL_330_CORE
+        use_fbo = true;
+        use_msaa = true;
+    #endif
     bool enable_gamma_correction = true;
 
     // glfw sample hint == 4, fbo samples == 1, enabled MSAA, disabled FBO => anti-aliasing works on every setup

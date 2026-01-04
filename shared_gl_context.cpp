@@ -14,7 +14,8 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
                         fbo3d_rbo_stencil(empty_id),
                       #endif
                       fbo3d_unconv(), fbo3d_conv(), fbo3d_samples(fbo3d_samples), fbo3d_unconv_size(init_width, init_height),
-                      use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction)
+                      use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction),
+                      gamma_coef(default_gamma_coef)
 {
     //checking the constructors
     assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
