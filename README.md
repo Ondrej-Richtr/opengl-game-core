@@ -1,4 +1,5 @@
-Game core made using OpenGL. It is tightly bundled together with a game built on top if it, supposed to be first person target shooter.
+Forward OpenGL renderer made to work on desktops and on a web (possibly on mobile too).
+It is tightly bundled together with a game built on top if it, supposed to be first person target shooter.
 
 It uses GLFW3 and OpenGL 3.3 on desktops and OpenGLES 2.0/WebGL for the web build.
 
