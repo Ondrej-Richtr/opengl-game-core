@@ -3,7 +3,7 @@
 
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
-SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa, bool enable_gamma_correction)
+SharedGLContext::SharedGLContext(unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, const RenderSettings render_settings)
                     : unit_quad_pos_only(), white_pixel_tex(Color3{ 255, 255, 255 }),
                       fbo3d_conv_tex(init_width, init_height, GL_RGB),
                       fbo3d_rbo_color(empty_id),
@@ -14,8 +14,7 @@ SharedGLContext::SharedGLContext(bool use_fbo3d, unsigned int init_width, unsign
                         fbo3d_rbo_stencil(empty_id),
                       #endif
                       fbo3d_unconv(), fbo3d_conv(), fbo3d_samples(fbo3d_samples), fbo3d_unconv_size(init_width, init_height),
-                      use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction),
-                      gamma_coef(default_gamma_coef)
+                      render_settings(render_settings), render_settings_default(render_settings)
 {
     //checking the constructors
     assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG

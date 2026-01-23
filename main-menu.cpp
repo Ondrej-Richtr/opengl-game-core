@@ -251,7 +251,8 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             if(nk_button_label(&ui.m_ctx, "Resume [ESC]"))
             {
                 nk_end(&ui.m_ctx);
-                nk_clear(&ui.m_ctx);
+                ui.convert();
+                ui.clear();
                 return LoopRetVal::popTop;
             }
 
@@ -285,7 +286,8 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 
                 //return from this loop early
                 nk_end(&ui.m_ctx);
-                nk_clear(&ui.m_ctx);
+                ui.convert();
+                ui.clear();
                 return LoopRetVal::ok;
             }
 
@@ -295,7 +297,8 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             if(nk_button_label(&ui.m_ctx, "Quit [Q]"))
             {
                 nk_end(&ui.m_ctx);
-                nk_clear(&ui.m_ctx);
+                ui.convert();
+                ui.clear();
                 return LoopRetVal::exit;
             }
         }
@@ -326,7 +329,7 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
 
     // ---Drawing---
     {
-        bool use_msaa = shared_gl_context.use_msaa;
+        bool use_msaa = shared_gl_context.render_settings.use_msaa;
 
         //2D block
         {
@@ -424,6 +427,9 @@ int GameOptionsMainLoop::init()
     tick = 0;
     last_global_tick = 0;
     last_esc_state = GLFW_PRESS;
+    last_enter_state = GLFW_PRESS;
+    settings = SharedGLContext::instance.value().render_settings;
+    initial_settings = settings;
 
     return 0;
 }
@@ -452,11 +458,9 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
 
     // ---Keyboard input---
     const int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    const int enter_state = glfwGetKey(window, GLFW_KEY_ENTER);
     const bool esc_clicked = consecutive_tick && esc_state == GLFW_PRESS && last_esc_state == GLFW_RELEASE;
-    if (esc_clicked) // go back to the Pause game menu on ESC
-    {
-        return LoopRetVal::popTop;
-    }
+    const bool enter_clicked = consecutive_tick && enter_state == GLFW_PRESS && last_enter_state == GLFW_RELEASE;
 
     // ---UI---
     UI::Context& ui = *ref_ui;
@@ -477,13 +481,20 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
         ui.m_ctx.style.window.padding = nk_vec2(8, 4);
         ui.m_ctx.style.text.color = nk_rgb(0, 0, 0);
 
+        nk_color cursor_normal_color = nk_rgb(147, 242, 79);
+        nk_color cursor_hover_color = nk_rgb(120, 177, 79);
+
         ui.m_ctx.style.option.text_normal = nk_rgb(0, 0, 0);
         ui.m_ctx.style.option.text_active = nk_rgb(0, 0, 0);
         ui.m_ctx.style.option.text_hover = nk_rgb(25, 25, 25);
+        ui.m_ctx.style.option.cursor_normal = nk_style_item_color(cursor_normal_color);
+        ui.m_ctx.style.option.cursor_hover = nk_style_item_color(cursor_hover_color);
 
         ui.m_ctx.style.checkbox.text_normal = nk_rgb(0, 0, 0);
         ui.m_ctx.style.checkbox.text_active = nk_rgb(0, 0, 0);
         ui.m_ctx.style.checkbox.text_hover = nk_rgb(25, 25, 25);
+        ui.m_ctx.style.checkbox.cursor_normal = nk_style_item_color(cursor_normal_color);
+        ui.m_ctx.style.checkbox.cursor_hover = nk_style_item_color(cursor_hover_color);
 
         ui.m_ctx.style.option.disabled_factor = 1.f;
     }
@@ -493,7 +504,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
 
-        const glm::vec2 menu_size(300, 450);
+        const glm::vec2 menu_size(300, 530);
         
         //Menu
         if (nk_begin(&ui.m_ctx, "Options", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
@@ -503,20 +514,31 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             nk_layout_row_dynamic(&ui.m_ctx, 50, 1);
             nk_label_wrap(&ui.m_ctx, "Note that the effect of these changes is visible ingame only");
 
-            ui.verticalGap(5.f);
+            //V-Sync
+            nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
+
+            nk_bool v_sync_enabled = settings.use_v_sync ? nk_true : nk_false;
+            if (nk_checkbox_label_align(&ui.m_ctx, "V-Sync", &v_sync_enabled, NK_WIDGET_RIGHT, NK_TEXT_LEFT))
+            {
+                settings.use_v_sync = (v_sync_enabled == nk_true);
+            }
+
+            ui.verticalGap(14.f);
 
             //FBO usage
             nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
             nk_label(&ui.m_ctx, "3D", NK_TEXT_LEFT);
 
             nk_layout_row_dynamic(&ui.m_ctx, 25, 1);
-            if (nk_option_label(&ui.m_ctx, "Implicit framebuffer", !shared_gl_context.use_fbo3d))
+            if (nk_widget_is_hovered(&ui.m_ctx)) nk_tooltip(&ui.m_ctx, "   OS framebuffer has the most functionality, but might be slower.");
+            if (nk_option_label(&ui.m_ctx, "OS framebuffer", !settings.use_fbo3d))
             {
-                shared_gl_context.use_fbo3d = false;
+                settings.use_fbo3d = false;
             }
-            if (nk_option_label(&ui.m_ctx, "Custom framebuffer", shared_gl_context.use_fbo3d))
+            if (nk_widget_is_hovered(&ui.m_ctx)) nk_tooltip(&ui.m_ctx, "   Typically faster, but anti-aliasing and other features might be limited.");
+            if (nk_option_label(&ui.m_ctx, "Custom framebuffer", settings.use_fbo3d))
             {
-                shared_gl_context.use_fbo3d = true;
+                settings.use_fbo3d = true;
             }
 
             ui.verticalGap(12.f);
@@ -534,13 +556,13 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             {
                 nk_layout_row_dynamic(&ui.m_ctx, 25.f, 1);
 
-                if (nk_option_label(&ui.m_ctx, "None", !shared_gl_context.use_msaa))
+                if (nk_option_label(&ui.m_ctx, "None", !settings.use_msaa))
                 {
-                    shared_gl_context.use_msaa = false;
+                    settings.use_msaa = false;
                 }
-                if (nk_option_label(&ui.m_ctx, "MSAA", shared_gl_context.use_msaa))
+                if (nk_option_label(&ui.m_ctx, "MSAA", settings.use_msaa))
                 {
-                    shared_gl_context.use_msaa = true;
+                    settings.use_msaa = true;
                 }
 
                 ui.verticalGap(12.f);
@@ -558,46 +580,77 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             //Gamma
             nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
 
-            nk_bool gamma_enabled = shared_gl_context.enable_gamma_correction ? nk_true : nk_false;
+            nk_bool gamma_enabled = settings.enable_gamma_correction ? nk_true : nk_false;
             if (nk_checkbox_label_align(&ui.m_ctx, "Gamma correction", &gamma_enabled, NK_WIDGET_RIGHT, NK_TEXT_LEFT))
             {
-                shared_gl_context.enable_gamma_correction = !shared_gl_context.enable_gamma_correction;
+                settings.enable_gamma_correction = !settings.enable_gamma_correction;
             }
 
-            if (shared_gl_context.enable_gamma_correction)
+            const float gamma_correction_slider_height = 25.f;
+            if (settings.enable_gamma_correction)
             {
                 const float gamma_label_max_size = 30.f;
 
-                nk_layout_row_begin(&ui.m_ctx, NK_STATIC, 25.f, 2);
+                nk_layout_row_begin(&ui.m_ctx, NK_STATIC, gamma_correction_slider_height, 2);
 
                 nk_layout_row_push(&ui.m_ctx, gamma_label_max_size);
-                snprintf(ui_textbuff, ui_textbuff_capacity, "%.2f", shared_gl_context.gamma_coef);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%.2f", settings.gamma_coef);
                 nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
 
                 //TODO add small buttons to change gamma value by small steps (nk_button_image)
 
                 nk_layout_row_push(&ui.m_ctx, menu_size.x - gamma_label_max_size - 24.f);
                 const float min_gamma_coef = 0.05f, max_gamma_coef = 10.f, gamma_coef_step = 0.01f;
-                float new_gamma_coef = std::max(std::min(shared_gl_context.gamma_coef, max_gamma_coef), min_gamma_coef);
+                float new_gamma_coef = std::max(std::min(settings.gamma_coef, max_gamma_coef), min_gamma_coef);
                 if (nk_slider_float(&ui.m_ctx, min_gamma_coef, &new_gamma_coef, max_gamma_coef, gamma_coef_step))
                 {
                     // dont change the value unless the slider was interacted with
-                    if (new_gamma_coef != shared_gl_context.gamma_coef)
+                    if (new_gamma_coef != settings.gamma_coef)
                     {
-                        shared_gl_context.gamma_coef = new_gamma_coef;
+                        settings.gamma_coef = new_gamma_coef;
                     }
                 }
 
                 nk_layout_row_end(&ui.m_ctx);
             }
 
-            ui.verticalGap(28.f);
+            ui.verticalGap(25.f + (settings.enable_gamma_correction ? 0.f : gamma_correction_slider_height + 4.f));
 
+            // Buttons
             nk_layout_row_dynamic(&ui.m_ctx, 40, 1);
-            if(nk_button_label(&ui.m_ctx, "Back [ESC]"))
+            const bool changes_made = (memcmp(&settings, &initial_settings, sizeof(settings)) != 0);
+
+            if (nk_button_label(&ui.m_ctx, "Set to default"))
+            {
+                settings = shared_gl_context.render_settings_default;
+            }
+
+            ui.verticalGap(3.f);
+            nk_layout_row_dynamic(&ui.m_ctx, 40, 2);
+            if (!changes_made)
+            {
+                nk_widget_disable_begin(&ui.m_ctx);
+                if (nk_widget_is_hovered(&ui.m_ctx))
+                {
+                    nk_tooltip(&ui.m_ctx, "   No changes were made.");
+                }
+            }
+            if ((nk_button_label(&ui.m_ctx, "Accept [Enter]") || enter_clicked) && changes_made)
+            {
+                shared_gl_context.render_settings = settings;
+
+                nk_end(&ui.m_ctx);
+                ui.convert(); // this has to be here or otherwise we get a crash after returning when hovering with tooltip
+                ui.clear();
+                return LoopRetVal::popTop;
+            }
+            if (!changes_made) nk_widget_disable_end(&ui.m_ctx);
+            
+            if (nk_button_label(&ui.m_ctx, "Cancel [ESC]") || esc_clicked)
             {
                 nk_end(&ui.m_ctx);
-                nk_clear(&ui.m_ctx);
+                ui.convert(); // this has to be here or otherwise we get a crash after returning when hovering with tooltip
+                ui.clear();
                 return LoopRetVal::popTop;
             }
         }
@@ -628,7 +681,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
 
     // ---Drawing---
     {
-        bool use_msaa = shared_gl_context.use_msaa;
+        bool use_msaa = shared_gl_context.render_settings.use_msaa;
         
         //2D block
         {
@@ -675,6 +728,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
     ui.clear(); // UI clear is here as we want to call it each frame regardless of drawing stage
 
     last_esc_state = esc_state;
+    last_enter_state = enter_state;
     last_global_tick = global_tick;
     ++tick;
 

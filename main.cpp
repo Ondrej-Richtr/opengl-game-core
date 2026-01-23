@@ -56,7 +56,8 @@ static int init(void)
     WindowManager::init(window);
 
     //other GLFW settings
-    glfwSwapInterval(1); //TODO settings for v-sync
+    bool use_v_sync = true;
+    glfwSwapInterval(use_v_sync ? 1 : 0);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
@@ -101,9 +102,10 @@ static int init(void)
         fbo_samples = glfw_samples;
     #endif
 
+    const SharedGLContext::RenderSettings default_render_settings{ use_fbo, use_msaa, enable_gamma_correction, use_v_sync };
+
     assert(!SharedGLContext::instance.has_value());
-    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(use_fbo, window_fbo_size.x, window_fbo_size.y,
-                                                                         fbo_samples, use_msaa, enable_gamma_correction);
+    SharedGLContext& sharedGLContext = SharedGLContext::instance.emplace(window_fbo_size.x, window_fbo_size.y, fbo_samples, default_render_settings);
     if (!sharedGLContext.isInitialized())
     {
         fprintf(stderr, "Failed to initialize shared GL context!\n");

@@ -1044,6 +1044,7 @@ int GameMainLoop::init()
     last_right_mbutton = false;
     last_esc_state = GLFW_PRESS;
     last_c_state = GLFW_PRESS;
+    last_v_state = GLFW_PRESS;
 
     puts("GameMainLoop init end");
     return 0;
@@ -1104,8 +1105,10 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     // ---Keyboard input---
     int esc_state = glfwGetKey(window, GLFW_KEY_ESCAPE);
     int c_state = glfwGetKey(window, GLFW_KEY_C);
+    int v_state = glfwGetKey(window, GLFW_KEY_V);
     const bool esc_clicked = consecutive_tick && (esc_state == GLFW_PRESS) && (last_esc_state == GLFW_RELEASE);
     const bool c_clicked = consecutive_tick && (c_state == GLFW_PRESS) && (last_c_state == GLFW_RELEASE);
+    const bool v_clicked = consecutive_tick && (v_state == GLFW_PRESS) && (last_v_state == GLFW_RELEASE);
     const bool pause_pressed = consecutive_tick && (glfwGetKey(window, GLFW_KEY_PAUSE) == GLFW_PRESS); // not using last_pause_state currently
     
     #ifdef PLATFORM_WEB
@@ -1140,19 +1143,29 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     // Gamma coef. setting
     {
-        float new_gamma_coef = shared_gl_context.gamma_coef;
+        float new_gamma_coef = shared_gl_context.render_settings.gamma_coef;
         if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) new_gamma_coef -= 0.01f;
         if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) new_gamma_coef += 0.01f;
-        if (new_gamma_coef != shared_gl_context.gamma_coef)
+        if (new_gamma_coef != shared_gl_context.render_settings.gamma_coef)
         {
             // printf("Gamma coeficient changed to: %f\n", new_gamma_coef);
-            shared_gl_context.gamma_coef = new_gamma_coef;
+            shared_gl_context.render_settings.gamma_coef = new_gamma_coef;
         }
     }
 
     if (c_clicked)
     {
-        shared_gl_context.enable_gamma_correction = !shared_gl_context.enable_gamma_correction;
+        shared_gl_context.render_settings.enable_gamma_correction = !shared_gl_context.render_settings.enable_gamma_correction;
+    }
+
+    if (v_clicked)
+    {
+        const bool new_use_v_sync = !shared_gl_context.render_settings.use_v_sync;
+
+        const int interval = new_use_v_sync ? 1 : 0;
+        glfwSwapInterval(interval);
+
+        shared_gl_context.render_settings.use_v_sync = new_use_v_sync;
     }
 
     glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
@@ -1310,6 +1323,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
         if (nk_begin(&ui.m_ctx, "Target Practice", nk_rect(30, 30, 150, 240),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_NO_SCROLLBAR))
         {
+            const bool use_v_sync = shared_gl_context.render_settings.use_v_sync;
             unsigned int level = level_manager.m_level_idx,
                          level_targets_hit = level_manager.m_level_targets_hit,
                          level_amount = level_manager.getLevelAmount(),
@@ -1333,12 +1347,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
                 fps_calculation_counter = 0;
                 last_fps_calculation_time = frame_time;
             }
-            snprintf(ui_textbuff, ui_textbuff_capacity, "FPS: %d", fps_calculated);
+            const char* maybe_v_sync_str = use_v_sync ? " (V-Sync)" : "";
+            snprintf(ui_textbuff, ui_textbuff_capacity, "FPS%s: %3d", maybe_v_sync_str, fps_calculated);
             nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
-
-            //DEBUG
-            // const char *gamma_correction_str = shared_gl_context.enable_gamma_correction ? "Gamma - Enabled" : "Gamma - Disabled";
-            // nk_label(&ui.m_ctx, gamma_correction_str, NK_TEXT_LEFT);
 
             //level counter
             nk_layout_row_begin(&ui.m_ctx, NK_DYNAMIC, 20, 2);
@@ -1448,11 +1459,11 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     // ---Drawing---
     {
-        bool use_fbo = shared_gl_context.use_fbo3d;
-        bool use_msaa = shared_gl_context.use_msaa;
-        bool enable_gamma_correction = shared_gl_context.enable_gamma_correction;
+        bool use_fbo = shared_gl_context.render_settings.use_fbo3d;
+        bool use_msaa = shared_gl_context.render_settings.use_msaa;
+        bool enable_gamma_correction = shared_gl_context.render_settings.enable_gamma_correction;
         bool post_process = enable_gamma_correction || use_fbo;
-        float gamma = enable_gamma_correction ? shared_gl_context.gamma_coef : 0.f;
+        float gamma = enable_gamma_correction ? shared_gl_context.render_settings.gamma_coef : 0.f;
 
         //3D block
         {
@@ -1878,6 +1889,7 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
     last_right_mbutton = right_mbutton;
     last_esc_state = esc_state;
     last_c_state = c_state;
+    last_v_state = v_state;
     last_global_tick = global_tick;
     ++tick;
 

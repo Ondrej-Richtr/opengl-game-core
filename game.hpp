@@ -1185,11 +1185,19 @@ private:
     unsigned int fbo3d_samples;
     glm::ivec2 fbo3d_unconv_size;
 public:
-    bool use_fbo3d, use_msaa, enable_gamma_correction;
-    static constexpr float default_gamma_coef = 2.2f;
-    float gamma_coef;
+    struct RenderSettings
+    {
+        bool use_fbo3d, use_msaa, enable_gamma_correction, use_v_sync; //FIXME v-sync in pause menu
+        static constexpr float default_gamma_coef = 2.2f;
+        float gamma_coef;
 
-    SharedGLContext(bool use_fbo3d, unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, bool use_msaa, bool enable_gamma_correction);
+        RenderSettings(bool use_fbo3d, bool use_msaa, bool enable_gamma_correction, bool use_v_sync)
+            : use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction),
+              use_v_sync(use_v_sync), gamma_coef(default_gamma_coef) {}
+    };
+    RenderSettings render_settings, render_settings_default;
+
+    SharedGLContext(unsigned int init_width, unsigned int init_height, unsigned int fbo3d_samples, const RenderSettings render_settings);
     ~SharedGLContext();
 
     bool isInitialized() const;
@@ -1334,7 +1342,7 @@ struct GameMainLoop
     unsigned int fps_calculation_counter, fps_calculated;
     glm::vec2 last_mouse_posF;
     bool last_left_mbutton, last_right_mbutton;
-    int last_esc_state, last_c_state;
+    int last_esc_state, last_c_state, last_v_state;
 
     int init();
     ~GameMainLoop();
@@ -1422,7 +1430,8 @@ struct GameOptionsMainLoop // also in main-menu.cpp
     //Misc.
     Color clear_color;
     unsigned int tick, last_global_tick;
-    int last_esc_state;
+    int last_esc_state, last_enter_state;
+    SharedGLContext::RenderSettings settings, initial_settings;
 
     void setParameters(Textures::Texture2D& background_tex, Shaders::Program& ui_shader,
                        Shaders::Program& tex_rect_shader, UI::Context& ui);
