@@ -1187,13 +1187,15 @@ private:
 public:
     struct RenderSettings
     {
-        bool use_fbo3d, use_msaa, enable_gamma_correction, use_v_sync; //FIXME v-sync in pause menu
+        bool use_fbo3d, use_msaa, enable_gamma_correction, use_v_sync;
         static constexpr float default_gamma_coef = 2.2f;
         float gamma_coef;
+        static constexpr int default_v_sync_interval = 1;
+        int v_sync_interval;
 
         RenderSettings(bool use_fbo3d, bool use_msaa, bool enable_gamma_correction, bool use_v_sync)
             : use_fbo3d(use_fbo3d), use_msaa(use_msaa), enable_gamma_correction(enable_gamma_correction),
-              use_v_sync(use_v_sync), gamma_coef(default_gamma_coef) {}
+              use_v_sync(use_v_sync), gamma_coef(default_gamma_coef), v_sync_interval(default_v_sync_interval) {}
     };
     RenderSettings render_settings, render_settings_default;
 
@@ -1213,6 +1215,8 @@ public:
 
     const Textures::Texture2D& getFbo3DTexture() const;
     const Drawing::FrameBuffer& getFbo3D(bool converted) const;
+
+    void applyRenderSettings(const RenderSettings& new_settings);
 
     static std::optional<SharedGLContext> instance;
 };

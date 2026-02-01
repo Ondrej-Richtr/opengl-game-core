@@ -1,5 +1,9 @@
 #include "game.hpp"
 
+#ifdef PLATFORM_WEB
+    #include <emscripten/emscripten.h>
+#endif
+
 
 std::optional<SharedGLContext> SharedGLContext::instance{};
 
@@ -17,7 +21,6 @@ SharedGLContext::SharedGLContext(unsigned int init_width, unsigned int init_heig
                       render_settings(render_settings), render_settings_default(render_settings)
 {
     //checking the constructors
-    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
     assert(!Utils::checkForGLError());
 
     if (white_pixel_tex.m_id == empty_id)
@@ -169,7 +172,8 @@ SharedGLContext::SharedGLContext(unsigned int init_width, unsigned int init_heig
 
     glBindFramebuffer(GL_FRAMEBUFFER, empty_id);
 
-    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
+    //apply render settings
+    applyRenderSettings(render_settings);
 }
 
 SharedGLContext::~SharedGLContext()
@@ -348,4 +352,23 @@ const Textures::Texture2D& SharedGLContext::getFbo3DTexture() const
 const Drawing::FrameBuffer& SharedGLContext::getFbo3D(bool converted) const
 {
     return converted ? fbo3d_conv : fbo3d_unconv;
+}
+
+void SharedGLContext::applyRenderSettings(const SharedGLContext::RenderSettings& new_settings)
+{
+    render_settings = new_settings;
+
+    // apply V-Sync
+    {
+        const int interval = render_settings.use_v_sync ? render_settings.v_sync_interval : 0;
+        glfwSwapInterval(interval);
+
+        #if PLATFORM_WEB
+            int ret = emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
+            if (ret != 0)
+            {
+                fprintf(stderr, "[WARNING] Failed to set emscripten main loop timing! Error: %d\n", ret);
+            }
+        #endif /* PLATFORM_WEB */
+    }
 }

@@ -56,8 +56,6 @@ static int init(void)
     WindowManager::init(window);
 
     //other GLFW settings
-    bool use_v_sync = true;
-    glfwSwapInterval(use_v_sync ? 1 : 0);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //DEBUG
     // try to enable raw mouse motion, only takes effect when the cursor is disabled
@@ -88,9 +86,11 @@ static int init(void)
 
     //initializing shared gl context
     const glm::ivec2 window_fbo_size = WindowManager::getFBOSize();
+    bool use_v_sync = true;
     bool use_fbo = false;
     bool use_msaa = false;
     #ifdef BUILD_OPENGL_330_CORE
+        use_v_sync = false;
         use_fbo = true;
         use_msaa = true;
     #endif
@@ -250,7 +250,7 @@ extern "C"
             break;
         case LoopRetVal::exit:
             // exit
-            glfwSetWindowShouldClose(window, true); //TODO implement exiting on web
+            glfwSetWindowShouldClose(window, true); //TODO implement exiting on web (maybe use something like emscripten_push_main_loop_blocker or emscripten_cancel_main_loop()
             break;
         case LoopRetVal::popTop:
             main_loop_stack.pop();

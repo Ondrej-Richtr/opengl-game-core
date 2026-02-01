@@ -225,8 +225,6 @@ void Textures::Texture2D::changeTextureToPixel(Color3 color)
     // upload the singular pixel onto gpu
     unsigned char pixel[] = { color.r, color.g, color.b };
     glTexImage2D(bind_type, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)pixel);
-    
-    assert(!Utils::checkForGLErrorsAndPrintThem()); //DEBUG
 
     // unbind the texture just in case
     glBindTexture(bind_type, empty_id);

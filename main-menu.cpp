@@ -356,7 +356,9 @@ LoopRetVal GamePauseMainLoop::loop(unsigned int global_tick, double frame_time, 
             #ifdef BUILD_OPENGL_330_CORE
                 if (use_msaa) glEnable(GL_MULTISAMPLE);
                 else          glDisable(GL_MULTISAMPLE);
-            #endif
+            #else
+                (void)use_msaa;
+            #endif /* BUILD_OPENGL_330_CORE */
             
             //render the background texture with gray postprocessing (should be last fbo3d render)
             Drawing::texturedRectangle(gray_tex_rect_shader, background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);
@@ -504,7 +506,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
         char ui_textbuff[256]{};
         size_t ui_textbuff_capacity = sizeof(ui_textbuff) / sizeof(ui_textbuff[0]); // including term. char.
 
-        const glm::vec2 menu_size(300, 530);
+        const glm::vec2 menu_size(300, 548);
         
         //Menu
         if (nk_begin(&ui.m_ctx, "Options", nk_rect((win_size.x - menu_size.x) / 2.f, (win_size.y - menu_size.y) / 2.f,
@@ -523,7 +525,34 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
                 settings.use_v_sync = (v_sync_enabled == nk_true);
             }
 
-            ui.verticalGap(14.f);
+            const float v_sync_slider_height = 25.f;
+            if (settings.use_v_sync)
+            {
+                const float v_sync_label_max_size = 30.f;
+
+                nk_layout_row_begin(&ui.m_ctx, NK_STATIC, v_sync_slider_height, 2);
+
+                nk_layout_row_push(&ui.m_ctx, v_sync_label_max_size);
+                snprintf(ui_textbuff, ui_textbuff_capacity, "%2d", settings.v_sync_interval);
+                nk_label(&ui.m_ctx, ui_textbuff, NK_TEXT_LEFT);
+
+                nk_layout_row_push(&ui.m_ctx, menu_size.x - v_sync_label_max_size - 24.f);
+
+                const int min_v_sync_interval = 1, max_v_sync_interval = 8;
+                int new_v_sync_interval = std::max(std::min(settings.v_sync_interval, max_v_sync_interval), min_v_sync_interval);
+                if (nk_slider_int(&ui.m_ctx, min_v_sync_interval, &new_v_sync_interval, max_v_sync_interval, 1))
+                {
+                    // dont change the value unless the slider was interacted with
+                    if (new_v_sync_interval != settings.v_sync_interval)
+                    {
+                        settings.v_sync_interval = new_v_sync_interval;
+                    }
+                }
+
+                nk_layout_row_end(&ui.m_ctx);
+            }
+
+            ui.verticalGap(8.f + (settings.use_v_sync ? 0.f : v_sync_slider_height + 4.f));
 
             //FBO usage
             nk_layout_row_dynamic(&ui.m_ctx, 20, 1);
@@ -637,7 +666,7 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             }
             if ((nk_button_label(&ui.m_ctx, "Accept [Enter]") || enter_clicked) && changes_made)
             {
-                shared_gl_context.render_settings = settings;
+                shared_gl_context.applyRenderSettings(settings);
 
                 nk_end(&ui.m_ctx);
                 ui.convert(); // this has to be here or otherwise we get a crash after returning when hovering with tooltip
@@ -708,7 +737,9 @@ LoopRetVal GameOptionsMainLoop::loop(unsigned int global_tick, double frame_time
             #ifdef BUILD_OPENGL_330_CORE
                 if (use_msaa) glEnable(GL_MULTISAMPLE);
                 else          glDisable(GL_MULTISAMPLE);
-            #endif
+            #else
+                (void)use_msaa;
+            #endif /* BUILD_OPENGL_330_CORE */
             
             //render the background texture with gray postprocessing (should be last fbo3d render)
             Drawing::texturedRectangle(*ref_gray_tex_rect_shader, *ref_background_tex, win_fbo_size, glm::vec2(0.f), win_fbo_size);

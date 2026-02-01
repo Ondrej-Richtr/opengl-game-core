@@ -1160,12 +1160,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
 
     if (v_clicked)
     {
-        const bool new_use_v_sync = !shared_gl_context.render_settings.use_v_sync;
-
-        const int interval = new_use_v_sync ? 1 : 0;
-        glfwSwapInterval(interval);
-
-        shared_gl_context.render_settings.use_v_sync = new_use_v_sync;
+        SharedGLContext::RenderSettings new_settings = shared_gl_context.render_settings;
+        new_settings.use_v_sync = !new_settings.use_v_sync;
+        shared_gl_context.applyRenderSettings(new_settings);
     }
 
     glm::vec3 move_dir_rel = Movement::getSimplePlayerDir(window);
@@ -1504,7 +1501,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             #ifdef BUILD_OPENGL_330_CORE
                 if (use_msaa) glEnable(GL_MULTISAMPLE);
                 else          glDisable(GL_MULTISAMPLE);
-            #endif
+            #else
+                (void)use_msaa;
+            #endif /* BUILD_OPENGL_330_CORE */
 
             //Enable backface culling
             glCullFace(GL_BACK);
@@ -1848,7 +1847,9 @@ LoopRetVal GameMainLoop::loop(unsigned int global_tick, double frame_time, float
             #ifdef BUILD_OPENGL_330_CORE
                 if (use_msaa) glEnable(GL_MULTISAMPLE);
                 else          glDisable(GL_MULTISAMPLE);
-            #endif
+            #else
+                (void)use_msaa;
+            #endif /* BUILD_OPENGL_330_CORE */
             
             //render the 3D scene as a background from it's framebuffer
             if (post_process)
