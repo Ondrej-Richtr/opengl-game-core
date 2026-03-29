@@ -5,7 +5,7 @@ const String = [:0]const u8;
 // Public constants related to build configuration.
 // Please keep list of cpp and c files updated with all file names that need to get compiled.
 pub const project_name = "shooting_practice";
-pub const version_string = "v0.2";
+pub const version_string = "v0.3";
 
 pub const cpp_files = [_]String{ "collision.cpp", "drawing.cpp", "game.cpp", "lighting.cpp", "loop_data.cpp", "main-game.cpp", "main-menu.cpp",
                                  "main-test.cpp", "main.cpp", "meshes.cpp", "mouse_manager.cpp", "movement.cpp", "shaders.cpp",

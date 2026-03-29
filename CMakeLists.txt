@@ -8,7 +8,7 @@ project(shooting_practice LANGUAGES C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #keep this up to date with build.zig
-set(version_string "v0.2")
+set(version_string "v0.3")
 
 list(APPEND cpp_files "collision.cpp" "drawing.cpp" "game.cpp" "lighting.cpp" "loop_data.cpp" "main-game.cpp" "main-menu.cpp"
                       "main-test.cpp" "main.cpp" "meshes.cpp" "mouse_manager.cpp" "movement.cpp" "shaders.cpp"
